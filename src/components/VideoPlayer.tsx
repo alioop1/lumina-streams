@@ -1096,6 +1096,24 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               )}
             </div>
           )}
+
+          {settingsPanel === 'external' && (
+            <div className="py-1">
+              <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10 tv-focus">
+                <BackChevron className="w-4 h-4" /> {labels.openExternal}
+              </button>
+              <div className="px-4 py-2 text-white/40 text-xs">{labels.externalPlayerHint}</div>
+              <button onClick={() => openInExternalPlayer('vlc')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
+                <ExternalLink className="w-4 h-4 text-primary" /> {labels.openVlc}
+              </button>
+              <button onClick={() => openInExternalPlayer('mx')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
+                <ExternalLink className="w-4 h-4 text-primary" /> {labels.openMx}
+              </button>
+              <button onClick={() => openInExternalPlayer('system')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
+                <Monitor className="w-4 h-4 text-primary" /> {labels.openSystem}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
