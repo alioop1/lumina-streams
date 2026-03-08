@@ -135,6 +135,13 @@ export const VideoPlayer = ({
   const [needsTranscodeFallback, setNeedsTranscodeFallback] = useState(false);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
   const [resumeTime, setResumeTime] = useState(0);
+  // Feature: Seek/Volume OSD
+  const [seekOSD, setSeekOSD] = useState<string | null>(null);
+  const seekOSDTimer = useRef<number | null>(null);
+  // Feature: PiP state
+  const [isPiP, setIsPiP] = useState(false);
+  // Feature: Cursor auto-hide
+  const cursorTimer = useRef<number | null>(null);
 
   const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
