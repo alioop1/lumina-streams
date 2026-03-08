@@ -78,6 +78,22 @@ const focusEl = (el: HTMLElement | undefined) => {
 
 const isInSidebar = (el: HTMLElement): boolean => !!el.closest('[data-sidebar]');
 
+const resolveIsRTL = (active?: HTMLElement | null): boolean => {
+  const dirFromActive = active?.closest('[dir]')?.getAttribute('dir');
+  if (dirFromActive === 'rtl') return true;
+  if (dirFromActive === 'ltr') return false;
+
+  const rootDir = document.documentElement.getAttribute('dir');
+  if (rootDir === 'rtl') return true;
+  if (rootDir === 'ltr') return false;
+
+  const bodyDir = document.body.getAttribute('dir');
+  if (bodyDir === 'rtl') return true;
+  if (bodyDir === 'ltr') return false;
+
+  return false;
+};
+
 // ─── Main Hook ───
 
 export const useTVGlobalNavigation = (enabled: boolean) => {
@@ -97,11 +113,11 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if ((tag === 'INPUT' || tag === 'TEXTAREA') && !['Enter', 'Back', 'ArrowUp', 'ArrowDown'].includes(key)) return;
 
-      const isRTL = document.documentElement.dir === 'rtl' || document.body.dir === 'rtl';
+      const active = document.activeElement as HTMLElement;
+      const isRTL = resolveIsRTL(active);
 
       // Enter → click
       if (key === 'Enter') {
-        const active = document.activeElement as HTMLElement;
         if (active && active !== document.body) {
           e.preventDefault();
           active.click();
@@ -121,7 +137,6 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       e.preventDefault();
       e.stopPropagation();
 
-      const active = document.activeElement as HTMLElement;
       const sidebarItems = getSidebarItems();
       const rows = getContentRows();
 
