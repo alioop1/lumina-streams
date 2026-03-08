@@ -39,6 +39,8 @@ interface NavRow {
   y: number;
   items: HTMLElement[];
   vertical: boolean;
+  grid: boolean;
+  gridCols: number;
 }
 
 const getContentRows = (): NavRow[] => {
