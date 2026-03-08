@@ -72,11 +72,9 @@ export const useIsTVDevice = () => {
     };
 
     window.addEventListener('keydown', detectFromRemoteInput, true);
-    document.addEventListener('keydown', detectFromRemoteInput, true);
 
     return () => {
       window.removeEventListener('keydown', detectFromRemoteInput, true);
-      document.removeEventListener('keydown', detectFromRemoteInput, true);
     };
   }, []);
 
