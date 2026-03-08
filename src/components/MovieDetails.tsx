@@ -58,7 +58,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   // Scroll to torrent results when they appear
   useEffect(() => {
     if (showTorrents && torrentResultsRef.current) {
-      torrentResultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      torrentResultsRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
     }
   }, [showTorrents, selectedEpisode]);
 
