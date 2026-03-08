@@ -650,33 +650,33 @@ export const VideoPlayer = ({
           {/* Buttons row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button onClick={toggleMute} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
-                <Volume2 className="w-5 h-5" />
+              <button onClick={toggleMute} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
+                <Volume2 className="w-5 h-5 3xl:w-6 3xl:h-6" />
               </button>
-              <div className="w-20 relative h-6 flex items-center">
-                <div className="absolute inset-x-0 h-1 bg-white/20 rounded-full">
+              <div className="w-20 3xl:w-28 relative h-6 3xl:h-8 flex items-center">
+                <div className="absolute inset-x-0 h-1 3xl:h-1.5 bg-white/20 rounded-full">
                   <div className="h-full bg-white rounded-full" style={{ width: `${(isMuted ? 0 : volume) * 100}%` }} />
                 </div>
                 <input type="range" min={0} max={1} step={0.05} value={isMuted ? 0 : volume} onChange={handleVolume} className="absolute inset-x-0 w-full h-full opacity-0 cursor-pointer" />
               </div>
-              {playbackSpeed !== 1 && <span className="text-white text-xs bg-white/10 px-2 py-0.5 rounded">{playbackSpeed}x</span>}
+              {playbackSpeed !== 1 && <span className="text-white text-xs 3xl:text-sm bg-white/10 px-2 py-0.5 3xl:px-3 3xl:py-1 rounded">{playbackSpeed}x</span>}
             </div>
 
-            <div className="flex items-center gap-1">
-              <button onClick={() => { setShowSettings(!showSettings); setSettingsPanel('main'); }} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
-                <Settings className="w-5 h-5" />
+            <div className="flex items-center gap-1 3xl:gap-2">
+              <button onClick={() => { setShowSettings(!showSettings); setSettingsPanel('main'); }} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
+                <Settings className="w-5 h-5 3xl:w-6 3xl:h-6" />
               </button>
-              <button onClick={() => { setSettingsPanel('subtitles'); setShowSettings(true); }} className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors tv-focus ${activeSub ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`}>
-                <Subtitles className="w-5 h-5" />
+              <button onClick={() => { setSettingsPanel('subtitles'); setShowSettings(true); }} className={`w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center transition-colors tv-focus ${activeSub ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`}>
+                <Subtitles className="w-5 h-5 3xl:w-6 3xl:h-6" />
               </button>
-              <button onClick={handleDownloadSub} disabled={!availableSubs.length} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors disabled:opacity-40 tv-focus">
-                <Download className="w-5 h-5" />
+              <button onClick={handleDownloadSub} disabled={!availableSubs.length} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors disabled:opacity-40 tv-focus">
+                <Download className="w-5 h-5 3xl:w-6 3xl:h-6" />
               </button>
-              <button onClick={toggleFullscreen} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
-                {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+              <button onClick={toggleFullscreen} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
+                {isFullscreen ? <Minimize className="w-5 h-5 3xl:w-6 3xl:h-6" /> : <Maximize className="w-5 h-5 3xl:w-6 3xl:h-6" />}
               </button>
-              <button onClick={() => openExternal('vlc')} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus" title={labels.openExternal}>
-                <ExternalLink className="w-5 h-5" />
+              <button onClick={() => openExternal('vlc')} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus" title={labels.openExternal}>
+                <ExternalLink className="w-5 h-5 3xl:w-6 3xl:h-6" />
               </button>
             </div>
           </div>
