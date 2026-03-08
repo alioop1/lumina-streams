@@ -174,7 +174,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       .finally(() => setLoadingSubs(false));
   }, [imdbId, mediaType, season, episode]);
 
-  // Fetch audio tracks
+  // Fetch audio tracks automatically
   useEffect(() => {
     if (!rdFileId || isYouTube) return;
     setLoadingAudio(true);
@@ -188,6 +188,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
           }
         }
         setRdAudioOptions(options);
+        // Auto-select default audio (original stream) - no switch needed as video already plays with default audio
       })
       .catch(e => console.warn('Transcode fetch failed:', e))
       .finally(() => setLoadingAudio(false));
