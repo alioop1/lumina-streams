@@ -32,10 +32,43 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkInput, setLinkInput] = useState('');
+  const [showTorrents, setShowTorrents] = useState(false);
   const unrestrict = useRDUnrestrict();
+  const addMagnet = useRDAddMagnet();
 
   const detailMovie = details?.movie || movie;
   const rawDetails = details?.raw;
+  const imdbId = rawDetails?.external_ids?.imdb_id || rawDetails?.imdb_id || null;
+
+  const torrentType = movie.type === 'series' ? 'series' : 'movie';
+  const { data: torrentioData, isLoading: torrentsLoading } = useTorrentioSearch(
+    showTorrents ? torrentType : null,
+    showTorrents ? imdbId : null
+  );
+  const streams = torrentioData?.streams || [];
+
+  const handleStreamSelect = async (stream: TorrentioStream) => {
+    const link = streamToMagnet(stream);
+    if (!link) return;
+    try {
+      if (link.startsWith('magnet:')) {
+        const result = await addMagnet.mutateAsync(link);
+        // For direct streaming, try unrestricting
+      } else {
+        const result = await unrestrict.mutateAsync(link);
+        setStreamUrl(result.download);
+      }
+    } catch (e) {
+      console.error('Stream select failed:', e);
+      // Fallback: try unrestricting the link
+      try {
+        const result = await unrestrict.mutateAsync(link);
+        setStreamUrl(result.download);
+      } catch (e2) {
+        console.error('Unrestrict fallback failed:', e2);
+      }
+    }
+  };
 
   const handleUnrestrict = async () => {
     if (!linkInput.trim()) return;
