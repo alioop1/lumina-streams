@@ -26,6 +26,12 @@ interface AudioTrackInfo {
   enabled: boolean;
 }
 
+const isWebAudioCodecCompatible = (codec?: string) => {
+  if (!codec) return false;
+  const c = codec.toLowerCase();
+  return c.includes('aac') || c.includes('mp3') || c.includes('opus') || c.includes('vorbis') || c.includes('flac');
+};
+
 const PLAYER_KEYCODE_MAP: Record<number, string> = {
   13: 'Enter',
   19: 'ArrowUp',
