@@ -451,7 +451,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             </h3>
             <div className="flex gap-5 3xl:gap-7 overflow-x-auto pb-2">
               {cast.map((actor: any) => (
-                <div key={actor.id} className="flex-shrink-0 w-24 text-center">
+                <div key={actor.id} className="flex-shrink-0 w-24 3xl:w-32 4k:w-36 text-center">
                   {actor.profile_path ? (
                     <img
                       src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`}
