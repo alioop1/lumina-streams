@@ -189,6 +189,15 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                 <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1" dir="ltr">
                   {parsed.quality}
                 </p>
+                {parsed.languages.length > 0 && (
+                  <div className="flex gap-1.5 mt-1 flex-wrap">
+                    {parsed.languages.map((lang) => (
+                      <span key={lang} className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full font-medium">
+                        {lang}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex flex-col items-end gap-1 flex-shrink-0 text-sm text-muted-foreground">
                 {parsed.size && <span className="text-foreground font-medium">💾 {parsed.size}</span>}
