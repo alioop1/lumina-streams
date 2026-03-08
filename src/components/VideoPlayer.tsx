@@ -177,6 +177,47 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     cannotSwitchAudio: lang === 'he' ? 'במכשיר/דפדפן הזה לא ניתן להחליף רצועת אודיו מתוך הנגן' : 'Audio track switching is not supported on this device/browser',
     chooseSourceAudio: lang === 'he' ? 'בחר שפה (יחליף מקור):' : 'Choose language (will switch source):',
     transcodeActive: lang === 'he' ? 'מצב תאימות אודיו פעיל' : 'Audio compatibility mode active',
+    openExternal: lang === 'he' ? 'פתח בנגן חיצוני' : 'Open in External Player',
+    openVlc: lang === 'he' ? 'פתח ב-VLC' : 'Open in VLC',
+    openMx: lang === 'he' ? 'פתח ב-MX Player' : 'Open in MX Player',
+    openSystem: lang === 'he' ? 'פתח בנגן המערכת' : 'Open in System Player',
+    externalPlayerHint: lang === 'he' ? 'לניגון עם כל הקודקים (DTS, AC3, EAC3 וכו\')' : 'For playback with all codecs (DTS, AC3, EAC3, etc.)',
+  };
+
+  const openInExternalPlayer = (playerType: 'vlc' | 'mx' | 'system') => {
+    const videoUrl = url; // Always use original (not transcoded) URL for external player
+    let intentUrl = '';
+
+    switch (playerType) {
+      case 'vlc':
+        // VLC intent
+        intentUrl = `vlc://${videoUrl}`;
+        // Try Android intent as fallback
+        if (/android/i.test(navigator.userAgent)) {
+          intentUrl = `intent://${videoUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=org.videolan.vlc;type=video/*;S.title=${encodeURIComponent(title)};end`;
+        }
+        break;
+      case 'mx':
+        // MX Player intent
+        if (/android/i.test(navigator.userAgent)) {
+          intentUrl = `intent://${videoUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.mxtech.videoplayer.ad;type=video/*;S.title=${encodeURIComponent(title)};end`;
+        } else {
+          intentUrl = videoUrl; // Fallback: just open URL
+        }
+        break;
+      case 'system':
+        // Generic Android video intent
+        if (/android/i.test(navigator.userAgent)) {
+          intentUrl = `intent://${videoUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;type=video/*;S.title=${encodeURIComponent(title)};end`;
+        } else {
+          intentUrl = videoUrl;
+        }
+        break;
+    }
+
+    if (intentUrl) {
+      window.location.href = intentUrl;
+    }
   };
 
   useEffect(() => {
