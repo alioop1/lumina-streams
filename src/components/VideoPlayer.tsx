@@ -165,6 +165,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     noAudio: lang === 'he' ? 'האודיו הראשי זמין, אבל אין רצועות נוספות לזיהוי' : 'Primary audio is available, but no additional tracks were detected',
     noSubs: lang === 'he' ? 'אין כתוביות זמינות' : 'No subtitles available',
     cannotSwitchAudio: lang === 'he' ? 'במכשיר/דפדפן הזה לא ניתן להחליף רצועת אודיו מתוך הנגן' : 'Audio track switching is not supported on this device/browser',
+    chooseSourceAudio: lang === 'he' ? 'בחר שפה (יחליף מקור):' : 'Choose language (will switch source):',
   };
 
   // Fetch subtitles
