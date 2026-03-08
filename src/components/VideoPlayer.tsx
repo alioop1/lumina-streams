@@ -138,6 +138,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const [activeAudioIdx, setActiveAudioIdx] = useState<number>(0);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [canSwitchAudioTracks, setCanSwitchAudioTracks] = useState(false);
+  const [noAudioDetected, setNoAudioDetected] = useState(false);
 
   const [availableSubs, setAvailableSubs] = useState<SubtitleTrack[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
