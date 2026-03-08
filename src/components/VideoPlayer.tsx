@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeft, ArrowRight, X, Settings, Volume2, Subtitles, ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause, SkipForward, SkipBack, Loader2, Languages, Download } from 'lucide-react';
 import { fetchSubtitles, type SubtitleTrack } from '@/lib/opensubtitles';
-import { realDebrid } from '@/lib/realDebrid';
+// realDebrid import removed - using embedded audio tracks now
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface VideoPlayerProps {
