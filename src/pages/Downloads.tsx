@@ -172,13 +172,13 @@ const Downloads = () => {
               <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
           )}
-          {!downloadsLoading && downloads?.length === 0 && (
+          {!downloadsLoading && downloadsList.length === 0 && (
             <div className="text-center text-muted-foreground py-12">
               <Download className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>{lang === 'he' ? 'אין הורדות' : 'No downloads'}</p>
             </div>
           )}
-          {downloads?.map((dl: any) => (
+          {downloadsList.map((dl: any) => (
             <a
               key={dl.id}
               href={dl.download}
