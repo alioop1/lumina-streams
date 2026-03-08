@@ -47,26 +47,50 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   );
   const streams = torrentioData?.streams || [];
 
-  const handleStreamSelect = async (stream: TorrentioStream) => {
+  const [loadingStreamIdx, setLoadingStreamIdx] = useState<number | null>(null);
+
+  const handleStreamSelect = async (stream: TorrentioStream, idx: number) => {
     const link = streamToMagnet(stream);
     if (!link) return;
+    setLoadingStreamIdx(idx);
     try {
       if (link.startsWith('magnet:')) {
         const result = await addMagnet.mutateAsync(link);
-        // For direct streaming, try unrestricting
+        // Poll torrent info until we get links, then unrestrict
+        const pollForLinks = async (torrentId: string, retries = 15): Promise<string | null> => {
+          const { realDebrid } = await import('@/lib/realDebrid');
+          for (let i = 0; i < retries; i++) {
+            await new Promise(r => setTimeout(r, 2000));
+            const info = await realDebrid.getTorrentInfo(torrentId);
+            if (info.links && info.links.length > 0) {
+              const unrestricted = await unrestrict.mutateAsync(info.links[0]);
+              return unrestricted.download;
+            }
+            if (info.status === 'error' || info.status === 'dead') break;
+          }
+          return null;
+        };
+        const url = await pollForLinks(result.id);
+        if (url) setStreamUrl(url);
       } else {
         const result = await unrestrict.mutateAsync(link);
         setStreamUrl(result.download);
       }
     } catch (e) {
       console.error('Stream select failed:', e);
-      // Fallback: try unrestricting the link
-      try {
-        const result = await unrestrict.mutateAsync(link);
-        setStreamUrl(result.download);
-      } catch (e2) {
-        console.error('Unrestrict fallback failed:', e2);
-      }
+    } finally {
+      setLoadingStreamIdx(null);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const text = `${displayTitle} - ${detailMovie.year}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: displayTitle, text, url }); } catch {}
+    } else {
+      await navigator.clipboard.writeText(url);
+      alert(lang === 'he' ? 'הקישור הועתק!' : 'Link copied!');
     }
   };
 
@@ -153,10 +177,20 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           >
             <Link className="w-5 h-5" />
           </button>
-          <button className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus">
+          <button
+            onClick={() => {
+              const text = `${displayTitle} (${detailMovie.year})`;
+              navigator.clipboard.writeText(text);
+              alert(lang === 'he' ? 'נוסף לרשימה!' : 'Added to watchlist!');
+            }}
+            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus"
+          >
             <Plus className="w-6 h-6" />
           </button>
-          <button className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus">
+          <button
+            onClick={handleShare}
+            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus"
+          >
             <Share2 className="w-5 h-5" />
           </button>
         </div>
@@ -187,11 +221,12 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               return (
                 <button
                   key={idx}
-                  onClick={() => handleStreamSelect(stream)}
-                  className="w-full glass rounded-xl p-3 flex items-start gap-3 tv-focus text-start hover:bg-accent/50 transition-colors"
+                  onClick={() => handleStreamSelect(stream, idx)}
+                  disabled={loadingStreamIdx !== null}
+                  className="w-full glass rounded-xl p-3 flex items-start gap-3 tv-focus text-start hover:bg-accent/50 transition-colors disabled:opacity-50"
                 >
                   <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Download className="w-5 h-5 text-primary" />
+                    {loadingStreamIdx === idx ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Download className="w-5 h-5 text-primary" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground" dir="ltr">
