@@ -17,6 +17,7 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
   const movie = heroMovies[current];
   const { t, lang, dir } = useLanguage();
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const isTVDevice = useIsTVDevice();
   const { toast } = useToast();
 
   useEffect(() => {
