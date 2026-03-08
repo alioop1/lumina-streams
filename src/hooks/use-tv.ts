@@ -4,38 +4,38 @@ const TV_UA_REGEX = /Android TV|GoogleTV|SmartTV|SMART-TV|HbbTV|AFT|BRAVIA|TV/i;
 const ANDROID_TV_HINT_REGEX = /AFT|BRAVIA|MIBOX|SHIELD|ADT-|SmartTV|GoogleTV/i;
 
 const KEYCODE_MAP: Record<number, string> = {
+  13: 'Enter',
   19: 'ArrowUp',
   20: 'ArrowDown',
   21: 'ArrowLeft',
   22: 'ArrowRight',
   23: 'Enter',
+  32: ' ',
+  37: 'ArrowLeft',
+  38: 'ArrowUp',
+  39: 'ArrowRight',
+  40: 'ArrowDown',
   66: 'Enter',
   3: 'Home',
   36: 'Home',
 };
 
 const normalizeRemoteKey = (e: KeyboardEvent): string => {
-  const key = e.key || '';
-  const code = e.code || '';
-  const lowered = key.toLowerCase();
+  const lowered = (e.key || '').toLowerCase();
 
-  if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'enter', ' ', 'home'].includes(lowered)) {
-    return key === ' ' ? ' ' : key;
-  }
+  if (lowered === 'arrowup' || lowered === 'up' || lowered === 'dpad_up' || lowered === 'dpadup') return 'ArrowUp';
+  if (lowered === 'arrowdown' || lowered === 'down' || lowered === 'dpad_down' || lowered === 'dpaddown') return 'ArrowDown';
+  if (lowered === 'arrowleft' || lowered === 'left' || lowered === 'dpad_left' || lowered === 'dpadleft') return 'ArrowLeft';
+  if (lowered === 'arrowright' || lowered === 'right' || lowered === 'dpad_right' || lowered === 'dpadright') return 'ArrowRight';
+  if (lowered === 'enter' || lowered === 'select' || lowered === 'ok' || lowered === 'center' || lowered === 'dpad_center') return 'Enter';
+  if (lowered === 'home') return 'Home';
+  if (lowered === ' ') return ' ';
 
-  if (lowered === 'select' || lowered === 'ok' || lowered === 'dpad_center') {
-    return 'Enter';
-  }
+  if (e.code === 'Space') return ' ';
+  if (e.code && e.code.startsWith('Arrow')) return e.code;
 
-  if (lowered === 'dpad_up') return 'ArrowUp';
-  if (lowered === 'dpad_down') return 'ArrowDown';
-  if (lowered === 'dpad_left') return 'ArrowLeft';
-  if (lowered === 'dpad_right') return 'ArrowRight';
-
-  if (code === 'Space') return ' ';
-  if (code.startsWith('Arrow')) return code;
-
-  return KEYCODE_MAP[e.keyCode] || '';
+  const keyCode = e.keyCode || (e as any).which || 0;
+  return KEYCODE_MAP[keyCode] || '';
 };
 
 export const detectTVDevice = () => {
@@ -71,7 +71,8 @@ const isHTMLElementVisible = (el: HTMLElement) => {
     style.pointerEvents !== 'none' &&
     !hasNoOpacity &&
     !hiddenByAria &&
-    !el.hasAttribute('disabled')
+    !el.hasAttribute('disabled') &&
+    el.getClientRects().length > 0
   );
 };
 
@@ -83,7 +84,11 @@ const getCenter = (el: HTMLElement) => {
   };
 };
 
-const getSpatialNext = (current: HTMLElement, focusable: HTMLElement[], direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight') => {
+const getSpatialNext = (
+  current: HTMLElement,
+  focusable: HTMLElement[],
+  direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
+) => {
   const currentCenter = getCenter(current);
   const candidates = focusable
     .filter((el) => el !== current)
@@ -115,23 +120,18 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
   useEffect(() => {
     if (!enabled) return;
 
-    const isWithinViewport = (el: HTMLElement, overscan = 320) => {
-      const rect = el.getBoundingClientRect();
-      return (
-        rect.width > 0 &&
-        rect.height > 0 &&
-        rect.bottom >= -overscan &&
-        rect.top <= window.innerHeight + overscan &&
-        rect.right >= -overscan &&
-        rect.left <= window.innerWidth + overscan
-      );
-    };
+    const getFocusableWithin = (root: ParentNode | null) =>
+      root
+        ? Array.from(root.querySelectorAll<HTMLElement>(focusableSelector)).filter((el) => isHTMLElementVisible(el))
+        : [];
 
-    const getFocusable = () =>
-      Array.from(document.querySelectorAll<HTMLElement>(focusableSelector)).filter((el) => {
-        if (!isHTMLElementVisible(el)) return false;
-        return isWithinViewport(el);
-      });
+    const getSidebarFocusable = () => getFocusableWithin(document.querySelector('[data-sidebar]'));
+    const getMainFocusable = () => getFocusableWithin(document.querySelector('main'));
+    const getAllFocusable = () => {
+      const sidebar = getSidebarFocusable();
+      const main = getMainFocusable();
+      return [...sidebar, ...main.filter((el) => !sidebar.includes(el))];
+    };
 
     let lastArrowAt = 0;
 
@@ -151,9 +151,21 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       }
     };
 
-    const focusAt = (index: number) => {
-      const focusable = getFocusable();
-      focusElement(focusable[index] || null);
+    const focusFirstAvailable = () => {
+      const main = getMainFocusable();
+      const sidebar = getSidebarFocusable();
+      const all = getAllFocusable();
+      focusElement(main[0] || sidebar[0] || all[0] || null);
+    };
+
+    const moveInList = (list: HTMLElement[], current: HTMLElement, delta: number) => {
+      const idx = list.indexOf(current);
+      if (idx === -1) {
+        focusElement(list[0] || null);
+        return;
+      }
+      const nextIdx = Math.min(Math.max(idx + delta, 0), list.length - 1);
+      focusElement(list[nextIdx] || null);
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -170,22 +182,27 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
 
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
         const now = performance.now();
-        if (e.repeat || now - lastArrowAt < 110) {
+        if (now - lastArrowAt < 55) {
           e.preventDefault();
           return;
         }
         lastArrowAt = now;
       }
 
-      const focusable = getFocusable();
-      if (!focusable.length) return;
+      const sidebarFocusable = getSidebarFocusable();
+      const mainFocusable = getMainFocusable();
+      const allFocusable = [...sidebarFocusable, ...mainFocusable.filter((el) => !sidebarFocusable.includes(el))];
+      if (!allFocusable.length) return;
 
       const active = document.activeElement as HTMLElement | null;
-      const activeIndex = active ? focusable.indexOf(active) : -1;
+      const isActiveFocusable = !!active && allFocusable.includes(active);
+      const isRTL = (document.documentElement.getAttribute('dir') || document.body.getAttribute('dir') || 'ltr') === 'rtl';
+      const towardContent = isRTL ? 'ArrowLeft' : 'ArrowRight';
+      const towardSidebar = isRTL ? 'ArrowRight' : 'ArrowLeft';
 
       if (key === 'Home') {
         e.preventDefault();
-        focusAt(0);
+        focusFirstAvailable();
         return;
       }
 
@@ -193,44 +210,74 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
         if (active && active !== document.body) {
           e.preventDefault();
           active.click();
+        } else {
+          e.preventDefault();
+          focusFirstAvailable();
         }
         return;
       }
 
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) return;
 
-      if (activeIndex === -1) {
+      if (!isActiveFocusable) {
         e.preventDefault();
-        focusAt(0);
+        focusFirstAvailable();
         return;
       }
 
-      const current = focusable[activeIndex];
-      const nextSpatial = getSpatialNext(current, focusable, key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight');
+      const activeEl = active as HTMLElement;
+      const activeInSidebar = sidebarFocusable.includes(activeEl);
 
-      if (nextSpatial) {
-        e.preventDefault();
-        focusElement(nextSpatial);
+      if (activeInSidebar) {
+        if (key === 'ArrowUp' || key === 'ArrowDown') {
+          e.preventDefault();
+          moveInList(sidebarFocusable, activeEl, key === 'ArrowDown' ? 1 : -1);
+          return;
+        }
+
+        if (key === towardContent && mainFocusable.length) {
+          e.preventDefault();
+          const nextMain = getSpatialNext(activeEl, mainFocusable, key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight') || mainFocusable[0];
+          focusElement(nextMain);
+        }
+
         return;
       }
+
+      const nextInMain = getSpatialNext(activeEl, mainFocusable, key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight');
+      if (nextInMain) {
+        e.preventDefault();
+        focusElement(nextInMain);
+        return;
+      }
+
+      if (key === towardSidebar && sidebarFocusable.length) {
+        e.preventDefault();
+        const nextSidebar = getSpatialNext(activeEl, sidebarFocusable, key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight') || sidebarFocusable[0];
+        focusElement(nextSidebar);
+        return;
+      }
+
+      const activeIndex = mainFocusable.indexOf(activeEl);
+      if (activeIndex === -1) return;
 
       const moveForward = key === 'ArrowDown' || key === 'ArrowRight';
       const nextIndex = moveForward
-        ? Math.min(activeIndex + 1, focusable.length - 1)
+        ? Math.min(activeIndex + 1, mainFocusable.length - 1)
         : Math.max(activeIndex - 1, 0);
 
       if (nextIndex !== activeIndex) {
         e.preventDefault();
-        focusAt(nextIndex);
+        focusElement(mainFocusable[nextIndex]);
       }
     };
 
     const ensureInitialFocus = window.setTimeout(() => {
       const active = document.activeElement as HTMLElement | null;
       if (!active || active === document.body) {
-        focusAt(0);
+        focusFirstAvailable();
       }
-    }, 120);
+    }, 80);
 
     window.addEventListener('keydown', handleKeyDown);
 

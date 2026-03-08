@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const Watchlist = () => {
-  const { t, dir } = useLanguage();
+  const { t, dir, lang } = useLanguage();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background pt-12 pb-24 px-4" dir={dir}>
@@ -12,6 +14,12 @@ const Watchlist = () => {
         </div>
         <p className="text-muted-foreground">{t('emptyList')}</p>
         <p className="text-sm text-muted-foreground mt-1">{t('addLater')}</p>
+        <button
+          onClick={() => navigate('/search')}
+          className="mt-5 bg-primary text-primary-foreground rounded-lg px-4 py-2.5 text-sm font-semibold tv-focus"
+        >
+          {lang === 'he' ? 'חפש משהו לצפייה' : 'Find Something to Watch'}
+        </button>
       </div>
     </div>
   );

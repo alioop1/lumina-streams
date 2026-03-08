@@ -18,7 +18,7 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
       className="flex-shrink-0 w-[140px] md:w-[180px] snap-start group/card cursor-pointer text-start bg-transparent border-none p-0 outline-none"
       data-card-index={index}
     >
-      <div className="relative rounded-lg overflow-hidden aspect-[2/3] mb-2 movie-card-poster bg-card transition-all duration-200">
+      <div className="relative rounded-lg overflow-hidden aspect-[2/3] mb-2 movie-card-poster bg-card transition-all duration-150">
         {posterSrc ? (
           <img
             src={posterSrc}
@@ -32,8 +32,7 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
             <span className="text-muted-foreground text-xs">No Image</span>
           </div>
         )}
-        
-        {/* Quality badge */}
+
         {movie.quality && (
           <div className="absolute top-2 end-2 bg-primary/90 backdrop-blur-sm rounded px-1.5 py-0.5 z-10">
             <span className="text-[10px] font-bold text-primary-foreground tracking-wide">
@@ -42,8 +41,7 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
           </div>
         )}
 
-        {/* Hover/focus overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 group-focus/card:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
+        <div className="movie-card-overlay absolute inset-0 bg-gradient-to-t from-background/75 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-150 pointer-events-none flex flex-col items-center justify-center gap-2">
           <div className="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center">
             <Play className="w-4 h-4 text-primary-foreground fill-primary-foreground ms-0.5" />
           </div>

@@ -135,7 +135,7 @@
   /* Android TV D-pad focus styles */
   .tv-focus {
     @apply outline-none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    transition: transform 0.14s ease, box-shadow 0.14s ease, background-color 0.14s ease;
   }
 
   .tv-focus:focus-visible {
@@ -148,43 +148,49 @@
     outline: none;
   }
 
-  /* Movie card poster focus/hover styles */
   .focus-card {
-    transition: transform 0.2s ease;
+    transition: transform 0.14s ease, box-shadow 0.14s ease;
     outline: none !important;
     border: none !important;
     box-shadow: none !important;
   }
 
-  .focus-card:hover,
-  .focus-card:focus-visible {
-    transform: scale(1.05);
-    z-index: 20;
+  @media (hover: hover) and (pointer: fine) {
+    .focus-card:hover {
+      transform: scale(1.03);
+      z-index: 20;
+    }
+
+    .focus-card:hover .movie-card-poster {
+      box-shadow: 0 0 0 1px hsl(var(--foreground) / 0.35);
+      border-radius: 0.5rem;
+    }
   }
 
-  /* No border/outline on focus - only scale + poster shadow */
   .focus-card:focus-visible {
+    transform: scale(1.03);
+    z-index: 20;
     outline: none !important;
   }
 
   .focus-card:focus-visible .movie-card-poster {
-    box-shadow: 0 0 0 2px hsl(var(--foreground) / 0.9);
+    box-shadow: 0 0 0 2px hsl(var(--foreground) / 0.88);
     border-radius: 0.5rem;
   }
 
-  .focus-card:hover .movie-card-poster {
-    box-shadow: 0 0 0 1px hsl(var(--foreground) / 0.4);
-    border-radius: 0.5rem;
+  .focus-card:focus-visible .movie-card-overlay {
+    opacity: 1;
   }
+
   :root.tv-device .tv-focus,
   body.tv-device .tv-focus {
-    transition: background-color 0.1s linear, box-shadow 0.1s linear;
+    transition: background-color 0.08s linear, box-shadow 0.08s linear;
   }
 
   :root.tv-device .focus-card,
   body.tv-device .focus-card {
     transform: none !important;
-    transition: box-shadow 0.1s linear !important;
+    transition: box-shadow 0.08s linear !important;
   }
 
   :root.tv-device .focus-card:hover,
@@ -199,4 +205,8 @@
     box-shadow: 0 0 0 2px hsl(var(--foreground) / 0.95), 0 10px 24px -14px hsl(var(--foreground) / 0.6);
     border-radius: 0.5rem;
   }
-}
+
+  :root.tv-device .movie-card-overlay,
+  body.tv-device .movie-card-overlay {
+    opacity: 0 !important;
+  }
