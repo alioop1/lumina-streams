@@ -508,13 +508,15 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10">
                 <ChevronRight className="w-4 h-4" /> שפת אודיו
               </button>
-              {audioTracks.length === 0 ? (
-                <div className="px-4 py-3 text-white/40 text-center">רצועת אודיו אחת בלבד</div>
+              {rdAudioOptions.length === 0 ? (
+                <div className="px-4 py-3 text-white/40 text-center">
+                  {loadingAudio ? 'טוען...' : 'אין רצועות אודיו נוספות'}
+                </div>
               ) : (
-                audioTracks.map((t, i) => (
-                  <button key={i} onClick={() => selectAudioTrack(i)} className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between ${t.enabled ? 'text-primary' : ''}`}>
-                    {t.label} {t.language && `(${t.language})`}
-                    {t.enabled && <span className="text-primary">✓</span>}
+                rdAudioOptions.map((opt, i) => (
+                  <button key={i} onClick={() => selectAudioTrack(opt)} className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between ${activeAudio === opt.url ? 'text-primary' : ''}`}>
+                    {opt.label}
+                    {activeAudio === opt.url && <span className="text-primary">✓</span>}
                   </button>
                 ))
               )}
