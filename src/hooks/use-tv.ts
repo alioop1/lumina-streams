@@ -1,15 +1,16 @@
 import { useEffect } from 'react';
 
 /**
- * Android TV D-pad navigation engine.
+ * Android TV D-pad navigation engine — v3
  * 
  * Architecture:
  * - Every focusable element: class="tv-focus"
- * - Elements grouped in rows: parent has data-nav-row="uniqueId"
- * - Sidebar marked with data-sidebar
- * - Automatically detects horizontal vs vertical rows
- * - Horizontal rows: Left/Right moves within, Up/Down moves between rows
- * - Vertical rows: Up/Down moves within, Left/Right = sidebar transition
+ * - Elements grouped: parent has data-nav-row="uniqueId"
+ * - Sidebar: data-sidebar
+ * - Auto-detects horizontal vs vertical rows
+ * - RTL-aware: sidebar on right, content on left
+ * - Physical arrow keys: always map to screen direction
+ * - Sidebar transition: based on layout direction
  */
 
 // ─── Key Normalisation ───
@@ -49,7 +50,7 @@ interface NavRow {
   id: string;
   y: number;
   items: HTMLElement[];
-  vertical: boolean; // true if items are stacked vertically
+  vertical: boolean;
 }
 
 const getContentRows = (): NavRow[] => {
@@ -64,7 +65,7 @@ const getContentRows = (): NavRow[] => {
     const items = getVisibleFocusable(c);
     if (items.length === 0) continue;
 
-    // Detect orientation: if items span more vertically than horizontally, it's vertical
+    // Detect orientation
     let vertical = false;
     if (items.length > 1) {
       const rects = items.map(el => el.getBoundingClientRect());
@@ -73,7 +74,7 @@ const getContentRows = (): NavRow[] => {
       vertical = ySpread > xSpread;
     }
 
-    // Sort by primary axis
+    // Sort by primary axis position
     if (vertical) {
       items.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
     } else {
@@ -96,11 +97,8 @@ const focusEl = (el: HTMLElement | undefined) => {
 const isInSidebar = (el: HTMLElement): boolean => !!el.closest('[data-sidebar]');
 
 const resolveIsRTL = (): boolean => {
-  const rootDir = document.documentElement.getAttribute('dir');
-  if (rootDir === 'rtl') return true;
-  if (rootDir === 'ltr') return false;
-  const bodyDir = document.body.getAttribute('dir');
-  return bodyDir === 'rtl';
+  return document.documentElement.getAttribute('dir') === 'rtl' ||
+         document.body.getAttribute('dir') === 'rtl';
 };
 
 // ─── Main Hook ───
@@ -118,12 +116,17 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       const key = normalizeKey(e);
       if (!key) return;
 
-      // Don't intercept typing in inputs (except navigation keys)
+      // Don't intercept typing in inputs
       const tag = (e.target as HTMLElement)?.tagName;
       if ((tag === 'INPUT' || tag === 'TEXTAREA') && !['Enter', 'Back', 'ArrowUp', 'ArrowDown'].includes(key)) return;
 
       const active = document.activeElement as HTMLElement;
       const isRTL = resolveIsRTL();
+
+      // In RTL: sidebar is on RIGHT, content on LEFT
+      // towardSidebar = physical direction toward the sidebar
+      const towardSidebar = isRTL ? 'ArrowRight' : 'ArrowLeft';
+      const towardContent = isRTL ? 'ArrowLeft' : 'ArrowRight';
 
       // Enter → click
       if (key === 'Enter') {
@@ -134,9 +137,7 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
         return;
       }
 
-      // Back → let app handle
       if (key === 'Back') return;
-
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) return;
 
       // Throttle
@@ -149,37 +150,65 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       const sidebarItems = getSidebarItems();
       const rows = getContentRows();
 
-      // Nothing focused → focus first available
+      // Nothing focused → focus first content or sidebar
       if (!active || active === document.body || !active.classList.contains('tv-focus')) {
         focusEl(sidebarItems[0] || rows[0]?.items[0]);
         return;
       }
 
-      // Sidebar is on the right in RTL, left in LTR
-      const towardContent = isRTL ? 'ArrowLeft' : 'ArrowRight';
-      const towardSidebar = isRTL ? 'ArrowRight' : 'ArrowLeft';
+      // ─── Helper: go to sidebar closest to current Y ───
+      const goToSidebar = () => {
+        if (sidebarItems.length === 0) return;
+        const y = active.getBoundingClientRect().top + active.getBoundingClientRect().height / 2;
+        let best = sidebarItems[0];
+        let bestD = Infinity;
+        for (const si of sidebarItems) {
+          const d = Math.abs(si.getBoundingClientRect().top + si.getBoundingClientRect().height / 2 - y);
+          if (d < bestD) { bestD = d; best = si; }
+        }
+        focusEl(best);
+      };
 
-      // ── Sidebar navigation (always vertical) ──
+      // ─── Helper: go to content from sidebar ───
+      const goToContent = () => {
+        if (rows.length === 0) return;
+        const activeY = active.getBoundingClientRect().top + active.getBoundingClientRect().height / 2;
+        let best = rows[0];
+        let bestDist = Infinity;
+        for (const row of rows) {
+          const d = Math.abs(row.y - activeY);
+          if (d < bestDist) { bestDist = d; best = row; }
+        }
+        // Focus the item nearest to sidebar:
+        // In RTL sidebar is RIGHT → nearest = rightmost = last in sorted array
+        // In LTR sidebar is LEFT → nearest = leftmost = first in sorted array
+        if (best.vertical) {
+          focusEl(best.items[0]); // vertical list: always start at top
+        } else {
+          const idx = isRTL ? best.items.length - 1 : 0;
+          focusEl(best.items[idx]);
+        }
+      };
+
+      // ═══════════════════════════════════════
+      // SIDEBAR NAVIGATION (always vertical)
+      // ═══════════════════════════════════════
       if (isInSidebar(active)) {
         const idx = sidebarItems.indexOf(active);
         if (key === 'ArrowUp' && idx > 0) {
           focusEl(sidebarItems[idx - 1]);
         } else if (key === 'ArrowDown' && idx < sidebarItems.length - 1) {
           focusEl(sidebarItems[idx + 1]);
-        } else if (key === towardContent && rows.length > 0) {
-          const activeY = active.getBoundingClientRect().top + active.getBoundingClientRect().height / 2;
-          let best = rows[0];
-          let bestDist = Infinity;
-          for (const row of rows) {
-            const d = Math.abs(row.y - activeY);
-            if (d < bestDist) { bestDist = d; best = row; }
-          }
-          focusEl(best.items[0]);
+        } else if (key === towardContent) {
+          goToContent();
         }
+        // towardSidebar from sidebar = do nothing
         return;
       }
 
-      // ── Content navigation ──
+      // ═══════════════════════════════════════
+      // CONTENT NAVIGATION
+      // ═══════════════════════════════════════
       let activeRowIdx = -1, activeColIdx = -1;
       for (let r = 0; r < rows.length; r++) {
         const col = rows[r].items.indexOf(active);
@@ -193,83 +222,72 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
 
       const currentRow = rows[activeRowIdx];
 
-      const moveToClosestSidebarItem = () => {
-        if (sidebarItems.length === 0) return;
-        const y = active.getBoundingClientRect().top + active.getBoundingClientRect().height / 2;
-        let best = sidebarItems[0];
-        let bestD = Infinity;
-        for (const si of sidebarItems) {
-          const d = Math.abs(si.getBoundingClientRect().top + si.getBoundingClientRect().height / 2 - y);
-          if (d < bestD) { bestD = d; best = si; }
-        }
-        focusEl(best);
-      };
-
-      const moveToPrevRow = () => {
+      // ─── Move to adjacent row ───
+      const goToPrevRow = () => {
         if (activeRowIdx > 0) {
           const prev = rows[activeRowIdx - 1];
           focusEl(prev.items[Math.min(activeColIdx, prev.items.length - 1)]);
         } else {
-          moveToClosestSidebarItem();
+          // At first row, go up → sidebar
+          goToSidebar();
         }
       };
 
-      const moveToNextRow = () => {
+      const goToNextRow = () => {
         if (activeRowIdx < rows.length - 1) {
           const next = rows[activeRowIdx + 1];
           focusEl(next.items[Math.min(activeColIdx, next.items.length - 1)]);
         }
       };
 
+      // ═══════════════════════════════════════
+      // VERTICAL ROW (e.g. Settings list)
+      // Up/Down = within row, towardSidebar = sidebar
+      // ═══════════════════════════════════════
       if (currentRow.vertical) {
-        // ── Vertical row: Up/Down moves within, Left/Right = row change or sidebar ──
-        switch (key) {
-          case 'ArrowUp':
-            if (activeColIdx > 0) {
-              focusEl(currentRow.items[activeColIdx - 1]);
-            } else {
-              moveToPrevRow();
-            }
-            break;
-          case 'ArrowDown':
-            if (activeColIdx < currentRow.items.length - 1) {
-              focusEl(currentRow.items[activeColIdx + 1]);
-            } else {
-              moveToNextRow();
-            }
-            break;
-          case towardSidebar:
-            moveToClosestSidebarItem();
-            break;
-          case towardContent:
-            // In a vertical list, toward-content does nothing (or go to next row)
-            moveToNextRow();
-            break;
+        if (key === 'ArrowUp') {
+          if (activeColIdx > 0) {
+            focusEl(currentRow.items[activeColIdx - 1]);
+          } else {
+            goToPrevRow();
+          }
+        } else if (key === 'ArrowDown') {
+          if (activeColIdx < currentRow.items.length - 1) {
+            focusEl(currentRow.items[activeColIdx + 1]);
+          } else {
+            goToNextRow();
+          }
+        } else if (key === towardSidebar) {
+          goToSidebar();
         }
-      } else {
-        // ── Horizontal row: Left/Right moves within, Up/Down = row change ──
-        switch (key) {
-          case 'ArrowRight':
-            if (activeColIdx < currentRow.items.length - 1) {
-              focusEl(currentRow.items[activeColIdx + 1]);
-            } else if (key === towardSidebar) {
-              moveToClosestSidebarItem();
-            }
-            break;
-          case 'ArrowLeft':
-            if (activeColIdx > 0) {
-              focusEl(currentRow.items[activeColIdx - 1]);
-            } else if (key === towardSidebar) {
-              moveToClosestSidebarItem();
-            }
-            break;
-          case 'ArrowUp':
-            moveToPrevRow();
-            break;
-          case 'ArrowDown':
-            moveToNextRow();
-            break;
+        // towardContent in vertical list = do nothing
+        return;
+      }
+
+      // ═══════════════════════════════════════
+      // HORIZONTAL ROW (e.g. movie card rows)
+      // Left/Right = within row (physical direction)
+      // At edge toward sidebar = go to sidebar
+      // Up/Down = between rows
+      // ═══════════════════════════════════════
+      if (key === 'ArrowRight') {
+        if (activeColIdx < currentRow.items.length - 1) {
+          focusEl(currentRow.items[activeColIdx + 1]);
+        } else if (towardSidebar === 'ArrowRight') {
+          // RTL: at rightmost item, going right = toward sidebar
+          goToSidebar();
         }
+      } else if (key === 'ArrowLeft') {
+        if (activeColIdx > 0) {
+          focusEl(currentRow.items[activeColIdx - 1]);
+        } else if (towardSidebar === 'ArrowLeft') {
+          // LTR: at leftmost item, going left = toward sidebar
+          goToSidebar();
+        }
+      } else if (key === 'ArrowUp') {
+        goToPrevRow();
+      } else if (key === 'ArrowDown') {
+        goToNextRow();
       }
     };
 

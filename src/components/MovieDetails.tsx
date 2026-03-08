@@ -206,13 +206,15 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           alt={movie.title}
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        <button
-          onClick={onBack}
-          className="absolute top-12 start-4 glass w-10 h-10 rounded-full flex items-center justify-center text-foreground tv-focus"
-        >
-          <BackArrow className="w-5 h-5" />
-        </button>
+         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div data-nav-row="details-back">
+          <button
+            onClick={onBack}
+            className="absolute top-12 start-4 glass w-10 h-10 rounded-full flex items-center justify-center text-foreground tv-focus"
+          >
+            <BackArrow className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <div className="px-4 -mt-20 relative z-10 pb-24 space-y-6">
@@ -239,7 +241,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           )}
         </div>
 
-        <div className="flex gap-3">
+        <div data-nav-row="details-actions" className="flex gap-3">
           <button
             onClick={() => {
               if (movie.type === 'series') {
@@ -293,7 +295,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               <Link className="w-4 h-4" />
               {lang === 'he' ? 'הדבק קישור או מגנט לצפייה' : 'Paste a link or magnet to watch'}
             </div>
-            <div className="flex gap-2">
+            <div data-nav-row="details-link-input" className="flex gap-2">
               <input
                 value={linkInput}
                 onChange={e => setLinkInput(e.target.value)}
@@ -386,7 +388,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         {movie.type === 'series' && seasons.length > 0 && (
           <div ref={episodeSectionRef}>
             <h3 className="font-semibold text-foreground mb-3">{t('seasons')}</h3>
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            <div data-nav-row="details-seasons" className="flex gap-2 overflow-x-auto pb-2">
               {seasons.map((s: any) => (
                 <button
                   key={s.season_number}
@@ -410,7 +412,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             )}
 
             {seasonData?.episodes && (
-              <div className="mt-4 space-y-3">
+              <div data-nav-row="details-episodes" className="mt-4 space-y-3">
                 {seasonData.episodes.map((ep: any) => (
                   <button
                     key={ep.id}
