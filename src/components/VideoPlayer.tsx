@@ -250,7 +250,14 @@ export const VideoPlayer = ({
     const onCan = () => setIsBuffering(false);
     const onVol = () => { setVolume(v.volume); setIsMuted(v.muted); };
     const onError = () => {
-      console.error('Video error:', v.error?.message, v.error?.code);
+      const code = v.error?.code;
+      const msg = v.error?.message || '';
+      console.error('Video error:', msg, code);
+      // Format error (4) = browser can't decode this codec → try RD transcode
+      if (code === 4 && playbackMode === 'direct') {
+        fallbackToTranscode();
+        return;
+      }
       setIsBuffering(false);
     };
 
