@@ -519,7 +519,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-32 h-[4.5rem] rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                      <div className="w-32 3xl:w-44 4k:w-52 h-[4.5rem] 3xl:h-[6rem] 4k:h-[7rem] rounded-lg 3xl:rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
                         <Play className="w-6 h-6 text-muted-foreground" />
                       </div>
                     )}
