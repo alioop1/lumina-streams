@@ -20,37 +20,22 @@ const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const { dir } = useLanguage();
-  const location = useLocation();
   const isTVDevice = useIsTVDevice();
 
+  // Always enable global D-pad navigation
   useTVGlobalNavigation(true);
 
   useEffect(() => {
     document.documentElement.classList.toggle('tv-device', isTVDevice);
     document.body.classList.toggle('tv-device', isTVDevice);
-
     return () => {
       document.documentElement.classList.remove('tv-device');
       document.body.classList.remove('tv-device');
     };
   }, [isTVDevice]);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (document.querySelector('[data-video-player="true"]')) return;
-      const mainFocusable = document.querySelector<HTMLElement>('main .tv-focus, main button, main [tabindex], main a, main input');
-      const active = document.activeElement as HTMLElement | null;
-
-      if (!active || active === document.body || active.closest('[data-sidebar]')) {
-        mainFocusable?.focus();
-      }
-    }, 140);
-
-    return () => window.clearTimeout(timer);
-  }, [location.pathname]);
-
   return (
-    <div className="min-h-screen flex w-full" dir={dir} data-tv-device={isTVDevice ? 'true' : 'false'}>
+    <div className="min-h-screen flex w-full" dir={dir}>
       <AppSidebar />
       <main className={cn('flex-1', isTVDevice ? 'ms-56' : 'ms-16')}>
         <Routes>

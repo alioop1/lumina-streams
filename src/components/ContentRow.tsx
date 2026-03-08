@@ -14,7 +14,6 @@ interface ContentRowProps {
 
 export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: ContentRowProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const { dir } = useLanguage();
@@ -29,9 +28,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
     setCanScrollRight(absScroll + clientWidth < scrollWidth - 10);
   }, []);
 
-  useEffect(() => {
-    checkScroll();
-  }, [movies, checkScroll]);
+  useEffect(() => { checkScroll(); }, [movies, checkScroll]);
 
   const scroll = useCallback((direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -40,42 +37,8 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
       ? (direction === 'left' ? amount : -amount)
       : (direction === 'left' ? -amount : amount);
     scrollRef.current.scrollBy({ left: scrollDir, behavior: isTVDevice ? 'auto' : 'smooth' });
-    window.setTimeout(checkScroll, isTVDevice ? 160 : 400);
+    setTimeout(checkScroll, isTVDevice ? 160 : 400);
   }, [isRTL, isTVDevice, checkScroll]);
-
-  const handleCardKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
-    if (isTVDevice) return;
-
-    const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
-    const prevKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
-
-    switch (e.key) {
-      case nextKey:
-        e.preventDefault();
-        e.stopPropagation();
-        if (index < movies.length - 1) {
-          cardRefs.current[index + 1]?.focus();
-          cardRefs.current[index + 1]?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
-        }
-        break;
-      case prevKey:
-        e.preventDefault();
-        e.stopPropagation();
-        if (index > 0) {
-          cardRefs.current[index - 1]?.focus();
-          cardRefs.current[index - 1]?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
-        } else {
-          const sidebar = document.querySelector<HTMLElement>('[data-sidebar] button');
-          sidebar?.focus();
-        }
-        break;
-      case 'Enter':
-      case ' ':
-        e.preventDefault();
-        onMovieClick(movies[index]);
-        break;
-    }
-  }, [isRTL, isTVDevice, movies, onMovieClick]);
 
   if (isLoading) {
     return (
@@ -98,14 +61,12 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
 
   return (
     <div className="mb-8">
-      <h2 className="font-display text-2xl tracking-wide px-4 mb-3 text-foreground">
-        {title}
-      </h2>
+      <h2 className="font-display text-2xl tracking-wide px-4 mb-3 text-foreground">{title}</h2>
       <div className="relative group">
         {!isTVDevice && canScrollLeft && (
           <button
             onClick={() => scroll('left')}
-            className="absolute start-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-r from-background/80 to-transparent hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity tv-focus"
+            className="absolute start-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-r from-background/80 to-transparent hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             aria-label="Scroll left"
           >
             {isRTL ? <ChevronRight className="w-6 h-6 text-foreground" /> : <ChevronLeft className="w-6 h-6 text-foreground" />}
@@ -119,23 +80,18 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
           {movies.map((movie, i) => (
             <button
               key={`${movie.id}-${i}`}
-              ref={el => { cardRefs.current[i] = el; }}
               tabIndex={0}
-              onKeyDown={!isTVDevice ? (e => handleCardKeyDown(e, i)) : undefined}
               onClick={() => onMovieClick(movie)}
-              className="tv-focus flex-shrink-0 rounded-xl content-row-item text-start focus-card"
+              className="tv-focus flex-shrink-0 rounded-xl text-start focus-card outline-none"
             >
-              <MovieCard
-                movie={movie}
-                index={i}
-              />
+              <MovieCard movie={movie} index={i} />
             </button>
           ))}
         </div>
         {!isTVDevice && canScrollRight && (
           <button
             onClick={() => scroll('right')}
-            className="absolute end-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-l from-background/80 to-transparent hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity tv-focus"
+            className="absolute end-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-l from-background/80 to-transparent hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             aria-label="Scroll right"
           >
             {isRTL ? <ChevronLeft className="w-6 h-6 text-foreground" /> : <ChevronRight className="w-6 h-6 text-foreground" />}

@@ -27,19 +27,15 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
     return () => clearInterval(timer);
   }, [heroMovies.length]);
 
-
   const handlePlay = useCallback(() => {
-    if (movie) {
-      onInfoClick(movie);
-    }
+    if (movie) onInfoClick(movie);
   }, [movie, onInfoClick]);
 
   const handleAddToList = useCallback(() => {
     if (movie) {
-      const displayTitle = lang === 'he' ? (movie.titleHe || movie.title) : movie.title;
       toast({
         title: lang === 'he' ? '✓ נוסף לרשימה' : '✓ Added to list',
-        description: displayTitle,
+        description: lang === 'he' ? (movie.titleHe || movie.title) : movie.title,
       });
     }
   }, [movie, lang, toast]);
@@ -83,10 +79,11 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
           </motion.div>
         </AnimatePresence>
 
+        {/* Hero action buttons — all tv-focus, same visual row */}
         <div className="flex items-center gap-3">
           <button
             onClick={handlePlay}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-3 rounded-lg transition-all glow-red tv-focus"
+            className="tv-focus flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-3 rounded-lg transition-all glow-red outline-none"
             tabIndex={0}
           >
             <Play className="w-5 h-5 fill-current" />
@@ -94,7 +91,7 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
           </button>
           <button
             onClick={() => onInfoClick(movie)}
-            className="flex items-center gap-2 glass hover:bg-accent px-6 py-3 rounded-lg transition-all text-foreground tv-focus"
+            className="tv-focus flex items-center gap-2 glass hover:bg-accent px-6 py-3 rounded-lg transition-all text-foreground outline-none"
             tabIndex={0}
           >
             <Info className="w-5 h-5" />
@@ -102,24 +99,11 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
           </button>
           <button
             onClick={handleAddToList}
-            className="glass hover:bg-accent w-12 h-12 rounded-full flex items-center justify-center transition-all text-foreground tv-focus"
+            className="tv-focus glass hover:bg-accent w-12 h-12 rounded-full flex items-center justify-center transition-all text-foreground outline-none"
             tabIndex={0}
           >
             <Plus className="w-5 h-5" />
           </button>
-        </div>
-
-        <div className="flex gap-2 pt-2">
-          {heroMovies.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrent(i)}
-              tabIndex={0}
-              className={`h-1 rounded-full transition-all duration-500 tv-focus ${
-                i === current ? 'w-8 bg-primary glow-red' : 'w-4 bg-muted-foreground/40 hover:bg-muted-foreground/60'
-              }`}
-            />
-          ))}
         </div>
       </div>
     </div>
