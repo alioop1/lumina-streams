@@ -68,6 +68,25 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       .finally(() => setLoadingSubs(false));
   }, [imdbId, mediaType, season, episode]);
 
+  // Fetch audio tracks from RD transcode API
+  useEffect(() => {
+    if (!rdFileId || isYouTube) return;
+    setLoadingAudio(true);
+    realDebrid.getTranscode(rdFileId)
+      .then(data => {
+        const options: RDAudioOption[] = [];
+        for (const [quality, info] of Object.entries(data)) {
+          if (info && typeof info === 'object' && 'full' in info) {
+            const label = `${quality}${(info as any).acodec ? ` (${(info as any).acodec})` : ''}`;
+            options.push({ label, url: (info as any).full });
+          }
+        }
+        setRdAudioOptions(options);
+      })
+      .catch(e => console.warn('Transcode fetch failed:', e))
+      .finally(() => setLoadingAudio(false));
+  }, [rdFileId]);
+
   // Fetch subtitle content and create blob URL to bypass CORS
   const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
     try {
