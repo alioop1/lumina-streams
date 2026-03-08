@@ -240,16 +240,26 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         </div>
 
         <div className="flex gap-3">
-          {/* For movies: show find torrents button. For series: episodes trigger torrent search */}
-          {movie.type !== 'series' && (
-            <button
-              onClick={() => setShowTorrents(!showTorrents)}
-              className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold glow-red transition-all hover:bg-primary/90 tv-focus"
-            >
-              <Search className="w-5 h-5" />
-              {lang === 'he' ? 'חפש טורנטים' : 'Find Torrents'}
-            </button>
-          )}
+          <button
+            onClick={() => {
+              if (movie.type === 'series') {
+                episodeSectionRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+                window.setTimeout(() => {
+                  const firstEpisodeButton = episodeSectionRef.current?.querySelector<HTMLElement>('[data-episode-button="true"]');
+                  firstEpisodeButton?.focus();
+                }, 80);
+                return;
+              }
+
+              setShowTorrents(!showTorrents);
+            }}
+            className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold glow-red transition-all hover:bg-primary/90 tv-focus"
+          >
+            <Search className="w-5 h-5" />
+            {movie.type === 'series'
+              ? (lang === 'he' ? 'בחר פרק לטורנטים' : 'Choose Episode')
+              : (lang === 'he' ? 'חפש טורנטים' : 'Find Torrents')}
+          </button>
           <button
             onClick={() => setShowLinkInput(true)}
             className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus"
