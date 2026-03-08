@@ -86,10 +86,10 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
           src={movie.backdrop || movie.poster}
           alt={movie.title}
           className="absolute inset-0 w-full h-full object-cover"
-          initial={{ opacity: 0, scale: 1.05 }}
+          initial={{ opacity: 0, scale: isTVDevice ? 1 : 1.05 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: isTVDevice ? 0 : 0.8 }}
         />
       </AnimatePresence>
       <div className="absolute inset-0 gradient-fade-bottom" />
