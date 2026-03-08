@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Settings, Monitor, Subtitles, Bell, Globe, Trash2, Info, Film, Type } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSettings, VideoQuality, SubtitleSize, UISize } from '@/contexts/SettingsContext';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -42,168 +42,197 @@ const SettingsPage = () => {
     { value: 'large', label: lang === 'he' ? 'גדול (TV)' : 'Large (TV)' },
   ];
 
-  // Sub-panel: render options list
-  const renderOptionPanel = (
-    title: string,
-    options: { value: string; label: string }[],
-    currentValue: string,
-    onSelect: (v: any) => void
-  ) => (
-    <div className="min-h-screen bg-background pt-12 pb-24 px-6" dir={dir}>
-      <div data-nav-row="settings-back">
-        <button onClick={() => setActivePanel(null)} className="tv-focus flex items-center gap-2 text-muted-foreground mb-6 outline-none">
+  /* ═══════ Shared sub-panel shell ═══════ */
+  const PanelShell = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div className="min-h-screen bg-background p-8 lg:p-12" dir={dir}>
+      <div data-nav-row="settings-back" className="mb-8">
+        <button
+          onClick={() => setActivePanel(null)}
+          className="tv-focus flex items-center gap-3 text-muted-foreground rounded-xl px-4 py-3 glass outline-none"
+        >
           <BackIcon className="w-5 h-5" />
-          <span className="text-sm">{lang === 'he' ? 'חזרה' : 'Back'}</span>
+          <span className="text-base font-medium">{lang === 'he' ? 'חזרה להגדרות' : 'Back to Settings'}</span>
         </button>
       </div>
-      <h1 className="font-display text-3xl text-foreground mb-6">{title}</h1>
-      <div data-nav-row="settings-options" className="space-y-2">
-        {options.map(opt => (
-          <button
-            key={opt.value}
-            onClick={() => onSelect(opt.value)}
-            className={cn('tv-focus w-full glass rounded-xl p-4 flex items-center justify-between text-start outline-none', currentValue === opt.value && 'ring-2 ring-primary')}
-          >
-            <span className="text-sm text-foreground">{opt.label}</span>
-            {currentValue === opt.value && <Check className="w-5 h-5 text-primary" />}
-          </button>
-        ))}
-      </div>
+      <h1 className="font-display text-4xl text-foreground mb-8">{title}</h1>
+      {children}
     </div>
   );
 
+  const OptionButton = ({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) => (
+    <button
+      onClick={onClick}
+      className={cn(
+        'tv-focus w-full rounded-xl p-5 flex items-center justify-between text-start outline-none transition-all',
+        selected ? 'bg-primary/10 ring-2 ring-primary' : 'glass'
+      )}
+    >
+      <span className="text-base text-foreground font-medium">{label}</span>
+      {selected && <Check className="w-6 h-6 text-primary flex-shrink-0" />}
+    </button>
+  );
+
+  /* ═══════ Sub-panels ═══════ */
+
   if (activePanel === 'videoQuality') {
-    return renderOptionPanel(t('videoQuality'), qualityOptions, settings.videoQuality, settings.setVideoQuality);
+    return (
+      <PanelShell title={t('videoQuality')}>
+        <div data-nav-row="settings-options" className="space-y-3 max-w-2xl">
+          {qualityOptions.map(opt => (
+            <OptionButton key={opt.value} label={opt.label} selected={settings.videoQuality === opt.value} onClick={() => settings.setVideoQuality(opt.value)} />
+          ))}
+        </div>
+      </PanelShell>
+    );
   }
 
   if (activePanel === 'subtitles') {
     return (
-      <div className="min-h-screen bg-background pt-12 pb-24 px-6" dir={dir}>
-        <div data-nav-row="settings-back">
-          <button onClick={() => setActivePanel(null)} className="tv-focus flex items-center gap-2 text-muted-foreground mb-6 outline-none">
-            <BackIcon className="w-5 h-5" />
-            <span className="text-sm">{lang === 'he' ? 'חזרה' : 'Back'}</span>
-          </button>
+      <PanelShell title={t('subtitles')}>
+        <div className="max-w-2xl space-y-8">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-4">{lang === 'he' ? 'שפת כתוביות' : 'Subtitle Language'}</h3>
+            <div data-nav-row="sub-lang" className="space-y-3">
+              {subLangOptions.map(opt => (
+                <OptionButton
+                  key={opt.value}
+                  label={opt.label}
+                  selected={settings.subtitleLang === opt.value}
+                  onClick={() => { settings.setSubtitleLang(opt.value); settings.setSubtitleEnabled(opt.value !== 'off'); }}
+                />
+              ))}
+            </div>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-4">{lang === 'he' ? 'גודל כתוביות' : 'Subtitle Size'}</h3>
+            <div data-nav-row="sub-size" className="space-y-3">
+              {subSizeOptions.map(opt => (
+                <OptionButton key={opt.value} label={opt.label} selected={settings.subtitleSize === opt.value} onClick={() => settings.setSubtitleSize(opt.value)} />
+              ))}
+            </div>
+          </div>
         </div>
-        <h1 className="font-display text-3xl text-foreground mb-6">{t('subtitles')}</h1>
-        <h3 className="text-sm font-medium text-foreground mb-3">{lang === 'he' ? 'שפת כתוביות' : 'Subtitle Language'}</h3>
-        <div data-nav-row="sub-lang" className="space-y-2 mb-8">
-          {subLangOptions.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => { settings.setSubtitleLang(opt.value); settings.setSubtitleEnabled(opt.value !== 'off'); }}
-              className={cn('tv-focus w-full glass rounded-xl p-4 flex items-center justify-between text-start outline-none', settings.subtitleLang === opt.value && 'ring-2 ring-primary')}
-            >
-              <span className="text-sm text-foreground">{opt.label}</span>
-              {settings.subtitleLang === opt.value && <Check className="w-5 h-5 text-primary" />}
-            </button>
-          ))}
-        </div>
-        <h3 className="text-sm font-medium text-foreground mb-3">{lang === 'he' ? 'גודל כתוביות' : 'Subtitle Size'}</h3>
-        <div data-nav-row="sub-size" className="space-y-2">
-          {subSizeOptions.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => settings.setSubtitleSize(opt.value)}
-              className={cn('tv-focus w-full glass rounded-xl p-4 flex items-center justify-between text-start outline-none', settings.subtitleSize === opt.value && 'ring-2 ring-primary')}
-            >
-              <span className="text-sm text-foreground">{opt.label}</span>
-              {settings.subtitleSize === opt.value && <Check className="w-5 h-5 text-primary" />}
-            </button>
-          ))}
-        </div>
-      </div>
+      </PanelShell>
     );
   }
 
   if (activePanel === 'uiSize') {
-    return renderOptionPanel(t('uiSize'), uiSizeOptions, settings.uiSize, settings.setUISize);
+    return (
+      <PanelShell title={t('uiSize')}>
+        <div data-nav-row="settings-options" className="space-y-3 max-w-2xl">
+          {uiSizeOptions.map(opt => (
+            <OptionButton key={opt.value} label={opt.label} selected={settings.uiSize === opt.value} onClick={() => settings.setUISize(opt.value)} />
+          ))}
+        </div>
+      </PanelShell>
+    );
   }
 
   if (activePanel === 'notifications') {
     return (
-      <div className="min-h-screen bg-background pt-12 pb-24 px-6" dir={dir}>
-        <div data-nav-row="settings-back">
-          <button onClick={() => setActivePanel(null)} className="tv-focus flex items-center gap-2 text-muted-foreground mb-6 outline-none">
-            <BackIcon className="w-5 h-5" />
-            <span className="text-sm">{lang === 'he' ? 'חזרה' : 'Back'}</span>
-          </button>
-        </div>
-        <h1 className="font-display text-3xl text-foreground mb-6">{t('notifications')}</h1>
-        <div data-nav-row="notif-toggle">
+      <PanelShell title={t('notifications')}>
+        <div data-nav-row="notif-toggle" className="max-w-2xl">
           <button
             onClick={() => settings.setNotifications(!settings.notifications)}
-            className="tv-focus w-full glass rounded-xl p-4 flex items-center justify-between outline-none"
+            className="tv-focus w-full glass rounded-xl p-5 flex items-center justify-between outline-none"
           >
-            <span className="text-sm text-foreground">{lang === 'he' ? 'התראות פוש' : 'Push Notifications'}</span>
-            <div className={cn('w-12 h-7 rounded-full transition-colors relative', settings.notifications ? 'bg-primary' : 'bg-muted')}>
-              <div className={cn('w-5 h-5 rounded-full bg-foreground absolute top-1 transition-all', settings.notifications ? 'end-1' : 'start-1')} />
+            <div className="flex items-center gap-4">
+              <Bell className="w-6 h-6 text-muted-foreground" />
+              <span className="text-base text-foreground font-medium">{lang === 'he' ? 'התראות פוש' : 'Push Notifications'}</span>
+            </div>
+            <div className={cn('w-14 h-8 rounded-full transition-colors relative flex-shrink-0', settings.notifications ? 'bg-primary' : 'bg-muted')}>
+              <div className={cn('w-6 h-6 rounded-full bg-foreground absolute top-1 transition-all', settings.notifications ? 'end-1' : 'start-1')} />
             </div>
           </button>
         </div>
-      </div>
+      </PanelShell>
     );
   }
 
   if (activePanel === 'cache') {
     return (
-      <div className="min-h-screen bg-background pt-12 pb-24 px-6" dir={dir}>
-        <div data-nav-row="settings-back">
-          <button onClick={() => setActivePanel(null)} className="tv-focus flex items-center gap-2 text-muted-foreground mb-6 outline-none">
-            <BackIcon className="w-5 h-5" />
-            <span className="text-sm">{lang === 'he' ? 'חזרה' : 'Back'}</span>
-          </button>
-        </div>
-        <h1 className="font-display text-3xl text-foreground mb-6">{t('cache')}</h1>
-        <div data-nav-row="cache-action">
+      <PanelShell title={t('cache')}>
+        <div data-nav-row="cache-action" className="max-w-2xl">
           <button
             onClick={settings.clearCache}
-            className="tv-focus w-full bg-destructive text-destructive-foreground rounded-xl p-4 font-medium outline-none"
+            className="tv-focus w-full bg-destructive text-destructive-foreground rounded-xl p-5 font-semibold text-base outline-none flex items-center justify-center gap-3"
           >
+            <Trash2 className="w-5 h-5" />
             {lang === 'he' ? 'נקה מטמון ורענן' : 'Clear Cache & Refresh'}
           </button>
         </div>
-      </div>
+      </PanelShell>
     );
   }
+
+  /* ═══════ Main settings screen ═══════ */
 
   const qualityLabel = qualityOptions.find(q => q.value === settings.videoQuality)?.label || '';
   const subLangLabel = subLangOptions.find(s => s.value === settings.subtitleLang)?.label || '';
   const uiSizeLabel = uiSizeOptions.find(s => s.value === settings.uiSize)?.label || '';
 
+  const iconMap: Record<string, React.ReactNode> = {
+    videoQuality: <Film className="w-6 h-6" />,
+    subtitles: <Subtitles className="w-6 h-6" />,
+    notifications: <Bell className="w-6 h-6" />,
+    language: <Globe className="w-6 h-6" />,
+    uiSize: <Type className="w-6 h-6" />,
+    cache: <Trash2 className="w-6 h-6" />,
+    about: <Info className="w-6 h-6" />,
+  };
+
   const settingsItems = [
-    { key: 'videoQuality', label: t('videoQuality'), desc: qualityLabel, icon: '🎬', panel: 'videoQuality' as SettingPanel },
-    { key: 'subtitles', label: t('subtitles'), desc: subLangLabel, icon: '💬', panel: 'subtitles' as SettingPanel },
-    { key: 'notifications', label: t('notifications'), desc: settings.notifications ? (lang === 'he' ? 'מופעל' : 'On') : (lang === 'he' ? 'כבוי' : 'Off'), icon: '🔔', panel: 'notifications' as SettingPanel },
-    { key: 'language', label: t('language'), desc: t('languageDesc'), icon: '🌐', isLang: true },
-    { key: 'uiSize', label: t('uiSize'), desc: uiSizeLabel, icon: '🔤', panel: 'uiSize' as SettingPanel },
-    { key: 'cache', label: t('cache'), desc: t('cacheDesc'), icon: '🗑️', panel: 'cache' as SettingPanel },
-    { key: 'about', label: t('about'), desc: t('aboutDesc'), icon: 'ℹ️' },
+    { key: 'videoQuality', label: t('videoQuality'), desc: qualityLabel, panel: 'videoQuality' as SettingPanel },
+    { key: 'subtitles', label: t('subtitles'), desc: subLangLabel, panel: 'subtitles' as SettingPanel },
+    { key: 'notifications', label: t('notifications'), desc: settings.notifications ? (lang === 'he' ? 'מופעל' : 'On') : (lang === 'he' ? 'כבוי' : 'Off'), panel: 'notifications' as SettingPanel },
+    { key: 'language', label: t('language'), desc: t('languageDesc'), isLang: true },
+    { key: 'uiSize', label: t('uiSize'), desc: uiSizeLabel, panel: 'uiSize' as SettingPanel },
+    { key: 'cache', label: t('cache'), desc: t('cacheDesc'), panel: 'cache' as SettingPanel },
+    { key: 'about', label: t('about'), desc: t('aboutDesc') },
   ];
 
   return (
-    <div className="min-h-screen bg-background pt-12 pb-24 px-6" dir={dir}>
-      <h1 className="font-display text-3xl text-foreground mb-6">{t('settingsTitle')}</h1>
+    <div className="min-h-screen bg-background p-8 lg:p-12" dir={dir}>
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-10">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+          <Settings className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <h1 className="font-display text-4xl text-foreground">{t('settingsTitle')}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {lang === 'he' ? 'התאם את האפליקציה לטעמך' : 'Customize your experience'}
+          </p>
+        </div>
+      </div>
 
-      <div data-nav-row="settings-list" className="space-y-2">
-        {settingsItems.map(item => (
+      {/* Settings grid */}
+      <div data-nav-row="settings-list" className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-4xl">
+        {settingsItems.map(item =>
           item.isLang ? (
-            <LanguageToggle key={item.key} variant="setting" settingItem={item} />
+            <LanguageToggle key={item.key} variant="setting-tv" settingItem={{ ...item, icon: iconMap[item.key] }} />
           ) : (
             <button
               key={item.key}
               onClick={() => item.panel ? setActivePanel(item.panel) : undefined}
-              className="tv-focus w-full glass rounded-xl p-4 flex items-center gap-4 text-start outline-none"
+              className="tv-focus w-full glass rounded-2xl p-6 flex items-center gap-5 text-start outline-none transition-all group"
             >
-              <span className="text-2xl">{item.icon}</span>
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-foreground">{item.label}</h3>
-                <p className="text-xs text-muted-foreground">{item.desc}</p>
+              <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center text-muted-foreground flex-shrink-0 transition-colors group-focus-visible:bg-primary/20 group-focus-visible:text-primary">
+                {iconMap[item.key]}
               </div>
-              {item.panel && <ChevronIcon className="w-4 h-4 text-muted-foreground" />}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold text-foreground">{item.label}</h3>
+                <p className="text-sm text-muted-foreground mt-0.5 truncate">{item.desc}</p>
+              </div>
+              {item.panel && <ChevronIcon className="w-5 h-5 text-muted-foreground flex-shrink-0" />}
             </button>
           )
-        ))}
+        )}
+      </div>
+
+      {/* App version */}
+      <div className="mt-12 text-center">
+        <p className="text-xs text-muted-foreground">Lumina Streams v1.0.0</p>
       </div>
     </div>
   );
