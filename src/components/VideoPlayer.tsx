@@ -131,7 +131,28 @@ export const VideoPlayer = ({
 
   const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
-  // Reset on URL change
+  // ── i18n ──
+  const t = (he: string, en: string) => (lang === 'he' ? he : en);
+  const labels = {
+    subtitles: t('כתוביות', 'Subtitles'),
+    audio: t('אודיו', 'Audio'),
+    playbackSpeed: t('מהירות ניגון', 'Playback Speed'),
+    audioLang: t('שפת אודיו', 'Audio Language'),
+    normal: t('רגיל', 'Normal'),
+    off: t('כבוי', 'Off'),
+    default: t('ברירת מחדל', 'Default'),
+    loading: t('טוען...', 'Loading...'),
+    loadingSubs: t('טוען כתוביות...', 'Loading subtitles...'),
+    noSubs: t('אין כתוביות זמינות', 'No subtitles available'),
+    openExternal: t('פתח בנגן חיצוני', 'Open in External Player'),
+    openVlc: t('פתח ב-VLC', 'Open in VLC'),
+    openMx: t('פתח ב-MX Player', 'Open in MX Player'),
+    openSystem: t('פתח בנגן המערכת', 'Open in System Player'),
+    externalHint: t('לניגון עם כל הקודקים', 'For playback with all codecs'),
+    chooseSource: t('בחר שפה (יחליף מקור):', 'Choose language (will switch source):'),
+    downloadSubs: t('הורד כתוביות', 'Download Subtitles'),
+  };
+
   useEffect(() => {
     setPlaybackUrl(url);
     setPlaybackMode('direct');
