@@ -302,11 +302,13 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       }
     }, 80);
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener('keydown', handleKeyDown, true);
 
     return () => {
       window.clearTimeout(ensureInitialFocus);
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      document.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [enabled, focusableSelector]);
 };

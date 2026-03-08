@@ -23,7 +23,7 @@ const AppLayout = () => {
   const location = useLocation();
   const isTVDevice = useIsTVDevice();
 
-  useTVGlobalNavigation(isTVDevice);
+  useTVGlobalNavigation(true);
 
   useEffect(() => {
     document.documentElement.classList.toggle('tv-device', isTVDevice);
