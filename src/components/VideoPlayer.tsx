@@ -205,8 +205,13 @@ export const VideoPlayer = ({
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        setIsBuffering(false);
         video.play().catch(() => {});
         updateHlsAudioTracks(hls);
+      });
+
+      hls.on(Hls.Events.FRAG_BUFFERED, () => {
+        setIsBuffering(false);
       });
 
       hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, () => {
