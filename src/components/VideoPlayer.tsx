@@ -388,8 +388,10 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
           active.click();
           return;
         }
-        e.preventDefault();
-        v.paused ? v.play() : v.pause();
+        if (v) {
+          e.preventDefault();
+          v.paused ? v.play() : v.pause();
+        }
         return;
       }
 
