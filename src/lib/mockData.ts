@@ -11,6 +11,8 @@ export interface Movie {
   backdrop?: string;
   quality?: string;
   type: 'movie' | 'series';
+  tmdbId?: number;
+  mediaType?: string;
 }
 
 export const MOCK_MOVIES: Movie[] = [
