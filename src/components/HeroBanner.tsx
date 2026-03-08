@@ -27,35 +27,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
     return () => clearInterval(timer);
   }, [heroMovies.length]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
-    if (isTVDevice) return;
-
-    const isRTL = dir === 'rtl';
-    const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
-    const prevKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
-
-    switch (e.key) {
-      case nextKey:
-        e.preventDefault();
-        e.stopPropagation();
-        if (buttonRefs.current[index + 1]) {
-          buttonRefs.current[index + 1]?.focus();
-        }
-        break;
-      case prevKey:
-        e.preventDefault();
-        e.stopPropagation();
-        if (index > 0) {
-          buttonRefs.current[index - 1]?.focus();
-        }
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        const firstRowItem = document.querySelector<HTMLElement>('.content-row-item');
-        firstRowItem?.focus();
-        break;
-    }
-  }, [dir, isTVDevice]);
 
   const handlePlay = useCallback(() => {
     if (movie) {
