@@ -15,16 +15,18 @@ export const MovieCard = memo(({ movie, onClick, index }: MovieCardProps) => {
   const posterSrc = movie.poster;
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className="flex-shrink-0 w-[140px] md:w-[180px] snap-start group/card cursor-pointer"
+      tabIndex={0}
+      className="focus-card flex-shrink-0 w-[140px] md:w-[180px] snap-start group/card cursor-pointer text-start bg-transparent border-none p-0 outline-none"
     >
-      <div className="relative rounded-xl overflow-hidden aspect-[2/3] mb-2 movie-card-poster border border-border/60 bg-card">
+      <div className="relative rounded-lg overflow-hidden aspect-[2/3] mb-2 movie-card-poster bg-card transition-all duration-200">
         {posterSrc ? (
           <img
             src={posterSrc}
             alt={movie.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110 group-focus-within/card:scale-110"
+            className="w-full h-full object-cover"
             loading="lazy"
             decoding="async"
           />
@@ -43,24 +45,24 @@ export const MovieCard = memo(({ movie, onClick, index }: MovieCardProps) => {
           </div>
         )}
 
-        {/* Hover overlay with play icon + rating */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-2">
-          <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center shadow-lg shadow-primary/30 transform scale-75 group-hover/card:scale-100 transition-transform duration-300">
-            <Play className="w-5 h-5 text-primary-foreground fill-primary-foreground ms-0.5" />
+        {/* Hover/focus overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 group-focus/card:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
+          <div className="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center">
+            <Play className="w-4 h-4 text-primary-foreground fill-primary-foreground ms-0.5" />
           </div>
-          <div className="absolute bottom-3 start-3 flex items-center gap-1">
+          <div className="absolute bottom-2 start-2 flex items-center gap-1">
             <Star className="w-3 h-3 text-primary fill-primary" />
             <span className="text-xs font-semibold text-foreground">{movie.rating}</span>
           </div>
         </div>
       </div>
-      <h3 className="text-sm font-medium text-foreground truncate text-start">
+      <h3 className="text-sm font-medium text-foreground truncate">
         {displayTitle}
       </h3>
-      <p className="text-xs text-muted-foreground text-start">
+      <p className="text-xs text-muted-foreground">
         {movie.year}{movie.genres?.[0] ? ` · ${movie.genres[0]}` : ''}
       </p>
-    </div>
+    </button>
   );
 });
 
