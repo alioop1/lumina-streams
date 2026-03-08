@@ -807,10 +807,15 @@ export const VideoPlayer = ({
                   <NavChevron className="w-4 h-4" />
                 </span>
               </button>
-              {streamLanguages.length > 0 && onSelectAudioLanguage && (
+              {(streamLanguages.length > 0 && onSelectAudioLanguage) || audioTracks.length > 1 ? (
                 <button onClick={() => setSettingsPanel('audio')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
                   <span>{labels.audioLang}</span>
-                  <NavChevron className="w-4 h-4 text-white/60" />
+                  <span className="text-white/60 flex items-center gap-1">
+                    {audioTracks.length > 1 ? `${audioTracks.find(t => t.enabled)?.label || 'Default'}` : ''}
+                    <NavChevron className="w-4 h-4" />
+                  </span>
+                </button>
+              ) : null}
                 </button>
               )}
               <button onClick={() => setSettingsPanel('external')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
