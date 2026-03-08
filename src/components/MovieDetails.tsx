@@ -189,13 +189,22 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                 <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1" dir="ltr">
                   {parsed.quality}
                 </p>
-                {parsed.languages.length > 0 && (
+                {(parsed.languages.length > 0 || parsed.audioCodec) && (
                   <div className="flex gap-1.5 mt-1 flex-wrap">
                     {parsed.languages.map((lang) => (
                       <span key={lang} className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full font-medium">
                         {lang}
                       </span>
                     ))}
+                    {parsed.audioCodec && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        parsed.audioCompatible
+                          ? 'bg-green-500/15 text-green-400'
+                          : 'bg-yellow-500/15 text-yellow-400'
+                      }`}>
+                        🔊 {parsed.audioCodec}{!parsed.audioCompatible ? ' ⚠️' : ''}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

@@ -138,6 +138,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const [activeAudioIdx, setActiveAudioIdx] = useState<number>(0);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [canSwitchAudioTracks, setCanSwitchAudioTracks] = useState(false);
+  const [noAudioDetected, setNoAudioDetected] = useState(false);
 
   const [availableSubs, setAvailableSubs] = useState<SubtitleTrack[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
@@ -231,6 +232,68 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       clearTimeout(timer);
     };
   }, [url, isYouTube, defaultAudioLabel]);
+
+  // Detect no-audio via Web Audio API analyzer
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || isYouTube) return;
+
+    let ctx: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let checkTimer: number | null = null;
+    let cancelled = false;
+
+    const checkAudio = () => {
+      try {
+        ctx = new AudioContext();
+        const source = ctx.createMediaElementSource(v);
+        analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        analyser.connect(ctx.destination);
+
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        let silentChecks = 0;
+        const maxChecks = 8;
+
+        const check = () => {
+          if (cancelled) return;
+          analyser!.getByteFrequencyData(data);
+          const maxVal = Math.max(...data);
+          if (maxVal < 5 && !v.paused && v.currentTime > 1) {
+            silentChecks++;
+            if (silentChecks >= 3) {
+              setNoAudioDetected(true);
+              return;
+            }
+          } else {
+            silentChecks = 0;
+            setNoAudioDetected(false);
+          }
+          if (silentChecks < maxChecks) {
+            checkTimer = window.setTimeout(check, 1500);
+          }
+        };
+
+        // Start checking after video plays a bit
+        checkTimer = window.setTimeout(check, 3000);
+      } catch (e) {
+        // Web Audio API not available - skip detection
+        console.warn('Audio detection unavailable:', e);
+      }
+    };
+
+    v.addEventListener('playing', checkAudio, { once: true });
+
+    return () => {
+      cancelled = true;
+      if (checkTimer) clearTimeout(checkTimer);
+      v.removeEventListener('playing', checkAudio);
+      if (ctx && ctx.state !== 'closed') {
+        try { ctx.close(); } catch {}
+      }
+    };
+  }, [url, isYouTube]);
 
   const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
     try {
@@ -687,6 +750,22 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       {isBuffering && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <Loader2 className="w-12 h-12 text-primary animate-spin" />
+        </div>
+      )}
+
+      {/* No audio warning banner */}
+      {noAudioDetected && !isBuffering && (
+        <div className="absolute top-20 start-1/2 -translate-x-1/2 z-20 bg-yellow-500/90 text-black px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg max-w-md text-center">
+          <Volume2 className="w-5 h-5 flex-shrink-0" />
+          {lang === 'he'
+            ? 'לא זוהה אודיו — ייתכן שקודק האודיו (DTS/AC3) לא נתמך בדפדפן. נסה מקור אחר עם AAC.'
+            : 'No audio detected — the audio codec (DTS/AC3) may not be supported. Try a source with AAC audio.'}
+          <button
+            onClick={() => setNoAudioDetected(false)}
+            className="ms-2 text-black/60 hover:text-black tv-focus"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
