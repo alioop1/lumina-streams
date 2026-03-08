@@ -97,97 +97,96 @@ const isHTMLElementVisible = (el: HTMLElement) => {
   );
 };
 
-const getCenter = (el: HTMLElement) => {
-  const rect = el.getBoundingClientRect();
-  return {
-    x: rect.left + rect.width / 2,
-    y: rect.top + rect.height / 2,
-  };
-};
-
-const getSpatialNext = (
-  current: HTMLElement,
-  focusable: HTMLElement[],
-  direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
-) => {
-  const currentCenter = getCenter(current);
-  const candidates = focusable
-    .filter((el) => el !== current)
-    .map((el) => ({ el, center: getCenter(el) }))
-    .filter(({ center }) => {
-      if (direction === 'ArrowRight') return center.x > currentCenter.x + 4;
-      if (direction === 'ArrowLeft') return center.x < currentCenter.x - 4;
-      if (direction === 'ArrowDown') return center.y > currentCenter.y + 4;
-      return center.y < currentCenter.y - 4;
-    })
-    .map(({ el, center }) => {
-      const dx = Math.abs(center.x - currentCenter.x);
-      const dy = Math.abs(center.y - currentCenter.y);
-      const primary = direction === 'ArrowLeft' || direction === 'ArrowRight' ? dx : dy;
-      const secondary = direction === 'ArrowLeft' || direction === 'ArrowRight' ? dy : dx;
-      return { el, score: primary * 10 + secondary };
-    })
-    .sort((a, b) => a.score - b.score);
-
-  return candidates[0]?.el ?? null;
-};
 
 export const useTVGlobalNavigation = (enabled: boolean) => {
-  const focusableSelector = useMemo(
-    () => '.tv-focus, button, [role="button"], a[href], input, textarea, select, [tabindex]:not([tabindex="-1"])',
-    []
-  );
+  const focusableSelector = useMemo(() => '.tv-focus', []);
 
   useEffect(() => {
     if (!enabled) return;
 
-    const getFocusableWithin = (root: ParentNode | null) =>
-      root
-        ? Array.from(root.querySelectorAll<HTMLElement>(focusableSelector)).filter((el) => isHTMLElementVisible(el))
-        : [];
+    const getSidebarRoot = () => document.querySelector('[data-sidebar]');
+    const getMainRoot = () => document.querySelector('main');
 
-    const getSidebarFocusable = () => getFocusableWithin(document.querySelector('[data-sidebar]'));
-    const getMainFocusable = () => getFocusableWithin(document.querySelector('main'));
-    const getAllFocusable = () => {
-      const sidebar = getSidebarFocusable();
-      const main = getMainFocusable();
-      return [...sidebar, ...main.filter((el) => !sidebar.includes(el))];
+    const isWithinViewport = (el: HTMLElement, overscan = 180) => {
+      const rect = el.getBoundingClientRect();
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom >= -overscan &&
+        rect.top <= window.innerHeight + overscan &&
+        rect.right >= -overscan &&
+        rect.left <= window.innerWidth + overscan
+      );
     };
 
-    let lastArrowAt = 0;
+    const getFocusableWithin = (root: ParentNode | null) =>
+      root
+        ? Array.from(root.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+            (el) => isHTMLElementVisible(el) && isWithinViewport(el)
+          )
+        : [];
+
+    const getSidebarFocusable = () => getFocusableWithin(getSidebarRoot());
+    const getMainFocusable = () => getFocusableWithin(getMainRoot());
+
+    const getCenterPoint = (el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        rect,
+      };
+    };
+
+    const getNextDirectional = (
+      current: HTMLElement,
+      list: HTMLElement[],
+      direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
+    ) => {
+      const c = getCenterPoint(current);
+      const axisLimitX = Math.max(c.rect.width * 1.8, 220);
+      const axisLimitY = Math.max(c.rect.height * 1.8, 140);
+
+      const candidates = list
+        .filter((el) => el !== current)
+        .map((el) => ({ el, point: getCenterPoint(el) }))
+        .filter(({ point }) => {
+          const dx = point.x - c.x;
+          const dy = point.y - c.y;
+
+          if (direction === 'ArrowRight') return dx > 4 && Math.abs(dy) <= axisLimitY;
+          if (direction === 'ArrowLeft') return dx < -4 && Math.abs(dy) <= axisLimitY;
+          if (direction === 'ArrowDown') return dy > 4 && Math.abs(dx) <= axisLimitX;
+          return dy < -4 && Math.abs(dx) <= axisLimitX;
+        })
+        .map(({ el, point }) => {
+          const dx = Math.abs(point.x - c.x);
+          const dy = Math.abs(point.y - c.y);
+          const primary = direction === 'ArrowLeft' || direction === 'ArrowRight' ? dx : dy;
+          const secondary = direction === 'ArrowLeft' || direction === 'ArrowRight' ? dy : dx;
+          return { el, score: primary + secondary * 0.45 };
+        })
+        .sort((a, b) => a.score - b.score);
+
+      return candidates[0]?.el ?? null;
+    };
 
     const focusElement = (target: HTMLElement | null) => {
       if (!target) return;
       target.focus();
-
-      const rect = target.getBoundingClientRect();
-      const outsideViewport =
-        rect.top < 0 ||
-        rect.left < 0 ||
-        rect.bottom > window.innerHeight ||
-        rect.right > window.innerWidth;
-
-      if (outsideViewport) {
-        target.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
-      }
+      target.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
     };
 
-    const focusFirstAvailable = () => {
-      const main = getMainFocusable();
-      const sidebar = getSidebarFocusable();
-      const all = getAllFocusable();
-      focusElement(main[0] || sidebar[0] || all[0] || null);
+    const focusNearestByY = (from: HTMLElement, targets: HTMLElement[]) => {
+      if (!targets.length) return;
+      const fromY = getCenterPoint(from).y;
+      const nearest = [...targets].sort(
+        (a, b) => Math.abs(getCenterPoint(a).y - fromY) - Math.abs(getCenterPoint(b).y - fromY)
+      )[0];
+      focusElement(nearest || null);
     };
 
-    const moveInList = (list: HTMLElement[], current: HTMLElement, delta: number) => {
-      const idx = list.indexOf(current);
-      if (idx === -1) {
-        focusElement(list[0] || null);
-        return;
-      }
-      const nextIdx = Math.min(Math.max(idx + delta, 0), list.length - 1);
-      focusElement(list[nextIdx] || null);
-    };
+    let lastArrowAt = 0;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
@@ -201,71 +200,69 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
         return;
       }
 
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
-        const now = performance.now();
-        if (e.repeat || now - lastArrowAt < 120) {
-          e.preventDefault();
-          return;
-        }
-        lastArrowAt = now;
-      }
-
       const sidebarFocusable = getSidebarFocusable();
       const mainFocusable = getMainFocusable();
       const allFocusable = [...sidebarFocusable, ...mainFocusable.filter((el) => !sidebarFocusable.includes(el))];
       if (!allFocusable.length) return;
 
       const active = document.activeElement as HTMLElement | null;
-      const isActiveFocusable = !!active && allFocusable.includes(active);
+      const activeEl = active && allFocusable.includes(active) ? active : null;
       const isRTL = (document.documentElement.getAttribute('dir') || document.body.getAttribute('dir') || 'ltr') === 'rtl';
       const towardContent = isRTL ? 'ArrowLeft' : 'ArrowRight';
       const towardSidebar = isRTL ? 'ArrowRight' : 'ArrowLeft';
 
       if (key === 'Home') {
         e.preventDefault();
-        focusFirstAvailable();
+        focusElement(mainFocusable[0] || sidebarFocusable[0] || allFocusable[0] || null);
         return;
       }
 
       if (key === 'Enter' || key === ' ') {
-        if (active && active !== document.body) {
-          e.preventDefault();
-          active.click();
+        e.preventDefault();
+        if (activeEl) {
+          activeEl.click();
         } else {
-          e.preventDefault();
-          focusFirstAvailable();
+          focusElement(mainFocusable[0] || sidebarFocusable[0] || allFocusable[0] || null);
         }
         return;
       }
 
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) return;
 
-      if (!isActiveFocusable) {
+      const now = performance.now();
+      if (e.repeat || now - lastArrowAt < 95) {
         e.preventDefault();
-        focusFirstAvailable();
+        return;
+      }
+      lastArrowAt = now;
+
+      if (!activeEl) {
+        e.preventDefault();
+        focusElement(mainFocusable[0] || sidebarFocusable[0] || allFocusable[0] || null);
         return;
       }
 
-      const activeEl = active as HTMLElement;
       const activeInSidebar = sidebarFocusable.includes(activeEl);
 
       if (activeInSidebar) {
         if (key === 'ArrowUp' || key === 'ArrowDown') {
+          const idx = sidebarFocusable.indexOf(activeEl);
+          const nextIdx = key === 'ArrowDown'
+            ? Math.min(idx + 1, sidebarFocusable.length - 1)
+            : Math.max(idx - 1, 0);
           e.preventDefault();
-          moveInList(sidebarFocusable, activeEl, key === 'ArrowDown' ? 1 : -1);
+          focusElement(sidebarFocusable[nextIdx] || null);
           return;
         }
 
         if (key === towardContent && mainFocusable.length) {
           e.preventDefault();
-          const nextMain = getSpatialNext(activeEl, mainFocusable, key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight') || mainFocusable[0];
-          focusElement(nextMain);
+          focusNearestByY(activeEl, mainFocusable);
         }
-
         return;
       }
 
-      const nextInMain = getSpatialNext(activeEl, mainFocusable, key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight');
+      const nextInMain = getNextDirectional(activeEl, mainFocusable, key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight');
       if (nextInMain) {
         e.preventDefault();
         focusElement(nextInMain);
@@ -274,31 +271,30 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
 
       if (key === towardSidebar && sidebarFocusable.length) {
         e.preventDefault();
-        const nextSidebar = getSpatialNext(activeEl, sidebarFocusable, key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight') || sidebarFocusable[0];
-        focusElement(nextSidebar);
+        focusNearestByY(activeEl, sidebarFocusable);
         return;
       }
 
-      const activeIndex = mainFocusable.indexOf(activeEl);
-      if (activeIndex === -1) return;
-
-      const moveForward = key === 'ArrowDown' || key === 'ArrowRight';
-      const nextIndex = moveForward
-        ? Math.min(activeIndex + 1, mainFocusable.length - 1)
-        : Math.max(activeIndex - 1, 0);
-
-      if (nextIndex !== activeIndex) {
-        e.preventDefault();
-        focusElement(mainFocusable[nextIndex]);
+      if (key === 'ArrowUp' || key === 'ArrowDown') {
+        const idx = mainFocusable.indexOf(activeEl);
+        if (idx !== -1) {
+          const nextIdx = key === 'ArrowDown'
+            ? Math.min(idx + 1, mainFocusable.length - 1)
+            : Math.max(idx - 1, 0);
+          if (nextIdx !== idx) {
+            e.preventDefault();
+            focusElement(mainFocusable[nextIdx] || null);
+          }
+        }
       }
     };
 
     const ensureInitialFocus = window.setTimeout(() => {
       const active = document.activeElement as HTMLElement | null;
       if (!active || active === document.body) {
-        focusFirstAvailable();
+        focusElement(getMainFocusable()[0] || getSidebarFocusable()[0] || null);
       }
-    }, 80);
+    }, 60);
 
     window.addEventListener('keydown', handleKeyDown, true);
 
