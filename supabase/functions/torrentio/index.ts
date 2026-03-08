@@ -2,40 +2,47 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 const TORRENTIO_BASE = 'https://torrentio.strem.fun';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const { type, imdbId, season, episode } = await req.json();
 
     if (!imdbId || !type) {
-      return new Response(JSON.stringify({ error: 'Missing type or imdbId' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      return new Response(JSON.stringify({ error: 'Missing type or imdbId', streams: [] }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    let streamPath = `${imdbId}`;
-    if (type === 'series' && season !== undefined && episode !== undefined) {
-      streamPath = `${imdbId}:${season}:${episode}`;
+    const safeType = type === 'series' ? 'series' : 'movie';
+    const safeImdbId = String(imdbId).startsWith('tt') ? String(imdbId) : `tt${imdbId}`;
+
+    let streamPath = safeImdbId;
+    if (safeType === 'series' && season !== undefined && episode !== undefined) {
+      streamPath = `${safeImdbId}:${season}:${episode}`;
     }
 
-    const url = `${TORRENTIO_BASE}/stream/${type}/${streamPath}.json`;
+    const url = `${TORRENTIO_BASE}/stream/${safeType}/${streamPath}.json`;
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
+        'User-Agent': 'stremio/4.4.168',
+        'Accept': 'application/json, text/plain, */*',
+        'Origin': 'https://web.stremio.com',
+        'Referer': 'https://web.stremio.com/',
       },
     });
+
     const text = await response.text();
 
-    let data;
+    let data: { streams: unknown[]; [key: string]: unknown } = { streams: [] };
     try {
       data = text ? JSON.parse(text) : { streams: [] };
     } catch {
@@ -43,18 +50,23 @@ serve(async (req) => {
     }
 
     if (!response.ok) {
-      return new Response(JSON.stringify({ error: 'Torrentio API error', streams: [] }), {
-        status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      return new Response(JSON.stringify({
+        error: `Torrentio blocked request (${response.status})`,
+        streams: [],
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify({ streams: Array.isArray(data.streams) ? data.streams : [] }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
     return new Response(JSON.stringify({ error: msg, streams: [] }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
