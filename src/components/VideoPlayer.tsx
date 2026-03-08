@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, ArrowRight, X, Settings, Volume2, Subtitles, ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause, SkipForward, SkipBack, Loader2, Languages, Download } from 'lucide-react';
+import { ArrowLeft, ArrowRight, X, Settings, Volume2, Subtitles, ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause, SkipForward, SkipBack, Loader2, Languages, Download, ExternalLink, Monitor } from 'lucide-react';
 import { fetchSubtitles, type SubtitleTrack } from '@/lib/opensubtitles';
 import { useRDTranscode } from '@/hooks/useRealDebrid';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -17,7 +17,7 @@ interface VideoPlayerProps {
   onSelectAudioLanguage?: (language: string) => void | Promise<void>;
 }
 
-type SettingsPanel = 'main' | 'speed' | 'audio' | 'subtitles';
+type SettingsPanel = 'main' | 'speed' | 'audio' | 'subtitles' | 'external';
 
 interface AudioTrackInfo {
   index: number;
@@ -177,6 +177,47 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     cannotSwitchAudio: lang === 'he' ? 'במכשיר/דפדפן הזה לא ניתן להחליף רצועת אודיו מתוך הנגן' : 'Audio track switching is not supported on this device/browser',
     chooseSourceAudio: lang === 'he' ? 'בחר שפה (יחליף מקור):' : 'Choose language (will switch source):',
     transcodeActive: lang === 'he' ? 'מצב תאימות אודיו פעיל' : 'Audio compatibility mode active',
+    openExternal: lang === 'he' ? 'פתח בנגן חיצוני' : 'Open in External Player',
+    openVlc: lang === 'he' ? 'פתח ב-VLC' : 'Open in VLC',
+    openMx: lang === 'he' ? 'פתח ב-MX Player' : 'Open in MX Player',
+    openSystem: lang === 'he' ? 'פתח בנגן המערכת' : 'Open in System Player',
+    externalPlayerHint: lang === 'he' ? 'לניגון עם כל הקודקים (DTS, AC3, EAC3 וכו\')' : 'For playback with all codecs (DTS, AC3, EAC3, etc.)',
+  };
+
+  const openInExternalPlayer = (playerType: 'vlc' | 'mx' | 'system') => {
+    const videoUrl = url; // Always use original (not transcoded) URL for external player
+    let intentUrl = '';
+
+    switch (playerType) {
+      case 'vlc':
+        // VLC intent
+        intentUrl = `vlc://${videoUrl}`;
+        // Try Android intent as fallback
+        if (/android/i.test(navigator.userAgent)) {
+          intentUrl = `intent://${videoUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=org.videolan.vlc;type=video/*;S.title=${encodeURIComponent(title)};end`;
+        }
+        break;
+      case 'mx':
+        // MX Player intent
+        if (/android/i.test(navigator.userAgent)) {
+          intentUrl = `intent://${videoUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.mxtech.videoplayer.ad;type=video/*;S.title=${encodeURIComponent(title)};end`;
+        } else {
+          intentUrl = videoUrl; // Fallback: just open URL
+        }
+        break;
+      case 'system':
+        // Generic Android video intent
+        if (/android/i.test(navigator.userAgent)) {
+          intentUrl = `intent://${videoUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;type=video/*;S.title=${encodeURIComponent(title)};end`;
+        } else {
+          intentUrl = videoUrl;
+        }
+        break;
+    }
+
+    if (intentUrl) {
+      window.location.href = intentUrl;
+    }
   };
 
   useEffect(() => {
@@ -792,19 +833,29 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         </div>
       )}
 
-      {/* No audio warning banner */}
+      {/* No audio warning banner - with external player buttons */}
       {noAudioDetected && !isBuffering && (
-        <div className="absolute top-20 start-1/2 -translate-x-1/2 z-20 bg-yellow-500/90 text-black px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg max-w-md text-center">
-          <Volume2 className="w-5 h-5 flex-shrink-0" />
-          {lang === 'he'
-            ? 'לא זוהה אודיו — ייתכן שקודק האודיו (DTS/AC3) לא נתמך בדפדפן. נסה מקור אחר עם AAC.'
-            : 'No audio detected — the audio codec (DTS/AC3) may not be supported. Try a source with AAC audio.'}
-          <button
-            onClick={() => setNoAudioDetected(false)}
-            className="ms-2 text-black/60 hover:text-black tv-focus"
-          >
-            <X className="w-4 h-4" />
-          </button>
+        <div className="absolute top-20 start-1/2 -translate-x-1/2 z-20 bg-yellow-500/90 text-black px-6 py-4 rounded-xl text-sm font-semibold shadow-lg max-w-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2 mb-3">
+            <Volume2 className="w-5 h-5 flex-shrink-0" />
+            {lang === 'he'
+              ? 'לא זוהה אודיו — הקודק לא נתמך בדפדפן.'
+              : 'No audio detected — codec not supported in browser.'}
+            <button onClick={() => setNoAudioDetected(false)} className="ms-auto text-black/60 hover:text-black tv-focus">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => openInExternalPlayer('vlc')} className="flex items-center gap-1.5 bg-black/20 hover:bg-black/30 text-black px-3 py-2 rounded-lg transition-colors tv-focus text-xs font-bold">
+              <ExternalLink className="w-4 h-4" /> {labels.openVlc}
+            </button>
+            <button onClick={() => openInExternalPlayer('mx')} className="flex items-center gap-1.5 bg-black/20 hover:bg-black/30 text-black px-3 py-2 rounded-lg transition-colors tv-focus text-xs font-bold">
+              <ExternalLink className="w-4 h-4" /> {labels.openMx}
+            </button>
+            <button onClick={() => openInExternalPlayer('system')} className="flex items-center gap-1.5 bg-black/20 hover:bg-black/30 text-black px-3 py-2 rounded-lg transition-colors tv-focus text-xs font-bold">
+              <Monitor className="w-4 h-4" /> {labels.openSystem}
+            </button>
+          </div>
         </div>
       )}
 
@@ -892,6 +943,13 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={toggleFullscreen} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
                 {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
               </button>
+              <button
+                onClick={() => openInExternalPlayer('vlc')}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus"
+                title={labels.openExternal}
+              >
+                <ExternalLink className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
@@ -926,6 +984,10 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
                   {loadingSubs && <Loader2 className="w-3 h-3 animate-spin" />}
                   <NavChevron className="w-4 h-4" />
                 </span>
+              </button>
+              <button onClick={() => setSettingsPanel('external')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
+                <span className="flex items-center gap-2"><ExternalLink className="w-4 h-4" /> {labels.openExternal}</span>
+                <NavChevron className="w-4 h-4 text-white/60" />
               </button>
             </div>
           )}
@@ -1032,6 +1094,24 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               {!loadingSubs && availableSubs.length === 0 && (
                 <div className="px-4 py-3 text-white/40 text-center">{labels.noSubs}</div>
               )}
+            </div>
+          )}
+
+          {settingsPanel === 'external' && (
+            <div className="py-1">
+              <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10 tv-focus">
+                <BackChevron className="w-4 h-4" /> {labels.openExternal}
+              </button>
+              <div className="px-4 py-2 text-white/40 text-xs">{labels.externalPlayerHint}</div>
+              <button onClick={() => openInExternalPlayer('vlc')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
+                <ExternalLink className="w-4 h-4 text-primary" /> {labels.openVlc}
+              </button>
+              <button onClick={() => openInExternalPlayer('mx')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
+                <ExternalLink className="w-4 h-4 text-primary" /> {labels.openMx}
+              </button>
+              <button onClick={() => openInExternalPlayer('system')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
+                <Monitor className="w-4 h-4 text-primary" /> {labels.openSystem}
+              </button>
             </div>
           )}
         </div>
