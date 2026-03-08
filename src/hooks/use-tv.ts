@@ -56,17 +56,28 @@ export const useIsTVDevice = () => {
 
   useEffect(() => {
     const detectFromRemoteInput = (e: KeyboardEvent) => {
-      const key = normalizeRemoteKey(e);
-      if (!key) return;
+      const normalized = normalizeRemoteKey(e);
+      const keyCode = e.keyCode || (e as any).which || 0;
+      const looksLikeRemoteKey =
+        !!normalized ||
+        keyCode in KEYCODE_MAP ||
+        e.key === 'Unidentified' ||
+        e.code?.startsWith('Arrow') ||
+        e.code === 'NumpadEnter';
 
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Home'].includes(key)) {
-        window.localStorage.setItem('force-tv-mode', 'true');
-        setIsTV(true);
-      }
+      if (!looksLikeRemoteKey) return;
+
+      window.localStorage.setItem('force-tv-mode', 'true');
+      setIsTV(true);
     };
 
-    window.addEventListener('keydown', detectFromRemoteInput);
-    return () => window.removeEventListener('keydown', detectFromRemoteInput);
+    window.addEventListener('keydown', detectFromRemoteInput, true);
+    document.addEventListener('keydown', detectFromRemoteInput, true);
+
+    return () => {
+      window.removeEventListener('keydown', detectFromRemoteInput, true);
+      document.removeEventListener('keydown', detectFromRemoteInput, true);
+    };
   }, []);
 
   return isTV;
@@ -291,11 +302,13 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       }
     }, 80);
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener('keydown', handleKeyDown, true);
 
     return () => {
       window.clearTimeout(ensureInitialFocus);
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      document.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [enabled, focusableSelector]);
 };
