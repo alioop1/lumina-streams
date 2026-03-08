@@ -16,7 +16,8 @@ const tabs: { icon: typeof Home; labelKey: TranslationKey; path: string }[] = [
 export const AppSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, dir } = useLanguage();
+  const isRTL = dir === 'rtl';
   const [expanded, setExpanded] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -35,15 +36,29 @@ export const AppSidebar = () => {
         break;
       case 'ArrowRight':
         e.preventDefault();
-        setExpanded(false);
-        // Move focus to main content
-        const mainContent = document.querySelector('main');
-        const firstFocusable = mainContent?.querySelector<HTMLElement>('[tabindex], a, button, input');
-        firstFocusable?.focus();
+        if (isRTL) {
+          // In RTL, ArrowRight opens sidebar
+          setExpanded(true);
+        } else {
+          // In LTR, ArrowRight exits sidebar
+          setExpanded(false);
+          const mainContent = document.querySelector('main');
+          const firstFocusable = mainContent?.querySelector<HTMLElement>('[tabindex], a, button, input');
+          firstFocusable?.focus();
+        }
         break;
       case 'ArrowLeft':
         e.preventDefault();
-        setExpanded(true);
+        if (isRTL) {
+          // In RTL, ArrowLeft exits sidebar
+          setExpanded(false);
+          const mainContent = document.querySelector('main');
+          const firstFocusable = mainContent?.querySelector<HTMLElement>('[tabindex], a, button, input');
+          firstFocusable?.focus();
+        } else {
+          // In LTR, ArrowLeft opens sidebar
+          setExpanded(true);
+        }
         break;
       case 'Enter':
       case ' ':
@@ -53,7 +68,7 @@ export const AppSidebar = () => {
         }
         break;
     }
-  }, [focusedIndex, navigate]);
+  }, [focusedIndex, navigate, isRTL]);
 
   useEffect(() => {
     if (focusedIndex >= 0 && buttonRefs.current[focusedIndex]) {
@@ -79,9 +94,9 @@ export const AppSidebar = () => {
       onMouseLeave={() => setExpanded(false)}
       onKeyDown={handleKeyDown}
       className={cn(
-        'fixed top-0 left-0 h-full z-50 flex flex-col',
-        'bg-[hsl(var(--sidebar-background))] border-r border-[hsl(var(--sidebar-border))]',
-        'transition-all duration-200 ease-out',
+        'fixed top-0 h-full z-50 flex flex-col',
+        'bg-[hsl(var(--sidebar-background))] transition-all duration-200 ease-out',
+        isRTL ? 'right-0 border-s border-[hsl(var(--sidebar-border))]' : 'left-0 border-e border-[hsl(var(--sidebar-border))]',
         expanded ? 'w-52' : 'w-16'
       )}
     >
@@ -123,7 +138,10 @@ export const AppSidebar = () => {
             >
               {/* Active indicator bar */}
               {active && (
-                <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-primary" />
+                <div className={cn(
+                  'absolute top-2 bottom-2 w-[3px] rounded-full bg-primary',
+                  isRTL ? 'right-0' : 'left-0'
+                )} />
               )}
               <Icon className={cn('w-5 h-5 shrink-0', active && 'drop-shadow-[0_0_6px_hsl(var(--primary))]')} />
               {expanded && (
