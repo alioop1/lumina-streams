@@ -101,8 +101,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
             <span>{t('details')}</span>
           </motion.button>
           <button
-            ref={el => { buttonRefs.current[2] = el; }}
-            onKeyDown={e => handleKeyDown(e, 2)}
             onClick={handleAddToList}
             className="glass hover:bg-accent w-12 h-12 rounded-full flex items-center justify-center transition-all text-foreground tv-focus"
             tabIndex={0}
