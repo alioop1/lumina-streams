@@ -1,8 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, ArrowRight, X, Settings, Volume2, Subtitles, ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause, SkipForward, SkipBack, Loader2, Languages, Download, ExternalLink, Monitor } from 'lucide-react';
+import Hls from 'hls.js';
+import {
+  ArrowLeft, ArrowRight, X, Settings, Volume2, Subtitles,
+  ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause,
+  SkipForward, SkipBack, Loader2, Languages, Download,
+  ExternalLink, Monitor,
+} from 'lucide-react';
 import { fetchSubtitles, type SubtitleTrack } from '@/lib/opensubtitles';
 import { useRDTranscode } from '@/hooks/useRealDebrid';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+/* ═══════════════════ Types ═══════════════════ */
 
 interface VideoPlayerProps {
   url: string;
@@ -20,72 +28,22 @@ interface VideoPlayerProps {
 type SettingsPanel = 'main' | 'speed' | 'audio' | 'subtitles' | 'external';
 
 interface AudioTrackInfo {
-  index: number;
+  id: number;
   label: string;
   language: string;
-  enabled: boolean;
+  active: boolean;
 }
 
-const isWebAudioCodecCompatible = (codec?: string) => {
-  if (!codec) return false;
-  const c = codec.toLowerCase();
-  return c.includes('aac') || c.includes('mp3') || c.includes('opus') || c.includes('vorbis') || c.includes('flac');
+/* ═══════════════════ TV-remote helpers ═══════════════════ */
+
+const KEYCODE_MAP: Record<number, string> = {
+  13: 'Enter', 19: 'ArrowUp', 20: 'ArrowDown', 21: 'ArrowLeft',
+  22: 'ArrowRight', 23: 'Enter', 27: 'Back', 32: 'Enter',
+  37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown',
+  66: 'Enter', 4: 'Back',
 };
 
-type PlaybackStreamKind = 'mp4' | 'webm' | 'hls' | 'dash' | 'other';
-
-const detectPlaybackStreamKind = (streamUrl: string): PlaybackStreamKind => {
-  const path = streamUrl.split('?')[0].toLowerCase();
-  if (path.endsWith('.mp4')) return 'mp4';
-  if (path.endsWith('.webm')) return 'webm';
-  if (path.endsWith('.m3u8')) return 'hls';
-  if (path.endsWith('.mpd')) return 'dash';
-  return 'other';
-};
-
-const canPlayKind = (video: HTMLVideoElement | null, kind: PlaybackStreamKind) => {
-  if (!video) return '';
-  switch (kind) {
-    case 'mp4':
-      return video.canPlayType('video/mp4');
-    case 'webm':
-      return video.canPlayType('video/webm');
-    case 'hls':
-      return video.canPlayType('application/vnd.apple.mpegurl') || video.canPlayType('application/x-mpegURL');
-    case 'dash':
-      return video.canPlayType('application/dash+xml');
-    default:
-      return '';
-  }
-};
-
-const scoreTranscodedSource = (streamUrl: string, codec: string | undefined, video: HTMLVideoElement | null) => {
-  const kind = detectPlaybackStreamKind(streamUrl);
-  const playability = canPlayKind(video, kind);
-  const playabilityScore = playability === 'probably' ? 120 : playability === 'maybe' ? 70 : 0;
-  const kindScore = kind === 'mp4' ? 50 : kind === 'webm' ? 40 : kind === 'hls' ? 25 : kind === 'dash' ? 10 : 0;
-  const codecScore = isWebAudioCodecCompatible(codec) ? 35 : 0;
-  return playabilityScore + kindScore + codecScore;
-};
-
-const PLAYER_KEYCODE_MAP: Record<number, string> = {
-  13: 'Enter',
-  19: 'ArrowUp',
-  20: 'ArrowDown',
-  21: 'ArrowLeft',
-  22: 'ArrowRight',
-  23: 'Enter',
-  27: 'Back',
-  32: 'Enter',
-  37: 'ArrowLeft',
-  38: 'ArrowUp',
-  39: 'ArrowRight',
-  40: 'ArrowDown',
-  66: 'Enter',
-  4: 'Back',
-};
-
-const normalizePlayerKey = (e: KeyboardEvent): string => {
+const normalizeKey = (e: KeyboardEvent): string => {
   const k = (e.key || '').toLowerCase();
   if (k === 'arrowup' || k === 'up' || k === 'dpadup') return 'ArrowUp';
   if (k === 'arrowdown' || k === 'down' || k === 'dpaddown') return 'ArrowDown';
@@ -101,77 +59,66 @@ const normalizePlayerKey = (e: KeyboardEvent): string => {
   if (k === 'm') return 'm';
   if (k === ' ') return 'Enter';
   if (e.code?.startsWith('Arrow')) return e.code;
-  return PLAYER_KEYCODE_MAP[e.keyCode || 0] || '';
+  return KEYCODE_MAP[e.keyCode || 0] || '';
 };
 
 const getFocusable = (root: ParentNode): HTMLElement[] =>
   Array.from(root.querySelectorAll<HTMLElement>('.tv-focus')).filter(el => {
-    const rect = el.getBoundingClientRect();
-    return el.offsetParent !== null && rect.width > 0 && rect.height > 0 && !el.hasAttribute('disabled');
+    const r = el.getBoundingClientRect();
+    return el.offsetParent !== null && r.width > 0 && r.height > 0 && !el.hasAttribute('disabled');
   });
 
-const getCenter = (rect: DOMRect) => ({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+const getCenter = (r: DOMRect) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
 
-const findNextFocusable = (
+const findNext = (
   current: HTMLElement,
-  direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight',
+  dir: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight',
   candidates: HTMLElement[],
 ): HTMLElement | null => {
-  const currentRect = current.getBoundingClientRect();
-  const currentCenter = getCenter(currentRect);
-
-  const filtered = candidates.filter((candidate) => {
-    if (candidate === current) return false;
-    const candidateCenter = getCenter(candidate.getBoundingClientRect());
-
-    if (direction === 'ArrowRight') return candidateCenter.x > currentCenter.x + 4;
-    if (direction === 'ArrowLeft') return candidateCenter.x < currentCenter.x - 4;
-    if (direction === 'ArrowDown') return candidateCenter.y > currentCenter.y + 4;
-    return candidateCenter.y < currentCenter.y - 4;
+  const cc = getCenter(current.getBoundingClientRect());
+  const filtered = candidates.filter(c => {
+    if (c === current) return false;
+    const tc = getCenter(c.getBoundingClientRect());
+    if (dir === 'ArrowRight') return tc.x > cc.x + 4;
+    if (dir === 'ArrowLeft') return tc.x < cc.x - 4;
+    if (dir === 'ArrowDown') return tc.y > cc.y + 4;
+    return tc.y < cc.y - 4;
   });
-
-  if (filtered.length === 0) return null;
-
+  if (!filtered.length) return null;
   filtered.sort((a, b) => {
-    const aCenter = getCenter(a.getBoundingClientRect());
-    const bCenter = getCenter(b.getBoundingClientRect());
-
-    const aPrimary = direction === 'ArrowLeft' || direction === 'ArrowRight'
-      ? Math.abs(aCenter.x - currentCenter.x)
-      : Math.abs(aCenter.y - currentCenter.y);
-    const bPrimary = direction === 'ArrowLeft' || direction === 'ArrowRight'
-      ? Math.abs(bCenter.x - currentCenter.x)
-      : Math.abs(bCenter.y - currentCenter.y);
-
-    const aCross = direction === 'ArrowLeft' || direction === 'ArrowRight'
-      ? Math.abs(aCenter.y - currentCenter.y)
-      : Math.abs(aCenter.x - currentCenter.x);
-    const bCross = direction === 'ArrowLeft' || direction === 'ArrowRight'
-      ? Math.abs(bCenter.y - currentCenter.y)
-      : Math.abs(bCenter.x - currentCenter.x);
-
-    return aPrimary * 10 + aCross - (bPrimary * 10 + bCross);
+    const ac = getCenter(a.getBoundingClientRect());
+    const bc = getCenter(b.getBoundingClientRect());
+    const horiz = dir === 'ArrowLeft' || dir === 'ArrowRight';
+    const ap = horiz ? Math.abs(ac.x - cc.x) : Math.abs(ac.y - cc.y);
+    const bp = horiz ? Math.abs(bc.x - cc.x) : Math.abs(bc.y - cc.y);
+    const ax = horiz ? Math.abs(ac.y - cc.y) : Math.abs(ac.x - cc.x);
+    const bx = horiz ? Math.abs(bc.y - cc.y) : Math.abs(bc.x - cc.x);
+    return ap * 10 + ax - (bp * 10 + bx);
   });
-
   return filtered[0] ?? null;
 };
 
-export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, episode, rdFileId, streamLanguages = [], onSelectAudioLanguage }: VideoPlayerProps) => {
+/* ═══════════════════ Component ═══════════════════ */
+
+export const VideoPlayer = ({
+  url, title, onBack, imdbId, mediaType, season, episode,
+  rdFileId, streamLanguages = [], onSelectAudioLanguage,
+}: VideoPlayerProps) => {
   const { lang, dir } = useLanguage();
   const isRTL = dir === 'rtl';
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const hideTimerRef = useRef<number | null>(null);
-  const lastFocusedControlRef = useRef<HTMLElement | null>(null);
-  const fallbackQueueRef = useRef<string[]>([]);
-  const failedUrlsRef = useRef<Set<string>>(new Set());
-  const { data: transcodeData, isLoading: loadingTranscode } = useRDTranscode(rdFileId || null);
+  const lastFocusRef = useRef<HTMLElement | null>(null);
 
+  const { data: transcodeData } = useRDTranscode(rdFileId || null);
+
+  // ── State ──
   const [playbackUrl, setPlaybackUrl] = useState(url);
-  const [usingTranscode, setUsingTranscode] = useState(false);
-
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsPanel, setSettingsPanel] = useState<SettingsPanel>('main');
@@ -184,11 +131,8 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
 
-  const [embeddedAudioTracks, setEmbeddedAudioTracks] = useState<AudioTrackInfo[]>([]);
-  const [activeAudioIdx, setActiveAudioIdx] = useState<number>(0);
-  const [loadingAudio, setLoadingAudio] = useState(false);
-  const [canSwitchAudioTracks, setCanSwitchAudioTracks] = useState(false);
-  const [noAudioDetected, setNoAudioDetected] = useState(false);
+  const [audioTracks, setAudioTracks] = useState<AudioTrackInfo[]>([]);
+  const [activeAudioId, setActiveAudioId] = useState<number>(-1);
 
   const [availableSubs, setAvailableSubs] = useState<SubtitleTrack[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
@@ -196,127 +140,221 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
   const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
-  const defaultAudioLabel = lang === 'he' ? 'ברירת מחדל' : 'Default';
-
-  // i18n labels
+  // ── i18n ──
+  const t = (he: string, en: string) => (lang === 'he' ? he : en);
   const labels = {
-    subtitles: lang === 'he' ? 'כתוביות' : 'Subtitles',
-    audio: lang === 'he' ? 'אודיו' : 'Audio',
-    downloadSubs: lang === 'he' ? 'הורד כתוביות' : 'Download Subtitles',
-    playbackSpeed: lang === 'he' ? 'מהירות ניגון' : 'Playback Speed',
-    audioLang: lang === 'he' ? 'שפת אודיו' : 'Audio Language',
-    normal: lang === 'he' ? 'רגיל' : 'Normal',
-    off: lang === 'he' ? 'כבוי' : 'Off',
-    default: defaultAudioLabel,
-    loading: lang === 'he' ? 'טוען...' : 'Loading...',
-    loadingSubs: lang === 'he' ? 'טוען כתוביות...' : 'Loading subtitles...',
-    noAudio: lang === 'he' ? 'האודיו הראשי זמין, אבל אין רצועות נוספות לזיהוי' : 'Primary audio is available, but no additional tracks were detected',
-    noSubs: lang === 'he' ? 'אין כתוביות זמינות' : 'No subtitles available',
-    cannotSwitchAudio: lang === 'he' ? 'במכשיר/דפדפן הזה לא ניתן להחליף רצועת אודיו מתוך הנגן' : 'Audio track switching is not supported on this device/browser',
-    chooseSourceAudio: lang === 'he' ? 'בחר שפה (יחליף מקור):' : 'Choose language (will switch source):',
-    transcodeActive: lang === 'he' ? 'מצב תאימות אודיו פעיל' : 'Audio compatibility mode active',
-    openExternal: lang === 'he' ? 'פתח בנגן חיצוני' : 'Open in External Player',
-    openVlc: lang === 'he' ? 'פתח ב-VLC' : 'Open in VLC',
-    openMx: lang === 'he' ? 'פתח ב-MX Player' : 'Open in MX Player',
-    openSystem: lang === 'he' ? 'פתח בנגן המערכת' : 'Open in System Player',
-    externalPlayerHint: lang === 'he' ? 'לניגון עם כל הקודקים (DTS, AC3, EAC3 וכו\')' : 'For playback with all codecs (DTS, AC3, EAC3, etc.)',
+    subtitles: t('כתוביות', 'Subtitles'),
+    audio: t('אודיו', 'Audio'),
+    playbackSpeed: t('מהירות ניגון', 'Playback Speed'),
+    audioLang: t('שפת אודיו', 'Audio Language'),
+    normal: t('רגיל', 'Normal'),
+    off: t('כבוי', 'Off'),
+    default: t('ברירת מחדל', 'Default'),
+    loading: t('טוען...', 'Loading...'),
+    loadingSubs: t('טוען כתוביות...', 'Loading subtitles...'),
+    noSubs: t('אין כתוביות זמינות', 'No subtitles available'),
+    openExternal: t('פתח בנגן חיצוני', 'Open in External Player'),
+    openVlc: t('פתח ב-VLC', 'Open in VLC'),
+    openMx: t('פתח ב-MX Player', 'Open in MX Player'),
+    openSystem: t('פתח בנגן המערכת', 'Open in System Player'),
+    externalHint: t('לניגון עם כל הקודקים', 'For playback with all codecs'),
+    chooseSource: t('בחר שפה (יחליף מקור):', 'Choose language (will switch source):'),
+    downloadSubs: t('הורד כתוביות', 'Download Subtitles'),
   };
 
-  const switchToNextPlaybackSource = useCallback(() => {
-    const nextIdx = fallbackQueueRef.current.findIndex(
-      (candidate) => candidate && candidate !== playbackUrl && !failedUrlsRef.current.has(candidate),
-    );
-
-    if (nextIdx >= 0) {
-      const [next] = fallbackQueueRef.current.splice(nextIdx, 1);
-      setPlaybackUrl(next);
-      setUsingTranscode(next !== url);
-      setIsBuffering(true);
-      setNoAudioDetected(false);
-      return true;
-    }
-
-    if (playbackUrl !== url && !failedUrlsRef.current.has(url)) {
-      setPlaybackUrl(url);
-      setUsingTranscode(false);
-      setIsBuffering(true);
-      setNoAudioDetected(false);
-      return true;
-    }
-
-    return false;
-  }, [playbackUrl, url]);
-
-  const openInExternalPlayer = (playerType: 'vlc' | 'mx' | 'system') => {
-    const videoUrl = url; // Always use original (not transcoded) URL for external player
-    let intentUrl = '';
-
-    switch (playerType) {
-      case 'vlc':
-        // VLC intent
-        intentUrl = `vlc://${videoUrl}`;
-        // Try Android intent as fallback
-        if (/android/i.test(navigator.userAgent)) {
-          intentUrl = `intent://${videoUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=org.videolan.vlc;type=video/*;S.title=${encodeURIComponent(title)};end`;
-        }
-        break;
-      case 'mx':
-        // MX Player intent
-        if (/android/i.test(navigator.userAgent)) {
-          intentUrl = `intent://${videoUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.mxtech.videoplayer.ad;type=video/*;S.title=${encodeURIComponent(title)};end`;
-        } else {
-          intentUrl = videoUrl; // Fallback: just open URL
-        }
-        break;
-      case 'system':
-        // Generic Android video intent
-        if (/android/i.test(navigator.userAgent)) {
-          intentUrl = `intent://${videoUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;type=video/*;S.title=${encodeURIComponent(title)};end`;
-        } else {
-          intentUrl = videoUrl;
-        }
-        break;
-    }
-
-    if (intentUrl) {
-      window.location.href = intentUrl;
-    }
-  };
-
-  useEffect(() => {
-    setPlaybackUrl(url);
-    setUsingTranscode(false);
-    setNoAudioDetected(false);
-    setIsBuffering(true);
-    fallbackQueueRef.current = [];
-    failedUrlsRef.current = new Set();
-  }, [url]);
-
-  // Build an ordered compatibility fallback queue (but keep original source first for stability)
+  /* ═══ Determine best playback URL from transcode data ═══ */
   useEffect(() => {
     if (!transcodeData || isYouTube) return;
 
+    // Prefer HLS for audio track switching, then liveMP4 for compatibility
+    const td = transcodeData as Record<string, any>;
+    const hlsUrl = td.apple?.full as string | undefined;
+    const mp4Url = td.liveMP4?.full as string | undefined;
+
+    // Check if browser supports HLS natively or via hls.js
+    if (hlsUrl && (Hls.isSupported() || videoRef.current?.canPlayType('application/vnd.apple.mpegurl'))) {
+      setPlaybackUrl(hlsUrl);
+    } else if (mp4Url) {
+      setPlaybackUrl(mp4Url);
+    }
+  }, [transcodeData, isYouTube]);
+
+  /* ═══ HLS.js / native playback engine ═══ */
+  useEffect(() => {
     const video = videoRef.current;
+    if (!video || isYouTube) return;
 
-    const ranked = Object.values(transcodeData as Record<string, any>)
-      .filter((item: any) => item?.full)
-      .map((item: any) => {
-        const full = item.full as string;
-        const acodec = (item.acodec as string | undefined) || '';
-        return {
-          full,
-          score: scoreTranscodedSource(full, acodec, video),
-        };
-      })
-      .sort((a, b) => b.score - a.score);
+    // Destroy previous HLS instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
 
-    const orderedUrls = [...new Set(ranked.map((c) => c.full))].filter((candidate) => !failedUrlsRef.current.has(candidate));
+    const isHls = playbackUrl.includes('.m3u8');
 
-    // Keep current playback source; only prepare fallbacks for automatic recovery
-    fallbackQueueRef.current = orderedUrls.filter((candidate) => candidate !== playbackUrl);
-  }, [transcodeData, isYouTube, playbackUrl]);
+    if (isHls && Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+      });
+      hlsRef.current = hls;
 
-  // Fetch subtitles
+      hls.loadSource(playbackUrl);
+      hls.attachMedia(video);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(() => {});
+        updateHlsAudioTracks(hls);
+      });
+
+      hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, () => {
+        updateHlsAudioTracks(hls);
+      });
+
+      hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, () => {
+        updateHlsAudioTracks(hls);
+      });
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          console.error('HLS fatal error:', data.type, data.details);
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            hls.startLoad();
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.recoverMediaError();
+          } else {
+            // Try falling back to MP4
+            const td = transcodeData as Record<string, any> | undefined;
+            const mp4 = td?.liveMP4?.full;
+            if (mp4 && playbackUrl !== mp4) {
+              hls.destroy();
+              hlsRef.current = null;
+              setPlaybackUrl(mp4);
+            }
+          }
+        }
+      });
+
+      return () => {
+        hls.destroy();
+        hlsRef.current = null;
+      };
+    } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Safari native HLS
+      video.src = playbackUrl;
+      video.play().catch(() => {});
+
+      // Safari exposes audioTracks natively
+      const detectNativeTracks = () => {
+        const vAny = video as any;
+        if (vAny.audioTracks && vAny.audioTracks.length > 0) {
+          const tracks: AudioTrackInfo[] = [];
+          for (let i = 0; i < vAny.audioTracks.length; i++) {
+            const tk = vAny.audioTracks[i];
+            tracks.push({
+              id: i,
+              label: tk.label || tk.language || `Track ${i + 1}`,
+              language: tk.language || '',
+              active: tk.enabled,
+            });
+          }
+          setAudioTracks(tracks);
+          const active = tracks.find(tk => tk.active);
+          if (active) setActiveAudioId(active.id);
+        }
+      };
+      video.addEventListener('loadedmetadata', detectNativeTracks);
+      const timer = setTimeout(detectNativeTracks, 2000);
+      return () => {
+        video.removeEventListener('loadedmetadata', detectNativeTracks);
+        clearTimeout(timer);
+      };
+    } else {
+      // Direct MP4/WebM playback
+      video.src = playbackUrl;
+      video.play().catch(() => {});
+
+      // Try native audioTracks API
+      const detectNativeTracks = () => {
+        const vAny = video as any;
+        if (vAny.audioTracks && vAny.audioTracks.length > 0) {
+          const tracks: AudioTrackInfo[] = [];
+          for (let i = 0; i < vAny.audioTracks.length; i++) {
+            const tk = vAny.audioTracks[i];
+            tracks.push({
+              id: i,
+              label: tk.label || tk.language || `Track ${i + 1}`,
+              language: tk.language || '',
+              active: tk.enabled,
+            });
+          }
+          setAudioTracks(tracks);
+          const active = tracks.find(tk => tk.active);
+          if (active) setActiveAudioId(active.id);
+        } else {
+          setAudioTracks([{ id: 0, label: labels.default, language: '', active: true }]);
+          setActiveAudioId(0);
+        }
+      };
+      video.addEventListener('loadedmetadata', detectNativeTracks);
+      const timer = setTimeout(detectNativeTracks, 2000);
+      return () => {
+        video.removeEventListener('loadedmetadata', detectNativeTracks);
+        clearTimeout(timer);
+      };
+    }
+  }, [playbackUrl, isYouTube]);
+
+  const updateHlsAudioTracks = (hls: Hls) => {
+    const hlsTracks = hls.audioTracks;
+    if (!hlsTracks || hlsTracks.length === 0) {
+      setAudioTracks([{ id: 0, label: labels.default, language: '', active: true }]);
+      setActiveAudioId(0);
+      return;
+    }
+    const tracks: AudioTrackInfo[] = hlsTracks.map((tk, idx) => ({
+      id: idx,
+      label: tk.name || tk.lang || `Track ${idx + 1}`,
+      language: tk.lang || '',
+      active: idx === hls.audioTrack,
+    }));
+    setAudioTracks(tracks);
+    setActiveAudioId(hls.audioTrack);
+  };
+
+  const switchAudioTrack = (trackId: number) => {
+    const hls = hlsRef.current;
+    if (hls) {
+      // HLS.js audio track switching
+      hls.audioTrack = trackId;
+      setActiveAudioId(trackId);
+    } else {
+      // Native audioTracks API (Safari, some Chromium)
+      const video = videoRef.current;
+      if (!video) return;
+      const vAny = video as any;
+      if (vAny.audioTracks) {
+        for (let i = 0; i < vAny.audioTracks.length; i++) {
+          vAny.audioTracks[i].enabled = i === trackId;
+        }
+        setActiveAudioId(trackId);
+      }
+    }
+    setSettingsPanel('main');
+    setShowSettings(false);
+  };
+
+  /* ═══ Reset on URL change ═══ */
+  useEffect(() => {
+    setPlaybackUrl(url);
+    setAudioTracks([]);
+    setActiveAudioId(-1);
+    setIsBuffering(true);
+  }, [url]);
+
+  /* ═══ Subtitles ═══ */
   useEffect(() => {
     if (!imdbId || isYouTube) return;
     setLoadingSubs(true);
@@ -324,150 +362,21 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       .then(subs => {
         setAvailableSubs(subs);
         const heb = subs.find(s => s.lang === 'heb');
-        if (heb) {
-          setActiveSub(heb.id);
-          addTrackToVideo(heb);
-        }
+        if (heb) { setActiveSub(heb.id); addTrackToVideo(heb); }
       })
       .finally(() => setLoadingSubs(false));
   }, [imdbId, mediaType, season, episode]);
-
-  // Detect embedded audio tracks from the video element
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || isYouTube) return;
-
-    const detectAudioTracks = () => {
-      const vAny = v as any;
-      const tracks = vAny.audioTracks;
-
-      // Fallback for platforms (Android TV / some Chromium builds) with no audioTracks API
-      if (!tracks || typeof tracks.length !== 'number' || tracks.length === 0) {
-        setCanSwitchAudioTracks(false);
-        setEmbeddedAudioTracks([
-          {
-            index: 0,
-            label: defaultAudioLabel,
-            language: '',
-            enabled: true,
-          },
-        ]);
-        setActiveAudioIdx(0);
-        setLoadingAudio(false);
-        return;
-      }
-
-      setCanSwitchAudioTracks(true);
-      const list: AudioTrackInfo[] = [];
-      for (let i = 0; i < tracks.length; i++) {
-        const t = tracks[i];
-        list.push({
-          index: i,
-          label: t.label || t.language || `Track ${i + 1}`,
-          language: t.language || '',
-          enabled: t.enabled,
-        });
-        if (t.enabled) setActiveAudioIdx(i);
-      }
-      setEmbeddedAudioTracks(list);
-      setLoadingAudio(false);
-    };
-
-    setLoadingAudio(true);
-    v.addEventListener('loadedmetadata', detectAudioTracks);
-    // Also try after a short delay for browsers that populate audioTracks late
-    const timer = setTimeout(detectAudioTracks, 2000);
-
-    return () => {
-      v.removeEventListener('loadedmetadata', detectAudioTracks);
-      clearTimeout(timer);
-    };
-  }, [playbackUrl, isYouTube, defaultAudioLabel]);
-
-  // Detect no-audio via Web Audio API analyzer
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || isYouTube) return;
-
-    let ctx: AudioContext | null = null;
-    let analyser: AnalyserNode | null = null;
-    let checkTimer: number | null = null;
-    let cancelled = false;
-
-    const checkAudio = () => {
-      try {
-        ctx = new AudioContext();
-        const source = ctx.createMediaElementSource(v);
-        analyser = ctx.createAnalyser();
-        analyser.fftSize = 256;
-        source.connect(analyser);
-        analyser.connect(ctx.destination);
-
-        const data = new Uint8Array(analyser.frequencyBinCount);
-        let silentChecks = 0;
-        const maxChecks = 8;
-
-        const check = () => {
-          if (cancelled) return;
-          analyser!.getByteFrequencyData(data);
-          const maxVal = Math.max(...data);
-          if (maxVal < 5 && !v.paused && v.currentTime > 1) {
-            silentChecks++;
-            if (silentChecks >= 3) {
-              setNoAudioDetected(true);
-              return;
-            }
-          } else {
-            silentChecks = 0;
-            setNoAudioDetected(false);
-          }
-          if (silentChecks < maxChecks) {
-            checkTimer = window.setTimeout(check, 1500);
-          }
-        };
-
-        // Start checking after video plays a bit
-        checkTimer = window.setTimeout(check, 3000);
-      } catch (e) {
-        // Web Audio API not available - skip detection
-        console.warn('Audio detection unavailable:', e);
-      }
-    };
-
-    v.addEventListener('playing', checkAudio, { once: true });
-
-    return () => {
-      cancelled = true;
-      if (checkTimer) clearTimeout(checkTimer);
-      v.removeEventListener('playing', checkAudio);
-      if (ctx && ctx.state !== 'closed') {
-        try { ctx.close(); } catch {}
-      }
-    };
-  }, [playbackUrl, isYouTube]);
-
-  // Auto-switch source if audio is silent (tries next transcoded source automatically)
-  useEffect(() => {
-    if (!noAudioDetected || isYouTube) return;
-    switchToNextPlaybackSource();
-  }, [noAudioDetected, isYouTube, switchToNextPlaybackSource]);
 
   const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
     try {
       const res = await fetch(subUrl);
       const text = await res.text();
-      let vttContent = text;
+      let vtt = text;
       if (!text.trimStart().startsWith('WEBVTT')) {
-        vttContent = 'WEBVTT\n\n' + text
-          .replace(/\r\n/g, '\n')
-          .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+        vtt = 'WEBVTT\n\n' + text.replace(/\r\n/g, '\n').replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
       }
-      const blob = new Blob([vttContent], { type: 'text/vtt' });
-      return URL.createObjectURL(blob);
-    } catch (e) {
-      console.error('Failed to fetch subtitle:', e);
-      return subUrl;
-    }
+      return URL.createObjectURL(new Blob([vtt], { type: 'text/vtt' }));
+    } catch { return subUrl; }
   };
 
   const addTrackToVideo = async (sub: SubtitleTrack) => {
@@ -475,20 +384,14 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     if (!v) return;
     while (v.textTracks.length > 0) {
       const track = v.querySelector('track');
-      if (track) track.remove();
-      else break;
+      if (track) track.remove(); else break;
     }
     const blobUrl = await fetchSubAsBlob(sub.url);
     const track = document.createElement('track');
-    track.kind = 'subtitles';
-    track.label = sub.label;
-    track.srclang = sub.lang;
-    track.src = blobUrl;
-    track.default = true;
+    track.kind = 'subtitles'; track.label = sub.label;
+    track.srclang = sub.lang; track.src = blobUrl; track.default = true;
     v.appendChild(track);
-    setTimeout(() => {
-      if (v.textTracks[0]) v.textTracks[0].mode = 'showing';
-    }, 100);
+    setTimeout(() => { if (v.textTracks[0]) v.textTracks[0].mode = 'showing'; }, 100);
   };
 
   const selectSubtitle = (sub: SubtitleTrack | null) => {
@@ -505,18 +408,31 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     setShowSettings(false);
   };
 
-  const handleDownloadSubtitle = () => {
-    const targetSub = availableSubs.find((s) => s.id === activeSub) || availableSubs[0];
-    if (!targetSub) return;
+  const handleDownloadSub = () => {
+    const sub = availableSubs.find(s => s.id === activeSub) || availableSubs[0];
+    if (!sub) return;
     const a = document.createElement('a');
-    a.href = targetSub.url;
-    a.download = `${title}.${targetSub.lang}.vtt`;
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = sub.url; a.download = `${title}.${sub.lang}.vtt`; a.target = '_blank';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
+  /* ═══ External player ═══ */
+  const openExternal = (player: 'vlc' | 'mx' | 'system') => {
+    const isAndroid = /android/i.test(navigator.userAgent);
+    let href = url;
+    if (player === 'vlc') {
+      href = isAndroid
+        ? `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=org.videolan.vlc;type=video/*;S.title=${encodeURIComponent(title)};end`
+        : `vlc://${url}`;
+    } else if (player === 'mx' && isAndroid) {
+      href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.mxtech.videoplayer.ad;type=video/*;S.title=${encodeURIComponent(title)};end`;
+    } else if (player === 'system' && isAndroid) {
+      href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;type=video/*;S.title=${encodeURIComponent(title)};end`;
+    }
+    window.location.href = href;
+  };
+
+  /* ═══ Controls hide timer ═══ */
   const resetHideTimer = useCallback(() => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     setShowControls(true);
@@ -530,89 +446,61 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); };
   }, [resetHideTimer]);
 
+  /* ═══ Video events ═══ */
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    const v = videoRef.current;
+    if (!v) return;
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
-    const onTimeUpdate = () => setCurrentTime(video.currentTime);
-    const onDuration = () => setDuration(video.duration);
-    const onWaiting = () => setIsBuffering(true);
-    const onCanPlay = () => {
-      setIsBuffering(false);
-      setNoAudioDetected(false);
-    };
-    const onVolumeChange = () => { setVolume(video.volume); setIsMuted(video.muted); };
-
-    video.addEventListener('play', onPlay);
-    video.addEventListener('pause', onPause);
-    video.addEventListener('timeupdate', onTimeUpdate);
-    video.addEventListener('loadedmetadata', onDuration);
-    video.addEventListener('durationchange', onDuration);
-    video.addEventListener('waiting', onWaiting);
-    video.addEventListener('canplay', onCanPlay);
-    video.addEventListener('playing', onCanPlay);
-    video.addEventListener('volumechange', onVolumeChange);
-
+    const onTime = () => setCurrentTime(v.currentTime);
+    const onDur = () => setDuration(v.duration);
+    const onWait = () => setIsBuffering(true);
+    const onCan = () => setIsBuffering(false);
+    const onVol = () => { setVolume(v.volume); setIsMuted(v.muted); };
+    v.addEventListener('play', onPlay);
+    v.addEventListener('pause', onPause);
+    v.addEventListener('timeupdate', onTime);
+    v.addEventListener('loadedmetadata', onDur);
+    v.addEventListener('durationchange', onDur);
+    v.addEventListener('waiting', onWait);
+    v.addEventListener('canplay', onCan);
+    v.addEventListener('playing', onCan);
+    v.addEventListener('volumechange', onVol);
     return () => {
-      video.removeEventListener('play', onPlay);
-      video.removeEventListener('pause', onPause);
-      video.removeEventListener('timeupdate', onTimeUpdate);
-      video.removeEventListener('loadedmetadata', onDuration);
-      video.removeEventListener('durationchange', onDuration);
-      video.removeEventListener('waiting', onWaiting);
-      video.removeEventListener('canplay', onCanPlay);
-      video.removeEventListener('playing', onCanPlay);
-      video.removeEventListener('volumechange', onVolumeChange);
+      v.removeEventListener('play', onPlay);
+      v.removeEventListener('pause', onPause);
+      v.removeEventListener('timeupdate', onTime);
+      v.removeEventListener('loadedmetadata', onDur);
+      v.removeEventListener('durationchange', onDur);
+      v.removeEventListener('waiting', onWait);
+      v.removeEventListener('canplay', onCan);
+      v.removeEventListener('playing', onCan);
+      v.removeEventListener('volumechange', onVol);
     };
   }, []);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || isYouTube) return;
-
-    const onError = () => {
-      failedUrlsRef.current.add(playbackUrl);
-      setIsBuffering(false);
-      switchToNextPlaybackSource();
-    };
-
-    video.addEventListener('error', onError);
-    return () => video.removeEventListener('error', onError);
-  }, [isYouTube, playbackUrl, switchToNextPlaybackSource]);
-
-  // ========== Smart TV remote navigation ==========
+  /* ═══ TV remote navigation ═══ */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const v = videoRef.current;
       const root = containerRef.current;
       if (!root) return;
-
-      const key = normalizePlayerKey(e);
+      const key = normalizeKey(e);
       if (!key) return;
 
       const active = document.activeElement as HTMLElement | null;
-      const activeInsidePlayer = !!active && root.contains(active);
-      const activeInSettings = !!active?.closest('[data-player-settings-panel="true"]');
+      const insidePlayer = !!active && root.contains(active);
+      const inSettings = !!active?.closest('[data-settings-panel]');
 
-      const focusDefaultControl = () => {
-        const fallback = root.querySelector<HTMLElement>('[data-player-default="true"]');
-        fallback?.focus();
-      };
+      const focusDefault = () => root.querySelector<HTMLElement>('[data-player-default]')?.focus();
 
-      // Always keep controls visible on remote interaction
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'MediaPlayPause'].includes(key)) {
-        resetHideTimer();
-      }
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'MediaPlayPause'].includes(key)) resetHideTimer();
 
       if (key === 'Back') {
         e.preventDefault();
         if (showSettings) {
           if (settingsPanel !== 'main') setSettingsPanel('main');
-          else {
-            setShowSettings(false);
-            requestAnimationFrame(focusDefaultControl);
-          }
+          else { setShowSettings(false); requestAnimationFrame(focusDefault); }
           return;
         }
         onBack();
@@ -620,102 +508,41 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       }
 
       if (showSettings) {
-        const settingsPanelEl = root.querySelector<HTMLElement>('[data-player-settings-panel="true"]');
-        const settingsItems = settingsPanelEl ? getFocusable(settingsPanelEl) : [];
-
-        if (settingsItems.length === 0) return;
-
-        if (!activeInSettings) {
-          e.preventDefault();
-          settingsItems[0].focus();
-          return;
-        }
-
-        const index = active ? settingsItems.indexOf(active) : -1;
-
-        if (key === 'Enter') {
-          e.preventDefault();
-          active?.click();
-          return;
-        }
-
+        const panel = root.querySelector<HTMLElement>('[data-settings-panel]');
+        const items = panel ? getFocusable(panel) : [];
+        if (!items.length) return;
+        if (!inSettings) { e.preventDefault(); items[0].focus(); return; }
+        const idx = active ? items.indexOf(active) : -1;
+        if (key === 'Enter') { e.preventDefault(); active?.click(); return; }
         if (key === 'ArrowDown' || key === 'ArrowUp') {
           e.preventDefault();
-          const nextIndex = key === 'ArrowDown'
-            ? Math.min(settingsItems.length - 1, index + 1)
-            : Math.max(0, index - 1);
-          settingsItems[Math.max(0, nextIndex)]?.focus();
+          const next = key === 'ArrowDown' ? Math.min(items.length - 1, idx + 1) : Math.max(0, idx - 1);
+          items[Math.max(0, next)]?.focus();
           return;
         }
-
-        // Close settings with sideways arrow toward player controls
-        const towardControls = isRTL ? 'ArrowRight' : 'ArrowLeft';
-        if (key === towardControls && settingsPanel === 'main') {
+        const toward = isRTL ? 'ArrowRight' : 'ArrowLeft';
+        if (key === toward && settingsPanel === 'main') {
           e.preventDefault();
           setShowSettings(false);
-          requestAnimationFrame(focusDefaultControl);
+          requestAnimationFrame(focusDefault);
         }
         return;
       }
 
       if (key === 'Enter') {
-        if (activeInsidePlayer && active?.classList.contains('tv-focus')) {
-          e.preventDefault();
-          active.click();
-          return;
-        }
-        if (v) {
-          e.preventDefault();
-          v.paused ? v.play() : v.pause();
-        }
+        if (insidePlayer && active?.classList.contains('tv-focus')) { e.preventDefault(); active.click(); return; }
+        if (v) { e.preventDefault(); v.paused ? v.play() : v.pause(); }
         return;
       }
-
-      if (key === 'MediaPlayPause') {
-        if (!v) return;
-        e.preventDefault();
-        v.paused ? v.play() : v.pause();
-        return;
-      }
-
-      if (key === 'MediaStop') {
-        e.preventDefault();
-        if (v) v.pause();
-        onBack();
-        return;
-      }
-
-      if (key === 'f') {
-        e.preventDefault();
-        toggleFullscreen();
-        return;
-      }
-
-      if (key === 'm') {
-        if (!v) return;
-        e.preventDefault();
-        v.muted = !v.muted;
-        return;
-      }
-
-      if (key === 'MediaRewind') {
-        if (!v) return;
-        e.preventDefault();
-        v.currentTime = Math.max(0, v.currentTime - 30);
-        return;
-      }
-
-      if (key === 'MediaFastForward') {
-        if (!v) return;
-        e.preventDefault();
-        v.currentTime = Math.min(v.duration, v.currentTime + 30);
-        return;
-      }
+      if (key === 'MediaPlayPause') { e.preventDefault(); if (v) v.paused ? v.play() : v.pause(); return; }
+      if (key === 'MediaStop') { e.preventDefault(); if (v) v.pause(); onBack(); return; }
+      if (key === 'f') { e.preventDefault(); toggleFullscreen(); return; }
+      if (key === 'm') { e.preventDefault(); if (v) v.muted = !v.muted; return; }
+      if (key === 'MediaRewind') { e.preventDefault(); if (v) v.currentTime = Math.max(0, v.currentTime - 30); return; }
+      if (key === 'MediaFastForward') { e.preventDefault(); if (v) v.currentTime = Math.min(v.duration, v.currentTime + 30); return; }
 
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
         e.preventDefault();
-
-        // If overlay is hidden, arrows act as quick playback controls
         if (!showControls) {
           if (!v) return;
           if (key === 'ArrowLeft') v.currentTime = Math.max(0, v.currentTime - 10);
@@ -724,44 +551,29 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
           if (key === 'ArrowDown') v.volume = Math.max(0, v.volume - 0.1);
           return;
         }
-
-        const controls = getFocusable(root).filter((el) => !el.closest('[data-player-settings-panel="true"]'));
-        if (controls.length === 0) return;
-
-        const current = activeInsidePlayer && active?.classList.contains('tv-focus') ? active : null;
-        if (!current) {
-          focusDefaultControl();
-          return;
-        }
-
-        const next = findNextFocusable(current, key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight', controls);
-        if (next) {
-          next.focus();
-          lastFocusedControlRef.current = next;
-          return;
-        }
-
-        // Smart fallback if no focus target in that direction
+        const controls = getFocusable(root).filter(el => !el.closest('[data-settings-panel]'));
+        if (!controls.length) return;
+        const cur = insidePlayer && active?.classList.contains('tv-focus') ? active : null;
+        if (!cur) { focusDefault(); return; }
+        const next = findNext(cur, key as any, controls);
+        if (next) { next.focus(); lastFocusRef.current = next; return; }
         if (v && key === 'ArrowLeft') v.currentTime = Math.max(0, v.currentTime - 10);
         if (v && key === 'ArrowRight') v.currentTime = Math.min(v.duration, v.currentTime + 10);
       }
     };
-
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [showSettings, settingsPanel, onBack, resetHideTimer, showControls, isRTL]);
 
+  // Restore focus when controls reappear
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
-
-    const onFocusIn = (event: FocusEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target || !target.classList.contains('tv-focus')) return;
-      if (target.closest('[data-player-settings-panel="true"]')) return;
-      lastFocusedControlRef.current = target;
+    const onFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.classList.contains('tv-focus') && !target.closest('[data-settings-panel]'))
+        lastFocusRef.current = target;
     };
-
     root.addEventListener('focusin', onFocusIn);
     return () => root.removeEventListener('focusin', onFocusIn);
   }, []);
@@ -770,15 +582,11 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     if (!showControls || showSettings) return;
     const root = containerRef.current;
     if (!root) return;
-
     const active = document.activeElement as HTMLElement | null;
-    const activeIsUsable = !!active && root.contains(active) && active.classList.contains('tv-focus') && !active.closest('[data-player-settings-panel="true"]');
-    if (activeIsUsable) return;
-
-    const preferred = (lastFocusedControlRef.current && root.contains(lastFocusedControlRef.current))
-      ? lastFocusedControlRef.current
-      : root.querySelector<HTMLElement>('[data-player-default="true"]');
-
+    if (active && root.contains(active) && active.classList.contains('tv-focus') && !active.closest('[data-settings-panel]')) return;
+    const preferred = (lastFocusRef.current && root.contains(lastFocusRef.current))
+      ? lastFocusRef.current
+      : root.querySelector<HTMLElement>('[data-player-default]');
     if (preferred) requestAnimationFrame(() => preferred.focus());
   }, [showControls, showSettings]);
 
@@ -786,84 +594,24 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     if (!showSettings || !showControls) return;
     const root = containerRef.current;
     if (!root) return;
-
     requestAnimationFrame(() => {
-      const first = root.querySelector<HTMLElement>('[data-player-settings-panel="true"] .tv-focus');
-      first?.focus();
+      root.querySelector<HTMLElement>('[data-settings-panel] .tv-focus')?.focus();
     });
   }, [showSettings, settingsPanel, showControls]);
 
-  const togglePlay = () => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.paused ? v.play() : v.pause();
-  };
-
-  const seek = (seconds: number) => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + seconds));
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.currentTime = parseFloat(e.target.value);
-  };
-
-  const handleVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = videoRef.current;
-    if (!v) return;
-    const val = parseFloat(e.target.value);
-    v.volume = val;
-    v.muted = val === 0;
-  };
-
-  const toggleMute = () => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.muted = !v.muted;
-  };
-
-  const setSpeed = (speed: number) => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.playbackRate = speed;
-    setPlaybackSpeed(speed);
-    setSettingsPanel('main');
-  };
-
-  const selectAudioTrack = (trackIdx: number) => {
-    const v = videoRef.current;
-    if (!v) return;
-
-    if (!canSwitchAudioTracks) {
-      setSettingsPanel('main');
-      setShowSettings(false);
-      return;
-    }
-
-    const vAny = v as any;
-    const tracks = vAny.audioTracks;
-    if (!tracks) return;
-    for (let i = 0; i < tracks.length; i++) {
-      tracks[i].enabled = i === trackIdx;
-    }
-    setActiveAudioIdx(trackIdx);
-    setSettingsPanel('main');
-    setShowSettings(false);
-  };
+  /* ═══ Playback helpers ═══ */
+  const togglePlay = () => { const v = videoRef.current; if (v) v.paused ? v.play() : v.pause(); };
+  const seek = (s: number) => { const v = videoRef.current; if (v) v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + s)); };
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => { const v = videoRef.current; if (v) v.currentTime = parseFloat(e.target.value); };
+  const handleVolume = (e: React.ChangeEvent<HTMLInputElement>) => { const v = videoRef.current; if (!v) return; const val = parseFloat(e.target.value); v.volume = val; v.muted = val === 0; };
+  const toggleMute = () => { const v = videoRef.current; if (v) v.muted = !v.muted; };
+  const setSpeed = (speed: number) => { const v = videoRef.current; if (v) v.playbackRate = speed; setPlaybackSpeed(speed); setSettingsPanel('main'); };
 
   const toggleFullscreen = async () => {
     const el = containerRef.current;
     if (!el) return;
-    if (document.fullscreenElement) {
-      await document.exitFullscreen();
-      setIsFullscreen(false);
-    } else {
-      await el.requestFullscreen();
-      setIsFullscreen(true);
-    }
+    if (document.fullscreenElement) { await document.exitFullscreen(); setIsFullscreen(false); }
+    else { await el.requestFullscreen(); setIsFullscreen(true); }
   };
 
   const formatTime = (s: number) => {
@@ -880,6 +628,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const NavChevron = isRTL ? ChevronRight : ChevronLeft;
   const BackChevron = isRTL ? ChevronLeft : ChevronRight;
 
+  /* ═══ YouTube ═══ */
   if (isYouTube) {
     return (
       <div ref={containerRef} data-video-player="true" className="fixed inset-0 z-50 bg-black flex flex-col" dir={dir}>
@@ -899,27 +648,24 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
   const activeSubLabel = availableSubs.find(s => s.id === activeSub)?.label || labels.off;
 
+  /* ═══ Main player UI ═══ */
   return (
     <div
       ref={containerRef}
       dir={dir}
       data-video-player="true"
       className="fixed inset-0 z-50 bg-black flex items-center justify-center cursor-pointer select-none"
-      onClick={(e) => {
-        if ((e.target as HTMLElement).closest('[data-controls]')) return;
-        togglePlay();
-        resetHideTimer();
-      }}
+      onClick={e => { if (!(e.target as HTMLElement).closest('[data-controls]')) { togglePlay(); resetHideTimer(); } }}
       onMouseMove={resetHideTimer}
       onTouchStart={resetHideTimer}
     >
       <video
         key={playbackUrl}
         ref={videoRef}
-        src={playbackUrl}
         className="w-full h-full object-contain"
         autoPlay
         playsInline
+        crossOrigin="anonymous"
       />
 
       {isBuffering && (
@@ -928,38 +674,11 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         </div>
       )}
 
-      {/* No audio warning banner - with external player buttons */}
-      {noAudioDetected && !isBuffering && (
-        <div className="absolute top-20 start-1/2 -translate-x-1/2 z-20 bg-yellow-500/90 text-black px-6 py-4 rounded-xl text-sm font-semibold shadow-lg max-w-lg" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2 mb-3">
-            <Volume2 className="w-5 h-5 flex-shrink-0" />
-            {lang === 'he'
-              ? 'לא זוהה אודיו — הקודק לא נתמך בדפדפן.'
-              : 'No audio detected — codec not supported in browser.'}
-            <button onClick={() => setNoAudioDetected(false)} className="ms-auto text-black/60 hover:text-black tv-focus">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => openInExternalPlayer('vlc')} className="flex items-center gap-1.5 bg-black/20 hover:bg-black/30 text-black px-3 py-2 rounded-lg transition-colors tv-focus text-xs font-bold">
-              <ExternalLink className="w-4 h-4" /> {labels.openVlc}
-            </button>
-            <button onClick={() => openInExternalPlayer('mx')} className="flex items-center gap-1.5 bg-black/20 hover:bg-black/30 text-black px-3 py-2 rounded-lg transition-colors tv-focus text-xs font-bold">
-              <ExternalLink className="w-4 h-4" /> {labels.openMx}
-            </button>
-            <button onClick={() => openInExternalPlayer('system')} className="flex items-center gap-1.5 bg-black/20 hover:bg-black/30 text-black px-3 py-2 rounded-lg transition-colors tv-focus text-xs font-bold">
-              <Monitor className="w-4 h-4" /> {labels.openSystem}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Side toolbar removed - controls are in bottom bar */}
-
+      {/* Controls overlay */}
       <div
         data-controls
         className={`absolute inset-0 flex flex-col justify-between transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         {/* Top bar */}
         <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/70 to-transparent">
@@ -972,7 +691,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
           </button>
         </div>
 
-        {/* Center controls */}
+        {/* Center */}
         <div className="flex items-center justify-center gap-8">
           <button onClick={() => seek(-10)} className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
             <SkipBack className="w-6 h-6" />
@@ -987,6 +706,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
         {/* Bottom bar */}
         <div className="p-4 bg-gradient-to-t from-black/70 to-transparent space-y-2">
+          {/* Progress */}
           <div className="flex items-center gap-3">
             <span className="text-white text-xs min-w-[40px]">{formatTime(currentTime)}</span>
             <div className="relative flex-1 h-6 flex items-center group">
@@ -998,6 +718,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
             <span className="text-white text-xs min-w-[40px] text-end">{formatTime(duration)}</span>
           </div>
 
+          {/* Buttons row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button onClick={toggleMute} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
@@ -1016,33 +737,19 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={() => { setShowSettings(!showSettings); setSettingsPanel('main'); }} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
                 <Settings className="w-5 h-5" />
               </button>
-              <button
-                onClick={() => { setSettingsPanel('audio'); setShowSettings(true); }}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus"
-              >
+              <button onClick={() => { setSettingsPanel('audio'); setShowSettings(true); }} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
                 <Languages className="w-5 h-5" />
               </button>
-              <button
-                onClick={() => { setSettingsPanel('subtitles'); setShowSettings(true); }}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors tv-focus ${activeSub ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`}
-              >
+              <button onClick={() => { setSettingsPanel('subtitles'); setShowSettings(true); }} className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors tv-focus ${activeSub ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`}>
                 <Subtitles className="w-5 h-5" />
               </button>
-              <button
-                onClick={handleDownloadSubtitle}
-                disabled={availableSubs.length === 0}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed tv-focus"
-              >
+              <button onClick={handleDownloadSub} disabled={!availableSubs.length} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors disabled:opacity-40 tv-focus">
                 <Download className="w-5 h-5" />
               </button>
               <button onClick={toggleFullscreen} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
                 {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
               </button>
-              <button
-                onClick={() => openInExternalPlayer('vlc')}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus"
-                title={labels.openExternal}
-              >
+              <button onClick={() => openExternal('vlc')} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus" title={labels.openExternal}>
                 <ExternalLink className="w-5 h-5" />
               </button>
             </div>
@@ -1054,9 +761,9 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       {showSettings && showControls && (
         <div
           data-controls
-          data-player-settings-panel="true"
+          data-settings-panel="true"
           className="absolute bottom-24 end-4 w-64 max-h-80 overflow-y-auto bg-black/90 backdrop-blur-lg rounded-xl border border-white/10 text-white text-sm"
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
           {settingsPanel === 'main' && (
             <div className="py-1">
@@ -1067,8 +774,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={() => setSettingsPanel('audio')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
                 <span>{labels.audioLang}</span>
                 <span className="text-white/60 flex items-center gap-1">
-                  {embeddedAudioTracks[activeAudioIdx]?.label || labels.default}
-                  {loadingAudio && <Loader2 className="w-3 h-3 animate-spin" />}
+                  {audioTracks.find(t => t.id === activeAudioId)?.label || labels.default}
                   <NavChevron className="w-4 h-4" />
                 </span>
               </button>
@@ -1106,55 +812,40 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10 tv-focus">
                 <BackChevron className="w-4 h-4" /> {labels.audioLang}
               </button>
-
-              {!canSwitchAudioTracks && (
-                <div className="px-4 py-2 text-white/40 text-xs text-center space-y-2">
-                  <div>{labels.cannotSwitchAudio}</div>
-                  {(loadingTranscode || usingTranscode) && (
-                    <div className="text-primary">{labels.transcodeActive}</div>
-                  )}
-                  {streamLanguages.length > 0 && onSelectAudioLanguage && (
-                    <div className="pt-1">
-                      <div className="text-white/60 mb-2">{labels.chooseSourceAudio}</div>
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {streamLanguages.map((language) => (
-                          <button
-                            key={language}
-                            onClick={() => {
-                              Promise.resolve(onSelectAudioLanguage(language));
-                              setShowSettings(false);
-                              setSettingsPanel('main');
-                            }}
-                            className="px-3 py-1 rounded-full bg-primary/20 text-primary hover:bg-primary/30 transition-colors tv-focus"
-                          >
-                            {language}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {embeddedAudioTracks.length === 0 ? (
-                <div className="px-4 py-3 text-white/40 text-center">
-                  {loadingAudio ? labels.loading : labels.noAudio}
-                </div>
+              {audioTracks.length === 0 ? (
+                <div className="px-4 py-3 text-white/40 text-center">{labels.loading}</div>
               ) : (
-                embeddedAudioTracks.map((track) => (
+                audioTracks.map(track => (
                   <button
-                    key={track.index}
-                    onClick={() => selectAudioTrack(track.index)}
-                    disabled={!canSwitchAudioTracks}
-                    className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus disabled:opacity-60 ${activeAudioIdx === track.index ? 'text-primary' : ''}`}
+                    key={track.id}
+                    onClick={() => switchAudioTrack(track.id)}
+                    className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus ${activeAudioId === track.id ? 'text-primary' : ''}`}
                   >
                     <div>
                       <div>{track.label}</div>
                       {track.language && track.language !== track.label && <div className="text-xs text-white/40">{track.language}</div>}
                     </div>
-                    {activeAudioIdx === track.index && <span className="w-2 h-2 rounded-full bg-green-400" />}
+                    {activeAudioId === track.id && <span className="w-2 h-2 rounded-full bg-green-400" />}
                   </button>
                 ))
+              )}
+
+              {/* Source language switching fallback */}
+              {streamLanguages.length > 0 && onSelectAudioLanguage && (
+                <div className="border-t border-white/10 px-4 py-2 space-y-2">
+                  <div className="text-white/60 text-xs">{labels.chooseSource}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {streamLanguages.map(language => (
+                      <button
+                        key={language}
+                        onClick={() => { Promise.resolve(onSelectAudioLanguage(language)); setShowSettings(false); setSettingsPanel('main'); }}
+                        className="px-3 py-1 rounded-full bg-primary/20 text-primary hover:bg-primary/30 transition-colors tv-focus text-xs"
+                      >
+                        {language}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -1169,24 +860,17 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
                   <Loader2 className="w-4 h-4 animate-spin" /> {labels.loadingSubs}
                 </div>
               )}
-              <button
-                onClick={() => selectSubtitle(null)}
-                className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus ${!activeSub ? 'text-primary' : ''}`}
-              >
+              <button onClick={() => selectSubtitle(null)} className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus ${!activeSub ? 'text-primary' : ''}`}>
                 {labels.off}
                 {!activeSub && <span className="text-primary">✓</span>}
               </button>
               {availableSubs.map(sub => (
-                <button
-                  key={sub.id}
-                  onClick={() => selectSubtitle(sub)}
-                  className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus ${activeSub === sub.id ? 'text-primary' : ''}`}
-                >
+                <button key={sub.id} onClick={() => selectSubtitle(sub)} className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus ${activeSub === sub.id ? 'text-primary' : ''}`}>
                   {sub.label}
                   {activeSub === sub.id && <span className="text-primary">✓</span>}
                 </button>
               ))}
-              {!loadingSubs && availableSubs.length === 0 && (
+              {!loadingSubs && !availableSubs.length && (
                 <div className="px-4 py-3 text-white/40 text-center">{labels.noSubs}</div>
               )}
             </div>
@@ -1197,14 +881,14 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10 tv-focus">
                 <BackChevron className="w-4 h-4" /> {labels.openExternal}
               </button>
-              <div className="px-4 py-2 text-white/40 text-xs">{labels.externalPlayerHint}</div>
-              <button onClick={() => openInExternalPlayer('vlc')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
+              <div className="px-4 py-2 text-white/40 text-xs">{labels.externalHint}</div>
+              <button onClick={() => openExternal('vlc')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
                 <ExternalLink className="w-4 h-4 text-primary" /> {labels.openVlc}
               </button>
-              <button onClick={() => openInExternalPlayer('mx')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
+              <button onClick={() => openExternal('mx')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
                 <ExternalLink className="w-4 h-4 text-primary" /> {labels.openMx}
               </button>
-              <button onClick={() => openInExternalPlayer('system')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
+              <button onClick={() => openExternal('system')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
                 <Monitor className="w-4 h-4 text-primary" /> {labels.openSystem}
               </button>
             </div>
