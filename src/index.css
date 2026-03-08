@@ -149,6 +149,31 @@
     z-index: 20;
   }
 
+  /* Large TV screens: thicker focus ring */
+  @media (min-width: 1920px) {
+    .tv-focus:focus-visible {
+      box-shadow: 0 0 0 4px hsl(var(--primary) / 0.9);
+      border-radius: 0.75rem;
+    }
+    .focus-card:focus-visible .movie-card-poster {
+      box-shadow: 0 0 0 4px hsl(0 0% 100% / 0.85);
+      border-radius: 1rem;
+    }
+  }
+  @media (min-width: 2560px) {
+    .tv-focus:focus-visible {
+      box-shadow: 0 0 0 5px hsl(var(--primary) / 0.9);
+      border-radius: 1rem;
+    }
+    .focus-card:focus-visible .movie-card-poster {
+      box-shadow: 0 0 0 5px hsl(0 0% 100% / 0.85);
+      border-radius: 1.25rem;
+    }
+    .focus-card:focus-visible {
+      transform: scale(1.04) translateZ(0);
+    }
+  }
+
   /* Sidebar items: subtle bg tint on focus */
   [data-sidebar] .tv-focus:focus-visible {
     background-color: hsl(var(--sidebar-accent));
