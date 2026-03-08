@@ -574,23 +574,3 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
     </div>
   );
 };
-            </h3>
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {recommendations.filter((r: any) => r.poster_path).slice(0, 10).map((rec: any) => (
-                <div key={rec.id} className="flex-shrink-0 w-32">
-                  <img
-                    src={`https://image.tmdb.org/t/p/w342${rec.poster_path}`}
-                    alt={rec.title || rec.name}
-                    className="w-full rounded-xl aspect-[2/3] object-cover mb-1.5"
-                    loading="lazy"
-                  />
-                  <p className="text-sm text-foreground truncate font-medium">{rec.title || rec.name}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
