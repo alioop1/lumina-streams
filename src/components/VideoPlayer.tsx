@@ -310,8 +310,32 @@ export const VideoPlayer = ({
 
     const onPlay = () => { setIsPlaying(true); setIsBuffering(false); };
     const onPause = () => setIsPlaying(false);
-    const onTime = () => { setCurrentTime(v.currentTime); if (!v.paused && v.readyState >= 3) setIsBuffering(false); };
-    const onDur = () => setDuration(v.duration);
+    const onTime = () => {
+      setCurrentTime(v.currentTime);
+      if (!v.paused && v.readyState >= 3) setIsBuffering(false);
+      // Update buffered
+      if (v.buffered.length > 0) {
+        const end = v.buffered.end(v.buffered.length - 1);
+        setBuffered(v.duration > 0 ? (end / v.duration) * 100 : 0);
+      }
+    };
+    const onDur = () => {
+      setDuration(v.duration);
+      // Detect embedded audio tracks (for multi-audio files)
+      if (v.audioTracks && v.audioTracks.length > 1) {
+        const tracks: { id: number; label: string; lang: string; enabled: boolean }[] = [];
+        for (let i = 0; i < v.audioTracks.length; i++) {
+          const t = v.audioTracks[i] as any;
+          tracks.push({
+            id: i,
+            label: t.label || t.language || `Track ${i + 1}`,
+            lang: t.language || '',
+            enabled: t.enabled,
+          });
+        }
+        setAudioTracks(tracks);
+      }
+    };
     const onWait = () => setIsBuffering(true);
     const onCan = () => setIsBuffering(false);
     const onVol = () => { setVolume(v.volume); setIsMuted(v.muted); };
