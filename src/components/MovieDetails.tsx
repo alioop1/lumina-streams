@@ -363,7 +363,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             }}
             className="flex items-center justify-center gap-3 3xl:gap-4 bg-primary text-primary-foreground px-8 py-4 3xl:px-10 3xl:py-5 4k:px-12 4k:py-6 rounded-xl 3xl:rounded-2xl font-bold text-base 3xl:text-lg 4k:text-xl glow-red transition-all tv-focus min-w-[220px] 3xl:min-w-[280px]"
           >
-            <Search className="w-6 h-6" />
+            <Search className="w-6 h-6 3xl:w-7 3xl:h-7" />
             {movie.type === 'series'
               ? (lang === 'he' ? 'בחר פרק' : 'Choose Episode')
               : (lang === 'he' ? 'חפש מקורות' : 'Find Sources')}
