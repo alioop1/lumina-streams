@@ -2,7 +2,6 @@ import { memo } from 'react';
 import { Star, Play } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { motion } from 'framer-motion';
 
 interface MovieCardProps {
   movie: Movie;
