@@ -22,6 +22,94 @@ interface RDAudioOption {
   url: string;
 }
 
+const PLAYER_KEYCODE_MAP: Record<number, string> = {
+  13: 'Enter',
+  19: 'ArrowUp',
+  20: 'ArrowDown',
+  21: 'ArrowLeft',
+  22: 'ArrowRight',
+  23: 'Enter',
+  27: 'Back',
+  32: 'Enter',
+  37: 'ArrowLeft',
+  38: 'ArrowUp',
+  39: 'ArrowRight',
+  40: 'ArrowDown',
+  66: 'Enter',
+  4: 'Back',
+};
+
+const normalizePlayerKey = (e: KeyboardEvent): string => {
+  const k = (e.key || '').toLowerCase();
+  if (k === 'arrowup' || k === 'up' || k === 'dpadup') return 'ArrowUp';
+  if (k === 'arrowdown' || k === 'down' || k === 'dpaddown') return 'ArrowDown';
+  if (k === 'arrowleft' || k === 'left' || k === 'dpadleft') return 'ArrowLeft';
+  if (k === 'arrowright' || k === 'right' || k === 'dpadright') return 'ArrowRight';
+  if (k === 'enter' || k === 'select' || k === 'ok' || k === 'center') return 'Enter';
+  if (k === 'escape' || k === 'backspace' || k === 'goback' || k === 'back') return 'Back';
+  if (k === 'mediaplaypause') return 'MediaPlayPause';
+  if (k === 'mediarewind') return 'MediaRewind';
+  if (k === 'mediafastforward') return 'MediaFastForward';
+  if (k === 'mediastop') return 'MediaStop';
+  if (k === 'f') return 'f';
+  if (k === 'm') return 'm';
+  if (k === ' ') return 'Enter';
+  if (e.code?.startsWith('Arrow')) return e.code;
+  return PLAYER_KEYCODE_MAP[e.keyCode || 0] || '';
+};
+
+const getFocusable = (root: ParentNode): HTMLElement[] =>
+  Array.from(root.querySelectorAll<HTMLElement>('.tv-focus')).filter(el => {
+    const rect = el.getBoundingClientRect();
+    return el.offsetParent !== null && rect.width > 0 && rect.height > 0 && !el.hasAttribute('disabled');
+  });
+
+const getCenter = (rect: DOMRect) => ({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+
+const findNextFocusable = (
+  current: HTMLElement,
+  direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight',
+  candidates: HTMLElement[],
+): HTMLElement | null => {
+  const currentRect = current.getBoundingClientRect();
+  const currentCenter = getCenter(currentRect);
+
+  const filtered = candidates.filter((candidate) => {
+    if (candidate === current) return false;
+    const candidateCenter = getCenter(candidate.getBoundingClientRect());
+
+    if (direction === 'ArrowRight') return candidateCenter.x > currentCenter.x + 4;
+    if (direction === 'ArrowLeft') return candidateCenter.x < currentCenter.x - 4;
+    if (direction === 'ArrowDown') return candidateCenter.y > currentCenter.y + 4;
+    return candidateCenter.y < currentCenter.y - 4;
+  });
+
+  if (filtered.length === 0) return null;
+
+  filtered.sort((a, b) => {
+    const aCenter = getCenter(a.getBoundingClientRect());
+    const bCenter = getCenter(b.getBoundingClientRect());
+
+    const aPrimary = direction === 'ArrowLeft' || direction === 'ArrowRight'
+      ? Math.abs(aCenter.x - currentCenter.x)
+      : Math.abs(aCenter.y - currentCenter.y);
+    const bPrimary = direction === 'ArrowLeft' || direction === 'ArrowRight'
+      ? Math.abs(bCenter.x - currentCenter.x)
+      : Math.abs(bCenter.y - currentCenter.y);
+
+    const aCross = direction === 'ArrowLeft' || direction === 'ArrowRight'
+      ? Math.abs(aCenter.y - currentCenter.y)
+      : Math.abs(aCenter.x - currentCenter.x);
+    const bCross = direction === 'ArrowLeft' || direction === 'ArrowRight'
+      ? Math.abs(bCenter.y - currentCenter.y)
+      : Math.abs(bCenter.x - currentCenter.x);
+
+    return aPrimary * 10 + aCross - (bPrimary * 10 + bCross);
+  });
+
+  return filtered[0] ?? null;
+};
+
 export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, episode, rdFileId }: VideoPlayerProps) => {
   const { lang, dir } = useLanguage();
   const isRTL = dir === 'rtl';
