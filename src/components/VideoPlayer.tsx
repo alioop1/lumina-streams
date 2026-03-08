@@ -684,6 +684,24 @@ export const VideoPlayer = ({
         </div>
       )}
 
+      {/* Resume prompt */}
+      {showResumePrompt && !isBuffering && (
+        <div className="absolute top-20 start-1/2 -translate-x-1/2 z-30 bg-black/90 backdrop-blur-lg rounded-2xl border border-white/10 p-5 flex flex-col items-center gap-3 min-w-[280px] 3xl:min-w-[360px]" data-controls onClick={e => e.stopPropagation()}>
+          <p className="text-white text-sm 3xl:text-base font-medium">
+            {lang === 'he' ? 'להמשיך מאיפה שעצרת?' : 'Resume where you left off?'}
+          </p>
+          <p className="text-white/60 text-xs 3xl:text-sm">{formatTime(resumeTime)}</p>
+          <div className="flex gap-3">
+            <button onClick={handleResume} className="tv-focus bg-primary text-primary-foreground px-5 py-2.5 rounded-lg font-semibold text-sm 3xl:text-base">
+              {lang === 'he' ? 'המשך' : 'Resume'}
+            </button>
+            <button onClick={handleStartOver} className="tv-focus glass text-white px-5 py-2.5 rounded-lg text-sm 3xl:text-base">
+              {lang === 'he' ? 'מההתחלה' : 'Start Over'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Controls overlay */}
       <div
         data-controls
