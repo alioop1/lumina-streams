@@ -214,7 +214,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               return (
                 <button
                   key={idx}
-                  onClick={() => handleStreamSelect(stream)}
+                  onClick={() => handleStreamSelect(stream, idx)}
                   className="w-full glass rounded-xl p-3 flex items-start gap-3 tv-focus text-start hover:bg-accent/50 transition-colors"
                 >
                   <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
