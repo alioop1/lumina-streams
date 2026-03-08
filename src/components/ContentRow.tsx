@@ -39,7 +39,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
       <div
         data-nav-row={rowId}
         ref={scrollRef}
-        className="flex gap-4 overflow-x-auto px-6 py-2"
+        className="flex gap-4 overflow-x-auto px-6 pt-3 pb-2"
       >
         {movies.map((movie, i) => (
           <button
