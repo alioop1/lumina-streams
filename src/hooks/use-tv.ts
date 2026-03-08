@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const TV_UA_REGEX = /Android TV|GoogleTV|SmartTV|SMART-TV|HbbTV|AFT|BRAVIA|TV/i;
 const ANDROID_TV_HINT_REGEX = /AFT|BRAVIA|MIBOX|SHIELD|ADT-|SmartTV|GoogleTV/i;
@@ -98,9 +98,8 @@ const isHTMLElementVisible = (el: HTMLElement) => {
 };
 
 export const useTVGlobalNavigation = (enabled: boolean) => {
-  const focusableSelector = useMemo(() => '.tv-focus', []);
-
   useEffect(() => {
+    const focusableSelector = '.tv-focus';
     if (!enabled) return;
 
     const getSidebarRoot = () => document.querySelector('[data-sidebar]');
@@ -301,5 +300,5 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       window.clearTimeout(ensureInitialFocus);
       window.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [enabled, focusableSelector]);
+  }, [enabled]);
 };
