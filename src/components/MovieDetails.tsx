@@ -505,7 +505,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                     key={ep.id}
                     data-episode-button="true"
                     onClick={() => { setSelectedEpisode(ep.episode_number); setShowTorrents(true); }}
-                    className={`w-full rounded-xl p-4 flex items-center gap-4 tv-focus text-start transition-all ${
+                    className={`w-full rounded-xl 3xl:rounded-2xl p-4 3xl:p-5 4k:p-6 flex items-center gap-4 3xl:gap-5 tv-focus text-start transition-all ${
                       selectedEpisode === ep.episode_number
                         ? 'bg-primary/10 ring-2 ring-primary'
                         : 'glass'
