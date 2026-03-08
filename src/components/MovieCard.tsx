@@ -17,17 +17,17 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
       className="flex-shrink-0 w-[160px] md:w-[200px] snap-start group/card cursor-pointer text-start bg-transparent border-none p-0 outline-none"
       data-card-index={index}
     >
-      <div className="relative rounded-lg aspect-[2/3] mb-2 movie-card-poster bg-card">
+      <div className="relative rounded-xl aspect-[2/3] mb-2 movie-card-poster bg-card">
         {movie.poster ? (
           <img
             src={movie.poster}
             alt={movie.title}
-            className="w-full h-full object-cover rounded-lg"
+            className="w-full h-full object-cover rounded-xl"
             loading="lazy"
             decoding="async"
           />
         ) : (
-          <div className="w-full h-full bg-muted flex items-center justify-center">
+          <div className="w-full h-full bg-muted flex items-center justify-center rounded-xl">
             <span className="text-muted-foreground text-xs">No Image</span>
           </div>
         )}
@@ -36,7 +36,7 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
             <span className="text-[10px] font-bold text-primary-foreground tracking-wide">{movie.quality}</span>
           </div>
         )}
-        <div className="movie-card-overlay absolute inset-0 bg-gradient-to-t from-background/75 via-transparent to-transparent opacity-0 transition-opacity duration-150 pointer-events-none flex flex-col items-center justify-center gap-2">
+        <div className="movie-card-overlay absolute inset-0 bg-gradient-to-t from-background/75 via-transparent to-transparent opacity-0 transition-opacity duration-150 pointer-events-none flex flex-col items-center justify-center gap-2 rounded-xl">
           <div className="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center">
             <Play className="w-4 h-4 text-primary-foreground fill-primary-foreground ms-0.5" />
           </div>
