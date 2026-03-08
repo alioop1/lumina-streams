@@ -157,14 +157,17 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   };
 
   const handleChooseAudioLanguage = async (language: string) => {
-    const candidates = streams
+    const candidates = displayStreams
       .map((stream, idx) => ({ stream, idx, parsed: parseTorrentioTitle(stream.title || '') }))
       .filter(item => item.parsed.languages.includes(language));
 
     if (candidates.length === 0) return;
 
-    // Prefer browser-compatible audio codecs first, then more seeds
+    // Prefer browser-compatible video/audio first, then more seeds
     candidates.sort((a, b) => {
+      if (a.parsed.videoCompatible !== b.parsed.videoCompatible) {
+        return a.parsed.videoCompatible ? -1 : 1;
+      }
       if (a.parsed.audioCompatible !== b.parsed.audioCompatible) {
         return a.parsed.audioCompatible ? -1 : 1;
       }
