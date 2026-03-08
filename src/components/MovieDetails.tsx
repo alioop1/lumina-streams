@@ -374,7 +374,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             {seasonData?.episodes && (
               <div className="mt-4 space-y-3">
                 {seasonData.episodes.map((ep: any) => (
-                  <button key={ep.id} className="w-full glass rounded-xl p-3 flex items-center gap-3 tv-focus text-start">
+                  <button key={ep.id} onClick={() => { setSelectedEpisode(ep.episode_number); setShowTorrents(true); }} className="w-full glass rounded-xl p-3 flex items-center gap-3 tv-focus text-start">
                     {ep.still_path ? (
                       <img
                         src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
