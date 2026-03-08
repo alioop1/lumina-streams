@@ -32,6 +32,42 @@ const isWebAudioCodecCompatible = (codec?: string) => {
   return c.includes('aac') || c.includes('mp3') || c.includes('opus') || c.includes('vorbis') || c.includes('flac');
 };
 
+type PlaybackStreamKind = 'mp4' | 'webm' | 'hls' | 'dash' | 'other';
+
+const detectPlaybackStreamKind = (streamUrl: string): PlaybackStreamKind => {
+  const path = streamUrl.split('?')[0].toLowerCase();
+  if (path.endsWith('.mp4')) return 'mp4';
+  if (path.endsWith('.webm')) return 'webm';
+  if (path.endsWith('.m3u8')) return 'hls';
+  if (path.endsWith('.mpd')) return 'dash';
+  return 'other';
+};
+
+const canPlayKind = (video: HTMLVideoElement | null, kind: PlaybackStreamKind) => {
+  if (!video) return '';
+  switch (kind) {
+    case 'mp4':
+      return video.canPlayType('video/mp4');
+    case 'webm':
+      return video.canPlayType('video/webm');
+    case 'hls':
+      return video.canPlayType('application/vnd.apple.mpegurl') || video.canPlayType('application/x-mpegURL');
+    case 'dash':
+      return video.canPlayType('application/dash+xml');
+    default:
+      return '';
+  }
+};
+
+const scoreTranscodedSource = (streamUrl: string, codec: string | undefined, video: HTMLVideoElement | null) => {
+  const kind = detectPlaybackStreamKind(streamUrl);
+  const playability = canPlayKind(video, kind);
+  const playabilityScore = playability === 'probably' ? 120 : playability === 'maybe' ? 70 : 0;
+  const kindScore = kind === 'mp4' ? 50 : kind === 'webm' ? 40 : kind === 'hls' ? 25 : kind === 'dash' ? 10 : 0;
+  const codecScore = isWebAudioCodecCompatible(codec) ? 35 : 0;
+  return playabilityScore + kindScore + codecScore;
+};
+
 const PLAYER_KEYCODE_MAP: Record<number, string> = {
   13: 'Enter',
   19: 'ArrowUp',
