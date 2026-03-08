@@ -160,13 +160,51 @@ export const VideoPlayer = ({
     downloadSubs: t('הורד כתוביות', 'Download Subtitles'),
   };
 
+  // ── Resume position key ──
+  const resumeKey = imdbId ? `resume_${imdbId}_${season || ''}_${episode || ''}` : '';
+
   useEffect(() => {
     attemptedSourcesRef.current = new Set([url]);
     setPlaybackUrl(url);
     setPlaybackMode('direct');
     setNeedsTranscodeFallback(false);
     setIsBuffering(true);
-  }, [url]);
+    setShowResumePrompt(false);
+    // Check for saved position
+    if (resumeKey) {
+      const saved = localStorage.getItem(resumeKey);
+      if (saved) {
+        const pos = parseFloat(saved);
+        if (pos > 30) { // Only show resume if >30s in
+          setResumeTime(pos);
+          setShowResumePrompt(true);
+        }
+      }
+    }
+  }, [url, resumeKey]);
+
+  // Save position periodically
+  useEffect(() => {
+    if (!resumeKey || duration < 60) return;
+    const interval = setInterval(() => {
+      const v = videoRef.current;
+      if (v && v.currentTime > 30 && v.currentTime < duration - 60) {
+        localStorage.setItem(resumeKey, String(v.currentTime));
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [resumeKey, duration]);
+
+  const handleResume = () => {
+    const v = videoRef.current;
+    if (v && resumeTime > 0) v.currentTime = resumeTime;
+    setShowResumePrompt(false);
+  };
+
+  const handleStartOver = () => {
+    setShowResumePrompt(false);
+    if (resumeKey) localStorage.removeItem(resumeKey);
+  };
 
   const getTranscodeCandidates = useCallback(() => {
     const td = transcodeData as Record<string, any> | undefined;
