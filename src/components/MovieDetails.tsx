@@ -35,6 +35,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkInput, setLinkInput] = useState('');
   const [showTorrents, setShowTorrents] = useState(false);
+  const [selectedStreamLanguages, setSelectedStreamLanguages] = useState<string[]>([]);
   const unrestrict = useRDUnrestrict();
   const addMagnet = useRDAddMagnet();
   const torrentResultsRef = useRef<HTMLDivElement>(null);
@@ -65,6 +66,8 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const handleStreamSelect = async (stream: TorrentioStream, idx: number) => {
     const link = streamToMagnet(stream);
     if (!link) return;
+    const parsed = parseTorrentioTitle(stream.title || '');
+    setSelectedStreamLanguages(parsed.languages);
     setLoadingStreamIdx(idx);
     try {
       if (link.startsWith('magnet:')) {
@@ -122,6 +125,24 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
     }
   };
 
+  const handleChooseAudioLanguage = async (language: string) => {
+    const candidates = streams
+      .map((stream, idx) => ({ stream, idx, parsed: parseTorrentioTitle(stream.title || '') }))
+      .filter(item => item.parsed.languages.includes(language));
+
+    if (candidates.length === 0) return;
+
+    // Prefer browser-compatible audio codecs first, then more seeds
+    candidates.sort((a, b) => {
+      if (a.parsed.audioCompatible !== b.parsed.audioCompatible) {
+        return a.parsed.audioCompatible ? -1 : 1;
+      }
+      return b.parsed.seeds - a.parsed.seeds;
+    });
+
+    await handleStreamSelect(candidates[0].stream, candidates[0].idx);
+  };
+
   if (streamUrl) {
     return (
       <VideoPlayer
@@ -133,6 +154,8 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         season={movie.type === 'series' ? selectedSeason : undefined}
         episode={movie.type === 'series' && selectedEpisode !== null ? selectedEpisode : undefined}
         rdFileId={rdFileId}
+        streamLanguages={selectedStreamLanguages}
+        onSelectAudioLanguage={handleChooseAudioLanguage}
       />
     );
   }

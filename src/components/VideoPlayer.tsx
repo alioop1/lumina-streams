@@ -13,6 +13,8 @@ interface VideoPlayerProps {
   season?: number;
   episode?: number;
   rdFileId?: string | null;
+  streamLanguages?: string[];
+  onSelectAudioLanguage?: (language: string) => void | Promise<void>;
 }
 
 type SettingsPanel = 'main' | 'speed' | 'audio' | 'subtitles';
@@ -112,7 +114,7 @@ const findNextFocusable = (
   return filtered[0] ?? null;
 };
 
-export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, episode, rdFileId }: VideoPlayerProps) => {
+export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, episode, rdFileId, streamLanguages = [], onSelectAudioLanguage }: VideoPlayerProps) => {
   const { lang, dir } = useLanguage();
   const isRTL = dir === 'rtl';
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
@@ -163,6 +165,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     noAudio: lang === 'he' ? 'האודיו הראשי זמין, אבל אין רצועות נוספות לזיהוי' : 'Primary audio is available, but no additional tracks were detected',
     noSubs: lang === 'he' ? 'אין כתוביות זמינות' : 'No subtitles available',
     cannotSwitchAudio: lang === 'he' ? 'במכשיר/דפדפן הזה לא ניתן להחליף רצועת אודיו מתוך הנגן' : 'Audio track switching is not supported on this device/browser',
+    chooseSourceAudio: lang === 'he' ? 'בחר שפה (יחליף מקור):' : 'Choose language (will switch source):',
   };
 
   // Fetch subtitles
@@ -912,8 +915,28 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               </button>
 
               {!canSwitchAudioTracks && (
-                <div className="px-4 py-2 text-white/40 text-xs text-center">
-                  {labels.cannotSwitchAudio}
+                <div className="px-4 py-2 text-white/40 text-xs text-center space-y-2">
+                  <div>{labels.cannotSwitchAudio}</div>
+                  {streamLanguages.length > 0 && onSelectAudioLanguage && (
+                    <div className="pt-1">
+                      <div className="text-white/60 mb-2">{labels.chooseSourceAudio}</div>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {streamLanguages.map((language) => (
+                          <button
+                            key={language}
+                            onClick={() => {
+                              Promise.resolve(onSelectAudioLanguage(language));
+                              setShowSettings(false);
+                              setSettingsPanel('main');
+                            }}
+                            className="px-3 py-1 rounded-full bg-primary/20 text-primary hover:bg-primary/30 transition-colors tv-focus"
+                          >
+                            {language}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
