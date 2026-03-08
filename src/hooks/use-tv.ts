@@ -72,11 +72,9 @@ export const useIsTVDevice = () => {
     };
 
     window.addEventListener('keydown', detectFromRemoteInput, true);
-    document.addEventListener('keydown', detectFromRemoteInput, true);
 
     return () => {
       window.removeEventListener('keydown', detectFromRemoteInput, true);
-      document.removeEventListener('keydown', detectFromRemoteInput, true);
     };
   }, []);
 
@@ -205,7 +203,7 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
 
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
         const now = performance.now();
-        if (now - lastArrowAt < 55) {
+        if (e.repeat || now - lastArrowAt < 120) {
           e.preventDefault();
           return;
         }
@@ -303,12 +301,10 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
     }, 80);
 
     window.addEventListener('keydown', handleKeyDown, true);
-    document.addEventListener('keydown', handleKeyDown, true);
 
     return () => {
       window.clearTimeout(ensureInitialFocus);
       window.removeEventListener('keydown', handleKeyDown, true);
-      document.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [enabled, focusableSelector]);
 };
