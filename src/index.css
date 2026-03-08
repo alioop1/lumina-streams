@@ -150,33 +150,30 @@
 
   /* Movie card poster focus/hover styles */
   .focus-card {
-    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                box-shadow 0.25s ease;
-    border-radius: 0.75rem;
+    transition: transform 0.2s ease;
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   .focus-card:hover,
   .focus-card:focus-visible {
-    transform: scale(1.06);
+    transform: scale(1.05);
     z-index: 20;
   }
 
+  /* No border/outline on focus - only scale + poster shadow */
   .focus-card:focus-visible {
-    outline: none;
-    /* Remove any ring from the button wrapper */
-    ring: none;
-    box-shadow: none;
+    outline: none !important;
   }
 
   .focus-card:focus-visible .movie-card-poster {
-    border-color: hsl(var(--primary) / 0.85);
-    box-shadow: 0 0 0 1.5px hsl(var(--primary) / 0.85),
-                0 4px 16px -4px hsl(0 0% 0% / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--foreground) / 0.9);
+    border-radius: 0.5rem;
   }
 
   .focus-card:hover .movie-card-poster {
-    border-color: hsl(var(--primary) / 0.5);
-    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.5),
-                0 4px 12px -4px hsl(0 0% 0% / 0.4);
+    box-shadow: 0 0 0 1px hsl(var(--foreground) / 0.4);
+    border-radius: 0.5rem;
   }
 }
