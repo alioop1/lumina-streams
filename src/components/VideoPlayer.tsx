@@ -576,6 +576,20 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     };
   }, []);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || isYouTube) return;
+
+    const onError = () => {
+      failedUrlsRef.current.add(playbackUrl);
+      setIsBuffering(false);
+      switchToNextPlaybackSource();
+    };
+
+    video.addEventListener('error', onError);
+    return () => video.removeEventListener('error', onError);
+  }, [isYouTube, playbackUrl, switchToNextPlaybackSource]);
+
   // ========== Smart TV remote navigation ==========
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
