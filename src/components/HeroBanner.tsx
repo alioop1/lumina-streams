@@ -12,7 +12,7 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
   const heroMovies = movies.filter(m => m.backdrop).slice(0, 5);
   const [current, setCurrent] = useState(0);
   const movie = heroMovies[current];
-  const { t, lang } = useLanguage();
+  const { t, lang, dir } = useLanguage();
 
   useEffect(() => {
     if (heroMovies.length === 0) return;
