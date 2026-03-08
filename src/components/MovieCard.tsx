@@ -27,7 +27,7 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
             decoding="async"
           />
         ) : (
-          <div className="w-full h-full bg-muted flex items-center justify-center">
+          <div className="w-full h-full bg-muted flex items-center justify-center rounded-xl">
             <span className="text-muted-foreground text-xs">No Image</span>
           </div>
         )}
