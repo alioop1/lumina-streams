@@ -226,7 +226,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           {lang === 'he' ? 'לא נמצאו מקורות' : 'No sources found'}
         </div>
       )}
-      <div data-nav-row="torrent-results" className="grid grid-cols-1 gap-3">
+      <div data-nav-row="torrent-results" className="grid grid-cols-1 gap-3 3xl:gap-4">
         {displayStreams.map((stream: TorrentioStream, idx: number) => {
           const parsed = parseTorrentioTitle(stream.title || '');
           return (
@@ -234,27 +234,27 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               key={idx}
               onClick={() => handleStreamSelect(stream, idx)}
               disabled={loadingStreamIdx !== null}
-              className="w-full glass rounded-xl p-4 flex items-center gap-4 tv-focus text-start transition-colors disabled:opacity-50 min-h-[4.5rem]"
+              className="w-full glass rounded-xl 3xl:rounded-2xl p-4 3xl:p-5 4k:p-6 flex items-center gap-4 3xl:gap-5 tv-focus text-start transition-colors disabled:opacity-50 min-h-[4.5rem] 3xl:min-h-[5.5rem] 4k:min-h-[6rem]"
             >
-              <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                {loadingStreamIdx === idx ? <Loader2 className="w-6 h-6 text-primary animate-spin" /> : <Download className="w-6 h-6 text-primary" />}
+              <div className="w-14 h-14 3xl:w-16 3xl:h-16 4k:w-20 4k:h-20 rounded-xl 3xl:rounded-2xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                {loadingStreamIdx === idx ? <Loader2 className="w-6 h-6 3xl:w-8 3xl:h-8 text-primary animate-spin" /> : <Download className="w-6 h-6 3xl:w-8 3xl:h-8 text-primary" />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-base font-semibold text-foreground truncate" dir="ltr">
+                <p className="text-base 3xl:text-lg 4k:text-xl font-semibold text-foreground truncate" dir="ltr">
                   {stream.name}
                 </p>
-                <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1" dir="ltr">
+                <p className="text-sm 3xl:text-base text-muted-foreground mt-0.5 line-clamp-1" dir="ltr">
                   {parsed.quality}
                 </p>
                 {(parsed.languages.length > 0 || parsed.audioCodec) && (
-                  <div className="flex gap-1.5 mt-1 flex-wrap">
+                  <div className="flex gap-1.5 3xl:gap-2 mt-1 flex-wrap">
                     {parsed.languages.map((lang) => (
-                      <span key={lang} className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full font-medium">
+                      <span key={lang} className="text-xs 3xl:text-sm bg-primary/15 text-primary px-2 3xl:px-3 py-0.5 3xl:py-1 rounded-full font-medium">
                         {lang}
                       </span>
                     ))}
                     {parsed.audioCodec && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      <span className={`text-xs 3xl:text-sm px-2 3xl:px-3 py-0.5 3xl:py-1 rounded-full font-medium ${
                         parsed.audioCompatible
                           ? 'bg-green-500/15 text-green-400'
                           : 'bg-yellow-500/15 text-yellow-400'
@@ -265,10 +265,10 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                   </div>
                 )}
               </div>
-              <div className="flex flex-col items-end gap-1 flex-shrink-0 text-sm text-muted-foreground">
+              <div className="flex flex-col items-end gap-1 flex-shrink-0 text-sm 3xl:text-base text-muted-foreground">
                 {parsed.size && <span className="text-foreground font-medium">💾 {parsed.size}</span>}
                 {parsed.seeds > 0 && <span className="text-green-400">👤 {parsed.seeds}</span>}
-                {parsed.source && <span className="text-xs truncate max-w-[120px]">{parsed.source}</span>}
+                {parsed.source && <span className="text-xs 3xl:text-sm truncate max-w-[120px] 3xl:max-w-[180px]">{parsed.source}</span>}
               </div>
             </button>
           );
