@@ -98,9 +98,8 @@ const isHTMLElementVisible = (el: HTMLElement) => {
 };
 
 export const useTVGlobalNavigation = (enabled: boolean) => {
-  const focusableSelector = useMemo(() => '.tv-focus', []);
-
   useEffect(() => {
+    const focusableSelector = '.tv-focus';
     if (!enabled) return;
 
     const getSidebarRoot = () => document.querySelector('[data-sidebar]');
