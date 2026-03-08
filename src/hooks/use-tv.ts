@@ -242,9 +242,11 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       const goToPrevRow = () => {
         if (activeRowIdx > 0) {
           const prev = rows[activeRowIdx - 1];
-          focusEl(prev.items[Math.min(activeColIdx, prev.items.length - 1)]);
+          // Always start from the first item in the row (respecting RTL)
+          const isRTL = resolveIsRTL();
+          const idx = prev.vertical ? 0 : (isRTL ? prev.items.length - 1 : 0);
+          focusEl(prev.items[idx]);
         } else {
-          // At first row, go up → sidebar
           goToSidebar();
         }
       };
@@ -252,7 +254,10 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       const goToNextRow = () => {
         if (activeRowIdx < rows.length - 1) {
           const next = rows[activeRowIdx + 1];
-          focusEl(next.items[Math.min(activeColIdx, next.items.length - 1)]);
+          // Always start from the first item in the row (respecting RTL)
+          const isRTL = resolveIsRTL();
+          const idx = next.vertical ? 0 : (isRTL ? next.items.length - 1 : 0);
+          focusEl(next.items[idx]);
         }
       };
 
