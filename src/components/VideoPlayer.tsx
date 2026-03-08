@@ -915,8 +915,28 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               </button>
 
               {!canSwitchAudioTracks && (
-                <div className="px-4 py-2 text-white/40 text-xs text-center">
-                  {labels.cannotSwitchAudio}
+                <div className="px-4 py-2 text-white/40 text-xs text-center space-y-2">
+                  <div>{labels.cannotSwitchAudio}</div>
+                  {streamLanguages.length > 0 && onSelectAudioLanguage && (
+                    <div className="pt-1">
+                      <div className="text-white/60 mb-2">{labels.chooseSourceAudio}</div>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {streamLanguages.map((language) => (
+                          <button
+                            key={language}
+                            onClick={() => {
+                              Promise.resolve(onSelectAudioLanguage(language));
+                              setShowSettings(false);
+                              setSettingsPanel('main');
+                            }}
+                            className="px-3 py-1 rounded-full bg-primary/20 text-primary hover:bg-primary/30 transition-colors tv-focus"
+                          >
+                            {language}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
