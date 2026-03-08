@@ -52,11 +52,7 @@ export const detectTVDevice = () => {
 };
 
 export const useIsTVDevice = () => {
-  const [isTV, setIsTV] = useState(false);
-
-  useEffect(() => {
-    setIsTV(detectTVDevice());
-  }, []);
+  const [isTV, setIsTV] = useState(() => detectTVDevice());
 
   useEffect(() => {
     const detectFromRemoteInput = (e: KeyboardEvent) => {
