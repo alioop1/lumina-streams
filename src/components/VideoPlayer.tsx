@@ -194,6 +194,8 @@ export const VideoPlayer = ({
     const isHls = playbackUrl.includes('.m3u8');
 
     if (isHls && Hls.isSupported()) {
+      networkErrorCountRef.current = 0;
+
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
@@ -201,6 +203,22 @@ export const VideoPlayer = ({
         maxMaxBufferLength: 60,
       });
       hlsRef.current = hls;
+
+      const switchToMp4Fallback = (reason: string) => {
+        const td = transcodeData as Record<string, any> | undefined;
+        const fallbackUrl = (td?.liveMP4?.full as string | undefined) || url;
+
+        if (fallbackUrl && fallbackUrl !== playbackUrl) {
+          console.warn(`HLS fallback to MP4: ${reason}`);
+          hls.destroy();
+          hlsRef.current = null;
+          setIsBuffering(true);
+          setPlaybackUrl(fallbackUrl);
+          return true;
+        }
+
+        return false;
+      };
 
       hls.loadSource(playbackUrl);
       hls.attachMedia(video);
@@ -224,23 +242,39 @@ export const VideoPlayer = ({
       });
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) {
-          console.error('HLS fatal error:', data.type, data.details);
-          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-            hls.startLoad();
-          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-            hls.recoverMediaError();
-          } else {
-            // Try falling back to MP4
-            const td = transcodeData as Record<string, any> | undefined;
-            const mp4 = td?.liveMP4?.full;
-            if (mp4 && playbackUrl !== mp4) {
-              hls.destroy();
-              hlsRef.current = null;
-              setPlaybackUrl(mp4);
-            }
+        if (!data.fatal) return;
+
+        const detail = String(data.details || 'unknown');
+        console.error('HLS fatal error:', data.type, detail);
+
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          networkErrorCountRef.current += 1;
+          const isTimeout = [
+            'manifestLoadTimeOut',
+            'levelLoadTimeOut',
+            'audioTrackLoadTimeOut',
+            'fragLoadTimeOut',
+            'keyLoadTimeOut',
+          ].includes(detail);
+
+          // Avoid endless buffering loops on RD segment timeouts
+          if (isTimeout || networkErrorCountRef.current >= 2) {
+            const switched = switchToMp4Fallback(`network ${detail}`);
+            if (!switched) setIsBuffering(false);
+            return;
           }
+
+          hls.startLoad();
+          return;
         }
+
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          hls.recoverMediaError();
+          return;
+        }
+
+        const switched = switchToMp4Fallback(`fatal ${detail}`);
+        if (!switched) setIsBuffering(false);
       });
 
       return () => {
@@ -311,7 +345,7 @@ export const VideoPlayer = ({
         clearTimeout(timer);
       };
     }
-  }, [playbackUrl, isYouTube]);
+  }, [playbackUrl, isYouTube, transcodeData, url]);
 
   const updateHlsAudioTracks = (hls: Hls) => {
     const hlsTracks = hls.audioTracks;
