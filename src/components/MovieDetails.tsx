@@ -388,7 +388,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         {movie.type === 'series' && seasons.length > 0 && (
           <div ref={episodeSectionRef}>
             <h3 className="font-semibold text-foreground mb-3">{t('seasons')}</h3>
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            <div data-nav-row="details-seasons" className="flex gap-2 overflow-x-auto pb-2">
               {seasons.map((s: any) => (
                 <button
                   key={s.season_number}
