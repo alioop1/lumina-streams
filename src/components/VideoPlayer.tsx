@@ -107,12 +107,13 @@ export const VideoPlayer = ({
   const hlsRef = useRef<Hls | null>(null);
   const hideTimerRef = useRef<number | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
+  const attemptedSourcesRef = useRef<Set<string>>(new Set());
 
   const { data: transcodeData } = useRDTranscode(rdFileId || null);
 
   // ── State ──
   const [playbackUrl, setPlaybackUrl] = useState(url);
-  const [playbackMode, setPlaybackMode] = useState<'direct' | 'transcode'>('direct');
+  const [, setPlaybackMode] = useState<'direct' | 'transcode'>('direct');
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsPanel, setSettingsPanel] = useState<SettingsPanel>('main');
@@ -128,6 +129,7 @@ export const VideoPlayer = ({
   const [availableSubs, setAvailableSubs] = useState<SubtitleTrack[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
   const [activeSub, setActiveSub] = useState<string | null>(null);
+  const [needsTranscodeFallback, setNeedsTranscodeFallback] = useState(false);
 
   const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
@@ -154,30 +156,47 @@ export const VideoPlayer = ({
   };
 
   useEffect(() => {
+    attemptedSourcesRef.current = new Set([url]);
     setPlaybackUrl(url);
     setPlaybackMode('direct');
+    setNeedsTranscodeFallback(false);
     setIsBuffering(true);
   }, [url]);
 
-  /* ═══ Fallback to RD transcode on format error ═══ */
-  const fallbackToTranscode = useCallback(() => {
-    if (playbackMode === 'transcode') return; // already tried
+  const getTranscodeCandidates = useCallback(() => {
     const td = transcodeData as Record<string, any> | undefined;
-    const mp4Url = td?.liveMP4?.full as string | undefined;
-    const hlsUrl = td?.apple?.full as string | undefined;
+    return [
+      td?.apple?.full as string | undefined,
+      td?.liveMP4?.full as string | undefined,
+      td?.h264WebM?.full as string | undefined,
+    ].filter(Boolean) as string[];
+  }, [transcodeData]);
 
-    if (mp4Url) {
-      console.log('Falling back to RD liveMP4 transcode');
-      setPlaybackMode('transcode');
-      setPlaybackUrl(mp4Url);
-      setIsBuffering(true);
-    } else if (hlsUrl) {
-      console.log('Falling back to RD HLS transcode');
-      setPlaybackMode('transcode');
-      setPlaybackUrl(hlsUrl);
-      setIsBuffering(true);
+  const switchSource = useCallback((nextUrl: string, reason: string) => {
+    if (!nextUrl || attemptedSourcesRef.current.has(nextUrl) || nextUrl === playbackUrl) return false;
+    attemptedSourcesRef.current.add(nextUrl);
+    setPlaybackMode('transcode');
+    setPlaybackUrl(nextUrl);
+    setIsBuffering(true);
+    console.info(`Switching playback source (${reason})`, nextUrl);
+    return true;
+  }, [playbackUrl]);
+
+  /* ═══ Fallback to RD transcode on format error ═══ */
+  const fallbackToTranscode = useCallback((reason = 'unsupported format') => {
+    const candidates = getTranscodeCandidates();
+    for (const candidate of candidates) {
+      if (switchSource(candidate, reason)) return true;
     }
-  }, [transcodeData, playbackMode]);
+    return false;
+  }, [getTranscodeCandidates, switchSource]);
+
+  useEffect(() => {
+    if (!needsTranscodeFallback) return;
+    if (fallbackToTranscode('transcode ready')) {
+      setNeedsTranscodeFallback(false);
+    }
+  }, [needsTranscodeFallback, fallbackToTranscode, transcodeData]);
 
   /* ═══ Playback engine ═══ */
   useEffect(() => {
@@ -216,9 +235,13 @@ export const VideoPlayer = ({
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (!data.fatal) return;
         console.error('HLS fatal error:', data.type, data.details);
+
         if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
           hls.recoverMediaError();
-        } else {
+          return;
+        }
+
+        if (!fallbackToTranscode(`hls ${data.details || data.type}`)) {
           setIsBuffering(false);
         }
       });
@@ -253,11 +276,17 @@ export const VideoPlayer = ({
       const code = v.error?.code;
       const msg = v.error?.message || '';
       console.error('Video error:', msg, code);
-      // Format error (4) = browser can't decode this codec → try RD transcode
-      if (code === 4 && playbackMode === 'direct') {
-        fallbackToTranscode();
-        return;
+
+      // Code 4/3 = unsupported or decode error in current browser.
+      if (code === 4 || code === 3) {
+        if (fallbackToTranscode(`media error ${code}`)) return;
+        if (rdFileId) {
+          setNeedsTranscodeFallback(true);
+          setIsBuffering(true);
+          return;
+        }
       }
+
       setIsBuffering(false);
     };
 
@@ -286,7 +315,7 @@ export const VideoPlayer = ({
       v.removeEventListener('volumechange', onVol);
       v.removeEventListener('error', onError);
     };
-  }, [playbackUrl, isYouTube, playbackMode, fallbackToTranscode]);
+  }, [playbackUrl, isYouTube, rdFileId, fallbackToTranscode]);
 
   /* ═══ Subtitles ═══ */
   useEffect(() => {
@@ -353,15 +382,15 @@ export const VideoPlayer = ({
   /* ═══ External player ═══ */
   const openExternal = (player: 'vlc' | 'mx' | 'system') => {
     const isAndroid = /android/i.test(navigator.userAgent);
-    let href = url;
+    let href = playbackUrl;
     if (player === 'vlc') {
       href = isAndroid
-        ? `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=org.videolan.vlc;type=video/*;S.title=${encodeURIComponent(title)};end`
-        : `vlc://${url}`;
+        ? `intent://${playbackUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=org.videolan.vlc;type=video/*;S.title=${encodeURIComponent(title)};end`
+        : `vlc://${playbackUrl}`;
     } else if (player === 'mx' && isAndroid) {
-      href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.mxtech.videoplayer.ad;type=video/*;S.title=${encodeURIComponent(title)};end`;
+      href = `intent://${playbackUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.mxtech.videoplayer.ad;type=video/*;S.title=${encodeURIComponent(title)};end`;
     } else if (player === 'system' && isAndroid) {
-      href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;type=video/*;S.title=${encodeURIComponent(title)};end`;
+      href = `intent://${playbackUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;type=video/*;S.title=${encodeURIComponent(title)};end`;
     }
     window.location.href = href;
   };

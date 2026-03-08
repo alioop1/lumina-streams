@@ -53,6 +53,14 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
     torrentType === 'series' && selectedEpisode !== null ? selectedEpisode : undefined
   );
   const streams = torrentioData?.streams || [];
+  const displayStreams = [...streams].sort((a, b) => {
+    const pa = parseTorrentioTitle(a.title || '');
+    const pb = parseTorrentioTitle(b.title || '');
+
+    if (pa.videoCompatible !== pb.videoCompatible) return pa.videoCompatible ? -1 : 1;
+    if (pa.audioCompatible !== pb.audioCompatible) return pa.audioCompatible ? -1 : 1;
+    return pb.seeds - pa.seeds;
+  });
 
   const [loadingStreamIdx, setLoadingStreamIdx] = useState<number | null>(null);
 
@@ -64,11 +72,34 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   }, [showTorrents, selectedEpisode]);
 
   const handleStreamSelect = async (stream: TorrentioStream, idx: number) => {
-    const link = streamToMagnet(stream);
+    let selected = { stream, idx, parsed: parseTorrentioTitle(stream.title || '') };
+
+    if (!selected.parsed.videoCompatible) {
+      const compatibleAlternative = displayStreams
+        .map((candidate, candidateIdx) => ({
+          stream: candidate,
+          idx: candidateIdx,
+          parsed: parseTorrentioTitle(candidate.title || ''),
+        }))
+        .filter((item) => item.parsed.videoCompatible)
+        .sort((a, b) => {
+          if (a.parsed.audioCompatible !== b.parsed.audioCompatible) {
+            return a.parsed.audioCompatible ? -1 : 1;
+          }
+          return b.parsed.seeds - a.parsed.seeds;
+        })[0];
+
+      if (compatibleAlternative) {
+        selected = compatibleAlternative;
+      }
+    }
+
+    const link = streamToMagnet(selected.stream);
     if (!link) return;
-    const parsed = parseTorrentioTitle(stream.title || '');
-    setSelectedStreamLanguages(parsed.languages);
-    setLoadingStreamIdx(idx);
+
+    setSelectedStreamLanguages(selected.parsed.languages);
+    setLoadingStreamIdx(selected.idx);
+
     try {
       if (link.startsWith('magnet:')) {
         const result = await addMagnet.mutateAsync(link);
@@ -126,14 +157,17 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   };
 
   const handleChooseAudioLanguage = async (language: string) => {
-    const candidates = streams
+    const candidates = displayStreams
       .map((stream, idx) => ({ stream, idx, parsed: parseTorrentioTitle(stream.title || '') }))
       .filter(item => item.parsed.languages.includes(language));
 
     if (candidates.length === 0) return;
 
-    // Prefer browser-compatible audio codecs first, then more seeds
+    // Prefer browser-compatible video/audio first, then more seeds
     candidates.sort((a, b) => {
+      if (a.parsed.videoCompatible !== b.parsed.videoCompatible) {
+        return a.parsed.videoCompatible ? -1 : 1;
+      }
       if (a.parsed.audioCompatible !== b.parsed.audioCompatible) {
         return a.parsed.audioCompatible ? -1 : 1;
       }
@@ -193,7 +227,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         </div>
       )}
       <div data-nav-row="torrent-results" className="grid grid-cols-1 gap-3">
-        {streams.map((stream: TorrentioStream, idx: number) => {
+        {displayStreams.map((stream: TorrentioStream, idx: number) => {
           const parsed = parseTorrentioTitle(stream.title || '');
           return (
             <button
