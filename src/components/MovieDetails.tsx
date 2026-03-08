@@ -1,7 +1,10 @@
-import { ArrowRight, ArrowLeft, Play, Star, Plus, Share2 } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, ArrowLeft, Play, Star, Plus, Share2, Link, Loader2 } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
-import { getImage } from '@/lib/images';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useMovieDetails, useSeason } from '@/hooks/useTMDB';
+import { useRDUnrestrict } from '@/hooks/useRealDebrid';
+import { VideoPlayer } from './VideoPlayer';
 
 interface MovieDetailsProps {
   movie: Movie;
@@ -9,10 +12,56 @@ interface MovieDetailsProps {
 }
 
 export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
-  const backdrop = movie.backdrop ? getImage(movie.backdrop) : getImage(movie.poster);
+  const backdrop = movie.backdrop || movie.poster;
   const { t, lang, dir } = useLanguage();
   const displayTitle = lang === 'he' ? (movie.titleHe || movie.title) : movie.title;
   const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
+
+  const tmdbId = movie.tmdbId || parseInt(movie.id);
+  const mediaType = movie.mediaType || (movie.type === 'series' ? 'tv' : 'movie');
+
+  const { data: details } = useMovieDetails(tmdbId, mediaType);
+  const [selectedSeason, setSelectedSeason] = useState(1);
+  const { data: seasonData } = useSeason(
+    movie.type === 'series' ? tmdbId : null,
+    selectedSeason
+  );
+
+  const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkInput, setLinkInput] = useState('');
+  const unrestrict = useRDUnrestrict();
+
+  const detailMovie = details?.movie || movie;
+  const rawDetails = details?.raw;
+
+  const handleUnrestrict = async () => {
+    if (!linkInput.trim()) return;
+    try {
+      const result = await unrestrict.mutateAsync(linkInput.trim());
+      setStreamUrl(result.download);
+      setShowLinkInput(false);
+      setLinkInput('');
+    } catch (e) {
+      console.error('Unrestrict failed:', e);
+    }
+  };
+
+  if (streamUrl) {
+    return (
+      <VideoPlayer
+        url={streamUrl}
+        title={displayTitle}
+        onBack={() => setStreamUrl(null)}
+      />
+    );
+  }
+
+  const genres = rawDetails?.genres || detailMovie.genres?.map(g => typeof g === 'string' ? g : (g as any).name) || [];
+  const seasons = rawDetails?.seasons?.filter((s: any) => s.season_number > 0) || [];
+  const recommendations = rawDetails?.recommendations?.results || [];
+  const cast = rawDetails?.credits?.cast?.slice(0, 10) || [];
+  const trailer = rawDetails?.videos?.results?.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube');
 
   return (
     <div className="min-h-screen bg-background animate-fade-in" dir={dir}>
@@ -44,19 +93,22 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
           <span className="flex items-center gap-1">
             <Star className="w-4 h-4 text-primary fill-primary" />
-            <span className="text-foreground font-semibold">{movie.rating}</span>
+            <span className="text-foreground font-semibold">{detailMovie.rating}</span>
           </span>
-          <span>{movie.year}</span>
-          <span>{movie.duration}</span>
-          {movie.quality && (
+          <span>{detailMovie.year}</span>
+          <span>{detailMovie.duration}</span>
+          {detailMovie.quality && (
             <span className="glass-strong px-2 py-0.5 rounded text-xs text-foreground font-medium">
-              {movie.quality}
+              {detailMovie.quality}
             </span>
           )}
         </div>
 
         <div className="flex gap-3">
-          <button className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold glow-red transition-all hover:bg-primary/90 tv-focus">
+          <button
+            onClick={() => setShowLinkInput(true)}
+            className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold glow-red transition-all hover:bg-primary/90 tv-focus"
+          >
             <Play className="w-5 h-5 fill-current" />
             {t('playNow')}
           </button>
@@ -68,49 +120,167 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           </button>
         </div>
 
+        {showLinkInput && (
+          <div className="glass rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2 text-foreground text-sm font-medium">
+              <Link className="w-4 h-4" />
+              {lang === 'he' ? 'הדבק קישור או מגנט לצפייה' : 'Paste a link or magnet to watch'}
+            </div>
+            <div className="flex gap-2">
+              <input
+                value={linkInput}
+                onChange={e => setLinkInput(e.target.value)}
+                placeholder={lang === 'he' ? 'קישור / magnet...' : 'Link / magnet...'}
+                className="flex-1 bg-secondary text-foreground placeholder:text-muted-foreground px-3 py-2.5 rounded-lg outline-none focus:ring-2 focus:ring-primary text-sm tv-focus"
+                dir="ltr"
+              />
+              <button
+                onClick={handleUnrestrict}
+                disabled={unrestrict.isPending || !linkInput.trim()}
+                className="bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium text-sm disabled:opacity-50 tv-focus flex items-center gap-2"
+              >
+                {unrestrict.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {lang === 'he' ? 'הפעל' : 'Play'}
+              </button>
+            </div>
+            <button
+              onClick={() => setShowLinkInput(false)}
+              className="text-xs text-muted-foreground hover:text-foreground tv-focus"
+            >
+              {lang === 'he' ? 'ביטול' : 'Cancel'}
+            </button>
+          </div>
+        )}
+
+        {trailer && (
+          <button
+            onClick={() => setStreamUrl(`https://www.youtube.com/embed/${trailer.key}?autoplay=1`)}
+            className="w-full glass rounded-xl p-3 flex items-center gap-3 tv-focus text-start"
+          >
+            <div className="w-16 h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+              <Play className="w-5 h-5 text-primary fill-primary" />
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-foreground">
+                {lang === 'he' ? 'צפה בטריילר' : 'Watch Trailer'}
+              </h4>
+              <p className="text-xs text-muted-foreground">YouTube</p>
+            </div>
+          </button>
+        )}
+
         <div className="flex gap-2 flex-wrap">
-          {movie.genres.map(g => (
-            <span key={g} className="glass px-3 py-1.5 rounded-full text-xs text-secondary-foreground">
-              {g}
-            </span>
-          ))}
+          {genres.map((g: any) => {
+            const name = typeof g === 'string' ? g : g.name;
+            return (
+              <span key={name} className="glass px-3 py-1.5 rounded-full text-xs text-secondary-foreground">
+                {name}
+              </span>
+            );
+          })}
         </div>
 
         <div>
           <h3 className="font-semibold text-foreground mb-2">{t('synopsis')}</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            {movie.overview}
+            {detailMovie.overview}
           </p>
         </div>
 
-        {movie.type === 'series' && (
+        {cast.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-foreground mb-3">
+              {lang === 'he' ? 'שחקנים' : 'Cast'}
+            </h3>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {cast.map((actor: any) => (
+                <div key={actor.id} className="flex-shrink-0 w-20 text-center">
+                  {actor.profile_path ? (
+                    <img
+                      src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`}
+                      alt={actor.name}
+                      className="w-16 h-16 rounded-full object-cover mx-auto mb-1"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-muted mx-auto mb-1 flex items-center justify-center text-muted-foreground text-xs">
+                      {actor.name?.[0]}
+                    </div>
+                  )}
+                  <p className="text-xs text-foreground truncate">{actor.name}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{actor.character}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {movie.type === 'series' && seasons.length > 0 && (
           <div>
             <h3 className="font-semibold text-foreground mb-3">{t('seasons')}</h3>
-            <div className="flex gap-2">
-              {[1, 2, 3].map(s => (
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {seasons.map((s: any) => (
                 <button
-                  key={s}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all tv-focus ${
-                    s === 1
+                  key={s.season_number}
+                  onClick={() => setSelectedSeason(s.season_number)}
+                  className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all tv-focus ${
+                    selectedSeason === s.season_number
                       ? 'bg-primary text-primary-foreground'
                       : 'glass text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {t('season')} {s}
+                  {t('season')} {s.season_number}
                 </button>
               ))}
             </div>
-            <div className="mt-4 space-y-3">
-              {[1, 2, 3, 4, 5].map(ep => (
-                <button key={ep} className="w-full glass rounded-xl p-3 flex items-center gap-3 tv-focus text-start">
-                  <div className="w-24 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                    <Play className="w-6 h-6 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-foreground">{t('episode')} {ep}</h4>
-                    <p className="text-xs text-muted-foreground">45 {t('minutes')}</p>
-                  </div>
-                </button>
+            {seasonData?.episodes && (
+              <div className="mt-4 space-y-3">
+                {seasonData.episodes.map((ep: any) => (
+                  <button key={ep.id} className="w-full glass rounded-xl p-3 flex items-center gap-3 tv-focus text-start">
+                    {ep.still_path ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
+                        alt={ep.name}
+                        className="w-24 h-14 rounded-lg object-cover flex-shrink-0"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-24 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                        <Play className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-foreground">
+                        {t('episode')} {ep.episode_number}: {ep.name}
+                      </h4>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{ep.overview}</p>
+                      {ep.runtime && (
+                        <p className="text-xs text-muted-foreground">{ep.runtime} {t('minutes')}</p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {recommendations.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-foreground mb-3">
+              {lang === 'he' ? 'המלצות דומות' : 'Recommendations'}
+            </h3>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {recommendations.filter((r: any) => r.poster_path).slice(0, 10).map((rec: any) => (
+                <div key={rec.id} className="flex-shrink-0 w-28">
+                  <img
+                    src={`https://image.tmdb.org/t/p/w342${rec.poster_path}`}
+                    alt={rec.title || rec.name}
+                    className="w-full rounded-lg aspect-[2/3] object-cover mb-1"
+                    loading="lazy"
+                  />
+                  <p className="text-xs text-foreground truncate">{rec.title || rec.name}</p>
+                </div>
               ))}
             </div>
           </div>

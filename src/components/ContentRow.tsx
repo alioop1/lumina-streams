@@ -7,9 +7,10 @@ interface ContentRowProps {
   title: string;
   movies: Movie[];
   onMovieClick: (movie: Movie) => void;
+  isLoading?: boolean;
 }
 
-export const ContentRow = ({ title, movies, onMovieClick }: ContentRowProps) => {
+export const ContentRow = ({ title, movies, onMovieClick, isLoading }: ContentRowProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -23,7 +24,7 @@ export const ContentRow = ({ title, movies, onMovieClick }: ContentRowProps) => 
 
   useEffect(() => {
     checkScroll();
-  }, []);
+  }, [movies]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -34,6 +35,25 @@ export const ContentRow = ({ title, movies, onMovieClick }: ContentRowProps) => 
     });
     setTimeout(checkScroll, 400);
   };
+
+  if (isLoading) {
+    return (
+      <div className="mb-8">
+        <h2 className="font-display text-2xl tracking-wide px-4 mb-3 text-foreground">{title}</h2>
+        <div className="flex gap-3 px-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="flex-shrink-0 w-[140px] md:w-[180px]">
+              <div className="rounded-lg aspect-[2/3] mb-2 bg-muted animate-pulse" />
+              <div className="h-4 bg-muted rounded animate-pulse mb-1" />
+              <div className="h-3 bg-muted rounded animate-pulse w-2/3" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!movies.length) return null;
 
   return (
     <div className="mb-8">
@@ -56,7 +76,7 @@ export const ContentRow = ({ title, movies, onMovieClick }: ContentRowProps) => 
         >
           {movies.map((movie, i) => (
             <MovieCard
-              key={movie.id}
+              key={`${movie.id}-${i}`}
               movie={movie}
               onClick={() => onMovieClick(movie)}
               index={i}
