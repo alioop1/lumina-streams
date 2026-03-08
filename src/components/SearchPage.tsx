@@ -4,7 +4,6 @@ import { Movie } from '@/lib/mockData';
 import { MovieCard } from './MovieCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSearch, useGenres, useDiscover } from '@/hooks/useTMDB';
-import { useIsTVDevice } from '@/hooks/use-tv';
 import { cn } from '@/lib/utils';
 
 interface SearchPageProps {
@@ -18,24 +17,14 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
   const [selectedGenreId, setSelectedGenreId] = useState<string | null>(null);
   const [mediaTab, setMediaTab] = useState<MediaTab>('movie');
   const { t, dir, lang } = useLanguage();
-  const isTVDevice = useIsTVDevice();
 
   const { data: searchResults, isLoading: searchLoading } = useSearch(query);
   const { data: movieGenres } = useGenres('movie');
   const { data: tvGenres } = useGenres('tv');
-  const { data: discoverResults, isLoading: discoverLoading } = useDiscover(
-    mediaTab,
-    selectedGenreId || undefined
-  );
+  const { data: discoverResults, isLoading: discoverLoading } = useDiscover(mediaTab, selectedGenreId || undefined);
 
-  const genres = mediaTab === 'movie'
-    ? (movieGenres?.genres || [])
-    : (tvGenres?.genres || []);
-
-  const genreRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const resultRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const genres = mediaTab === 'movie' ? (movieGenres?.genres || []) : (tvGenres?.genres || []);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
   const isSearchMode = query.length >= 2;
   const isLoading = isSearchMode ? searchLoading : discoverLoading;
   const results = useMemo(
@@ -48,79 +37,12 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
     setSelectedGenreId(prev => prev === id ? null : id);
   };
 
-  const handleGenreKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
-    if (isTVDevice) return;
-
-    const isRTL = dir === 'rtl';
-    const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
-    const prevKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
-
-    switch (e.key) {
-      case nextKey:
-        e.preventDefault();
-        genreRefs.current[index + 1]?.focus();
-        break;
-      case prevKey:
-        e.preventDefault();
-        if (index > 0) genreRefs.current[index - 1]?.focus();
-        else searchInputRef.current?.focus();
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        resultRefs.current[0]?.focus();
-        break;
-      case 'Enter':
-      case ' ':
-        e.preventDefault();
-        const genre = genres[index];
-        if (genre) selectGenre(genre.id);
-        break;
-    }
-  }, [dir, genres, isTVDevice]);
-
-  const handleResultKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
-    if (isTVDevice) return;
-
-    const cols = window.innerWidth >= 1024 ? 6 : window.innerWidth >= 768 ? 4 : 3;
-    const isRTL = dir === 'rtl';
-    const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
-    const prevKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
-
-    switch (e.key) {
-      case nextKey:
-        e.preventDefault();
-        resultRefs.current[index + 1]?.focus();
-        break;
-      case prevKey:
-        e.preventDefault();
-        if (index > 0) resultRefs.current[index - 1]?.focus();
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        resultRefs.current[index + cols]?.focus();
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        if (index - cols >= 0) resultRefs.current[index - cols]?.focus();
-        else genreRefs.current[0]?.focus();
-        break;
-      case 'Enter':
-      case ' ':
-        e.preventDefault();
-        if (results[index]) onMovieClick(results[index]);
-        break;
-    }
-  }, [dir, results, onMovieClick, isTVDevice]);
-
   const handleVoiceSearch = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       const recognition = new SpeechRecognition();
       recognition.lang = lang === 'he' ? 'he-IL' : 'en-US';
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setQuery(transcript);
-      };
+      recognition.onresult = (event: any) => setQuery(event.results[0][0].transcript);
       recognition.start();
     }
   };
@@ -139,23 +61,13 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
           onChange={e => setQuery(e.target.value)}
           placeholder={t('searchPlaceholder')}
           className="tv-focus w-full bg-secondary text-foreground placeholder:text-muted-foreground ps-10 pe-12 py-3.5 rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all text-sm"
-          onKeyDown={e => {
-            if (e.key === 'ArrowDown') {
-              e.preventDefault();
-              if (!isSearchMode && genreRefs.current[0]) {
-                genreRefs.current[0].focus();
-              } else {
-                resultRefs.current[0]?.focus();
-              }
-            }
-          }}
         />
         {query ? (
-          <button onClick={() => setQuery('')} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground tv-focus" aria-label="Clear search">
+          <button onClick={() => setQuery('')} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground tv-focus outline-none" aria-label="Clear search">
             <X className="w-5 h-5" />
           </button>
         ) : (
-          <button onClick={handleVoiceSearch} className="absolute end-3 top-1/2 -translate-y-1/2 text-primary tv-focus" aria-label="Voice search">
+          <button onClick={handleVoiceSearch} className="absolute end-3 top-1/2 -translate-y-1/2 text-primary tv-focus outline-none" aria-label="Voice search">
             <Mic className="w-5 h-5" />
           </button>
         )}
@@ -166,7 +78,7 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
           <button
             onClick={() => { setMediaTab('movie'); setSelectedGenreId(null); }}
             className={cn(
-              'tv-focus flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+              'tv-focus flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all outline-none',
               mediaTab === 'movie' ? 'bg-primary text-primary-foreground' : 'glass text-muted-foreground hover:text-foreground'
             )}
           >
@@ -176,7 +88,7 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
           <button
             onClick={() => { setMediaTab('tv'); setSelectedGenreId(null); }}
             className={cn(
-              'tv-focus flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+              'tv-focus flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all outline-none',
               mediaTab === 'tv' ? 'bg-primary text-primary-foreground' : 'glass text-muted-foreground hover:text-foreground'
             )}
           >
@@ -188,15 +100,13 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
 
       {!isSearchMode && genres.length > 0 && (
         <div className="flex gap-2 overflow-x-auto mb-6 pb-2">
-          {genres.map((g: any, index: number) => (
+          {genres.map((g: any) => (
             <button
               key={g.id}
-              ref={el => { genreRefs.current[index] = el; }}
               onClick={() => selectGenre(g.id)}
-              onKeyDown={e => handleGenreKeyDown(e, index)}
               tabIndex={0}
               className={cn(
-                'tv-focus flex-shrink-0 px-4 py-2 rounded-full text-xs font-medium transition-all',
+                'tv-focus flex-shrink-0 px-4 py-2 rounded-full text-xs font-medium transition-all outline-none',
                 selectedGenreId === String(g.id)
                   ? 'bg-primary text-primary-foreground'
                   : 'glass text-muted-foreground hover:text-foreground'
@@ -234,16 +144,11 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
           {results.map((movie: Movie, i: number) => (
             <button
               key={movie.id}
-              ref={el => { resultRefs.current[i] = el; }}
               tabIndex={0}
               onClick={() => onMovieClick(movie)}
-              onKeyDown={e => handleResultKeyDown(e, i)}
-              className="tv-focus focus-card rounded-lg text-start"
+              className="tv-focus focus-card rounded-lg text-start outline-none"
             >
-              <MovieCard
-                movie={movie}
-                index={i}
-              />
+              <MovieCard movie={movie} index={i} />
             </button>
           ))}
         </div>

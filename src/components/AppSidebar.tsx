@@ -23,9 +23,7 @@ export const AppSidebar = () => {
   const [expanded, setExpanded] = useState(isTVDevice);
 
   useEffect(() => {
-    if (isTVDevice) {
-      setExpanded(true);
-    }
+    if (isTVDevice) setExpanded(true);
   }, [isTVDevice]);
 
   return (
@@ -40,6 +38,7 @@ export const AppSidebar = () => {
         isTVDevice ? 'w-56' : expanded ? 'w-52' : 'w-16'
       )}
     >
+      {/* Logo */}
       <div className="h-16 flex items-center justify-center shrink-0 border-b border-[hsl(var(--sidebar-border))]">
         <div className={cn(
           'flex items-center gap-2 transition-all duration-200',
@@ -54,6 +53,7 @@ export const AppSidebar = () => {
         </div>
       </div>
 
+      {/* Nav items - each is a tv-focus element */}
       <nav className="flex-1 flex flex-col pt-4 gap-1 px-2">
         {tabs.map(({ icon: Icon, labelKey, path }) => {
           const active = location.pathname === path;
@@ -61,14 +61,12 @@ export const AppSidebar = () => {
             <button
               key={path}
               onClick={() => navigate(path)}
-              onFocus={() => {
-                if (!isTVDevice) setExpanded(true);
-              }}
+              onFocus={() => { if (!isTVDevice) setExpanded(true); }}
               tabIndex={0}
               className={cn(
                 'tv-focus relative flex items-center gap-3 rounded-lg',
-                'transition-all duration-150 cursor-pointer',
-                'h-12',
+                'transition-colors duration-150 cursor-pointer',
+                'h-12 outline-none',
                 expanded || isTVDevice ? 'px-4' : 'px-0 justify-center',
                 active
                   ? 'bg-primary/15 text-primary'
