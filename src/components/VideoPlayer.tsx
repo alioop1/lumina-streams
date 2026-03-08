@@ -660,7 +660,6 @@ export const VideoPlayer = ({
       onTouchStart={resetHideTimer}
     >
       <video
-        key={playbackUrl}
         ref={videoRef}
         className="w-full h-full object-contain"
         autoPlay
