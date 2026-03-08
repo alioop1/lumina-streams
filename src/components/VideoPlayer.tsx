@@ -17,7 +17,7 @@ interface VideoPlayerProps {
   onSelectAudioLanguage?: (language: string) => void | Promise<void>;
 }
 
-type SettingsPanel = 'main' | 'speed' | 'audio' | 'subtitles';
+type SettingsPanel = 'main' | 'speed' | 'audio' | 'subtitles' | 'external';
 
 interface AudioTrackInfo {
   index: number;
