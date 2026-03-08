@@ -158,7 +158,7 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
 
       // Throttle
       const now = performance.now();
-      if (now - lastNav < 120) { e.preventDefault(); return; }
+      if (now - lastNav < 80) { e.preventDefault(); return; }
       lastNav = now;
       e.preventDefault();
       e.stopPropagation();
