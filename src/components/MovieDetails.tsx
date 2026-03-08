@@ -384,7 +384,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
         {/* Series: Seasons & Episodes */}
         {movie.type === 'series' && seasons.length > 0 && (
-          <div>
+          <div ref={episodeSectionRef}>
             <h3 className="font-semibold text-foreground mb-3">{t('seasons')}</h3>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {seasons.map((s: any) => (
