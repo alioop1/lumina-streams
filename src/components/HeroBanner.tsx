@@ -99,7 +99,7 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
           >
             <Info className="w-5 h-5" />
             <span>{t('details')}</span>
-          </motion.button>
+          </button>
           <button
             onClick={handleAddToList}
             className="glass hover:bg-accent w-12 h-12 rounded-full flex items-center justify-center transition-all text-foreground tv-focus"
