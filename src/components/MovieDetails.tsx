@@ -38,6 +38,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const unrestrict = useRDUnrestrict();
   const addMagnet = useRDAddMagnet();
   const torrentResultsRef = useRef<HTMLDivElement>(null);
+  const episodeSectionRef = useRef<HTMLDivElement>(null);
 
   const detailMovie = details?.movie || movie;
   const rawDetails = details?.raw;
