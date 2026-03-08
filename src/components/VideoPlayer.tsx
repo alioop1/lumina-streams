@@ -186,11 +186,24 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     const detectAudioTracks = () => {
       const vAny = v as any;
       const tracks = vAny.audioTracks;
-      if (!tracks || tracks.length === 0) {
-        setEmbeddedAudioTracks([]);
+
+      // Fallback for platforms (Android TV / some Chromium builds) with no audioTracks API
+      if (!tracks || typeof tracks.length !== 'number' || tracks.length === 0) {
+        setCanSwitchAudioTracks(false);
+        setEmbeddedAudioTracks([
+          {
+            index: 0,
+            label: labels.default,
+            language: '',
+            enabled: true,
+          },
+        ]);
+        setActiveAudioIdx(0);
         setLoadingAudio(false);
         return;
       }
+
+      setCanSwitchAudioTracks(true);
       const list: AudioTrackInfo[] = [];
       for (let i = 0; i < tracks.length; i++) {
         const t = tracks[i];
