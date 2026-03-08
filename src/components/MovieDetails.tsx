@@ -414,6 +414,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                 {seasonData.episodes.map((ep: any) => (
                   <button
                     key={ep.id}
+                    data-episode-button="true"
                     onClick={() => { setSelectedEpisode(ep.episode_number); setShowTorrents(true); }}
                     className={`w-full rounded-xl p-3 flex items-center gap-3 tv-focus text-start transition-all ${
                       selectedEpisode === ep.episode_number
