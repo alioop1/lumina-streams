@@ -165,6 +165,8 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<number | null>(null);
   const lastFocusedControlRef = useRef<HTMLElement | null>(null);
+  const fallbackQueueRef = useRef<string[]>([]);
+  const failedUrlsRef = useRef<Set<string>>(new Set());
   const { data: transcodeData, isLoading: loadingTranscode } = useRDTranscode(rdFileId || null);
 
   const [playbackUrl, setPlaybackUrl] = useState(url);
