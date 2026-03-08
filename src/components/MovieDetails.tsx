@@ -241,7 +241,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           )}
         </div>
 
-        <div className="flex gap-3">
+        <div data-nav-row="details-actions" className="flex gap-3">
           <button
             onClick={() => {
               if (movie.type === 'series') {
