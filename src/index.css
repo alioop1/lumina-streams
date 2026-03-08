@@ -95,8 +95,6 @@
 @layer utilities {
   .glass {
     background: hsl(var(--glass));
-    backdrop-filter: blur(20px) saturate(1.5);
-    -webkit-backdrop-filter: blur(20px) saturate(1.5);
     border: 1px solid hsl(var(--glass-border));
   }
 
