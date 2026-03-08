@@ -310,7 +310,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     const handleKeyDown = (e: KeyboardEvent) => {
       const v = videoRef.current;
       const root = containerRef.current;
-      if (!v || !root) return;
+      if (!root) return;
 
       const key = normalizePlayerKey(e);
       if (!key) return;
