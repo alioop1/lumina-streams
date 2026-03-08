@@ -4,6 +4,7 @@ import { Movie } from '@/lib/mockData';
 import { MovieCard } from './MovieCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSearch, useGenres, useDiscover } from '@/hooks/useTMDB';
+import { useIsTVDevice } from '@/hooks/use-tv';
 import { cn } from '@/lib/utils';
 
 interface SearchPageProps {
@@ -17,6 +18,7 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
   const [selectedGenreId, setSelectedGenreId] = useState<string | null>(null);
   const [mediaTab, setMediaTab] = useState<MediaTab>('movie');
   const { t, dir, lang } = useLanguage();
+  const isTVDevice = useIsTVDevice();
 
   const { data: searchResults, isLoading: searchLoading } = useSearch(query);
   const { data: movieGenres } = useGenres('movie');
@@ -47,6 +49,8 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
   };
 
   const handleGenreKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
+    if (isTVDevice) return;
+
     const isRTL = dir === 'rtl';
     const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
     const prevKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
@@ -72,9 +76,11 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
         if (genre) selectGenre(genre.id);
         break;
     }
-  }, [dir, genres]);
+  }, [dir, genres, isTVDevice]);
 
   const handleResultKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
+    if (isTVDevice) return;
+
     const cols = window.innerWidth >= 1024 ? 6 : window.innerWidth >= 768 ? 4 : 3;
     const isRTL = dir === 'rtl';
     const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
@@ -104,7 +110,7 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
         if (results[index]) onMovieClick(results[index]);
         break;
     }
-  }, [dir, results, onMovieClick]);
+  }, [dir, results, onMovieClick, isTVDevice]);
 
   const handleVoiceSearch = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {

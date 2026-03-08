@@ -176,4 +176,27 @@
     box-shadow: 0 0 0 1px hsl(var(--foreground) / 0.4);
     border-radius: 0.5rem;
   }
+  :root.tv-device .tv-focus,
+  body.tv-device .tv-focus {
+    transition: background-color 0.1s linear, box-shadow 0.1s linear;
+  }
+
+  :root.tv-device .focus-card,
+  body.tv-device .focus-card {
+    transform: none !important;
+    transition: box-shadow 0.1s linear !important;
+  }
+
+  :root.tv-device .focus-card:hover,
+  :root.tv-device .focus-card:focus-visible,
+  body.tv-device .focus-card:hover,
+  body.tv-device .focus-card:focus-visible {
+    transform: none !important;
+  }
+
+  :root.tv-device .focus-card:focus-visible .movie-card-poster,
+  body.tv-device .focus-card:focus-visible .movie-card-poster {
+    box-shadow: 0 0 0 2px hsl(var(--foreground) / 0.95), 0 10px 24px -14px hsl(var(--foreground) / 0.6);
+    border-radius: 0.5rem;
+  }
 }

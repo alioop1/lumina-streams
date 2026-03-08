@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Play, Plus, Info } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsTVDevice } from '@/hooks/use-tv';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -16,6 +17,7 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
   const movie = heroMovies[current];
   const { t, lang, dir } = useLanguage();
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const isTVDevice = useIsTVDevice();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -27,6 +29,8 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
   }, [heroMovies.length]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
+    if (isTVDevice) return;
+
     const isRTL = dir === 'rtl';
     const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
     const prevKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
@@ -52,7 +56,7 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
         firstRowItem?.focus();
         break;
     }
-  }, [dir]);
+  }, [dir, isTVDevice]);
 
   const handlePlay = useCallback(() => {
     if (movie) {
@@ -82,10 +86,10 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
           src={movie.backdrop || movie.poster}
           alt={movie.title}
           className="absolute inset-0 w-full h-full object-cover"
-          initial={{ opacity: 0, scale: 1.05 }}
+          initial={{ opacity: 0, scale: isTVDevice ? 1 : 1.05 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: isTVDevice ? 0 : 0.8 }}
         />
       </AnimatePresence>
       <div className="absolute inset-0 gradient-fade-bottom" />
@@ -116,8 +120,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
             onClick={handlePlay}
             className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-3 rounded-lg transition-all glow-red tv-focus"
             tabIndex={0}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
           >
             <Play className="w-5 h-5 fill-current" />
             <span>{t('play')}</span>
@@ -128,8 +130,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
             onClick={() => onInfoClick(movie)}
             className="flex items-center gap-2 glass hover:bg-accent px-6 py-3 rounded-lg transition-all text-foreground tv-focus"
             tabIndex={0}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
           >
             <Info className="w-5 h-5" />
             <span>{t('details')}</span>
@@ -140,8 +140,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
             onClick={handleAddToList}
             className="glass hover:bg-accent w-12 h-12 rounded-full flex items-center justify-center transition-all text-foreground tv-focus"
             tabIndex={0}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
           >
             <Plus className="w-5 h-5" />
           </motion.button>

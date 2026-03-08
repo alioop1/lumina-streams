@@ -38,6 +38,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const unrestrict = useRDUnrestrict();
   const addMagnet = useRDAddMagnet();
   const torrentResultsRef = useRef<HTMLDivElement>(null);
+  const episodeSectionRef = useRef<HTMLDivElement>(null);
 
   const detailMovie = details?.movie || movie;
   const rawDetails = details?.raw;
@@ -57,7 +58,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   // Scroll to torrent results when they appear
   useEffect(() => {
     if (showTorrents && torrentResultsRef.current) {
-      torrentResultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      torrentResultsRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
     }
   }, [showTorrents, selectedEpisode]);
 
@@ -239,16 +240,26 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         </div>
 
         <div className="flex gap-3">
-          {/* For movies: show find torrents button. For series: episodes trigger torrent search */}
-          {movie.type !== 'series' && (
-            <button
-              onClick={() => setShowTorrents(!showTorrents)}
-              className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold glow-red transition-all hover:bg-primary/90 tv-focus"
-            >
-              <Search className="w-5 h-5" />
-              {lang === 'he' ? 'חפש טורנטים' : 'Find Torrents'}
-            </button>
-          )}
+          <button
+            onClick={() => {
+              if (movie.type === 'series') {
+                episodeSectionRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+                window.setTimeout(() => {
+                  const firstEpisodeButton = episodeSectionRef.current?.querySelector<HTMLElement>('[data-episode-button="true"]');
+                  firstEpisodeButton?.focus();
+                }, 80);
+                return;
+              }
+
+              setShowTorrents(!showTorrents);
+            }}
+            className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold glow-red transition-all hover:bg-primary/90 tv-focus"
+          >
+            <Search className="w-5 h-5" />
+            {movie.type === 'series'
+              ? (lang === 'he' ? 'בחר פרק לטורנטים' : 'Choose Episode')
+              : (lang === 'he' ? 'חפש טורנטים' : 'Find Torrents')}
+          </button>
           <button
             onClick={() => setShowLinkInput(true)}
             className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus"
@@ -373,7 +384,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
         {/* Series: Seasons & Episodes */}
         {movie.type === 'series' && seasons.length > 0 && (
-          <div>
+          <div ref={episodeSectionRef}>
             <h3 className="font-semibold text-foreground mb-3">{t('seasons')}</h3>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {seasons.map((s: any) => (
@@ -403,6 +414,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                 {seasonData.episodes.map((ep: any) => (
                   <button
                     key={ep.id}
+                    data-episode-button="true"
                     onClick={() => { setSelectedEpisode(ep.episode_number); setShowTorrents(true); }}
                     className={`w-full rounded-xl p-3 flex items-center gap-3 tv-focus text-start transition-all ${
                       selectedEpisode === ep.episode_number

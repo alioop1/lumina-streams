@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MovieCard } from './MovieCard';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsTVDevice } from '@/hooks/use-tv';
 
 interface ContentRowProps {
   title: string;
@@ -17,6 +18,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const { dir } = useLanguage();
+  const isTVDevice = useIsTVDevice();
   const isRTL = dir === 'rtl';
 
   const checkScroll = useCallback(() => {
@@ -37,11 +39,13 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
     const scrollDir = isRTL
       ? (direction === 'left' ? amount : -amount)
       : (direction === 'left' ? -amount : amount);
-    scrollRef.current.scrollBy({ left: scrollDir, behavior: 'smooth' });
-    setTimeout(checkScroll, 400);
-  }, [isRTL, checkScroll]);
+    scrollRef.current.scrollBy({ left: scrollDir, behavior: isTVDevice ? 'auto' : 'smooth' });
+    window.setTimeout(checkScroll, isTVDevice ? 160 : 400);
+  }, [isRTL, isTVDevice, checkScroll]);
 
   const handleCardKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
+    if (isTVDevice) return;
+
     const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
     const prevKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
 
@@ -51,7 +55,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
         e.stopPropagation();
         if (index < movies.length - 1) {
           cardRefs.current[index + 1]?.focus();
-          cardRefs.current[index + 1]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          cardRefs.current[index + 1]?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
         }
         break;
       case prevKey:
@@ -59,7 +63,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
         e.stopPropagation();
         if (index > 0) {
           cardRefs.current[index - 1]?.focus();
-          cardRefs.current[index - 1]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          cardRefs.current[index - 1]?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
         } else {
           const sidebar = document.querySelector<HTMLElement>('[data-sidebar] button');
           sidebar?.focus();
@@ -71,7 +75,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
         onMovieClick(movies[index]);
         break;
     }
-  }, [isRTL, movies, onMovieClick]);
+  }, [isRTL, isTVDevice, movies, onMovieClick]);
 
   if (isLoading) {
     return (
@@ -110,14 +114,14 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
         <div
           ref={scrollRef}
           onScroll={checkScroll}
-          className="flex gap-3 overflow-x-auto px-4 snap-x snap-mandatory scroll-smooth"
+          className="flex gap-3 overflow-x-auto px-4 snap-x snap-mandatory"
         >
           {movies.map((movie, i) => (
             <button
               key={`${movie.id}-${i}`}
               ref={el => { cardRefs.current[i] = el; }}
               tabIndex={0}
-              onKeyDown={e => handleCardKeyDown(e, i)}
+              onKeyDown={!isTVDevice ? (e => handleCardKeyDown(e, i)) : undefined}
               onClick={() => onMovieClick(movie)}
               className="tv-focus flex-shrink-0 rounded-xl content-row-item text-start focus-card"
             >
