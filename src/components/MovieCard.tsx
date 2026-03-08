@@ -14,10 +14,10 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
 
   return (
     <div
-      className="flex-shrink-0 w-[140px] md:w-[180px] snap-start group/card cursor-pointer text-start bg-transparent border-none p-0 outline-none"
+      className="flex-shrink-0 w-[160px] md:w-[200px] snap-start group/card cursor-pointer text-start bg-transparent border-none p-0 outline-none"
       data-card-index={index}
     >
-      <div className="relative rounded-lg overflow-hidden aspect-[2/3] mb-2 movie-card-poster bg-card transition-all duration-150">
+      <div className="relative rounded-lg overflow-hidden aspect-[2/3] mb-2 movie-card-poster bg-card">
         {movie.poster ? (
           <img
             src={movie.poster}
@@ -36,7 +36,7 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
             <span className="text-[10px] font-bold text-primary-foreground tracking-wide">{movie.quality}</span>
           </div>
         )}
-        <div className="movie-card-overlay absolute inset-0 bg-gradient-to-t from-background/75 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-150 pointer-events-none flex flex-col items-center justify-center gap-2">
+        <div className="movie-card-overlay absolute inset-0 bg-gradient-to-t from-background/75 via-transparent to-transparent opacity-0 transition-opacity duration-150 pointer-events-none flex flex-col items-center justify-center gap-2">
           <div className="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center">
             <Play className="w-4 h-4 text-primary-foreground fill-primary-foreground ms-0.5" />
           </div>
