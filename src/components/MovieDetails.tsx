@@ -227,7 +227,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         </div>
       )}
       <div data-nav-row="torrent-results" className="grid grid-cols-1 gap-3">
-        {streams.map((stream: TorrentioStream, idx: number) => {
+        {displayStreams.map((stream: TorrentioStream, idx: number) => {
           const parsed = parseTorrentioTitle(stream.title || '');
           return (
             <button
