@@ -441,6 +441,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
         // If overlay is hidden, arrows act as quick playback controls
         if (!showControls) {
+          if (!v) return;
           if (key === 'ArrowLeft') v.currentTime = Math.max(0, v.currentTime - 10);
           if (key === 'ArrowRight') v.currentTime = Math.min(v.duration, v.currentTime + 10);
           if (key === 'ArrowUp') v.volume = Math.min(1, v.volume + 0.1);
