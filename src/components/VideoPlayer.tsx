@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeft, ArrowRight, X, Settings, Volume2, Subtitles, ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause, SkipForward, SkipBack, Loader2, Languages, Download } from 'lucide-react';
 import { fetchSubtitles, type SubtitleTrack } from '@/lib/opensubtitles';
-// realDebrid import removed - using embedded audio tracks now
+import { useRDTranscode } from '@/hooks/useRealDebrid';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface VideoPlayerProps {
@@ -25,6 +25,12 @@ interface AudioTrackInfo {
   language: string;
   enabled: boolean;
 }
+
+const isWebAudioCodecCompatible = (codec?: string) => {
+  if (!codec) return false;
+  const c = codec.toLowerCase();
+  return c.includes('aac') || c.includes('mp3') || c.includes('opus') || c.includes('vorbis') || c.includes('flac');
+};
 
 const PLAYER_KEYCODE_MAP: Record<number, string> = {
   13: 'Enter',
@@ -123,6 +129,10 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<number | null>(null);
   const lastFocusedControlRef = useRef<HTMLElement | null>(null);
+  const { data: transcodeData, isLoading: loadingTranscode } = useRDTranscode(rdFileId || null);
+
+  const [playbackUrl, setPlaybackUrl] = useState(url);
+  const [usingTranscode, setUsingTranscode] = useState(false);
 
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
@@ -166,7 +176,32 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     noSubs: lang === 'he' ? 'אין כתוביות זמינות' : 'No subtitles available',
     cannotSwitchAudio: lang === 'he' ? 'במכשיר/דפדפן הזה לא ניתן להחליף רצועת אודיו מתוך הנגן' : 'Audio track switching is not supported on this device/browser',
     chooseSourceAudio: lang === 'he' ? 'בחר שפה (יחליף מקור):' : 'Choose language (will switch source):',
+    transcodeActive: lang === 'he' ? 'מצב תאימות אודיו פעיל' : 'Audio compatibility mode active',
   };
+
+  useEffect(() => {
+    setPlaybackUrl(url);
+    setUsingTranscode(false);
+    setNoAudioDetected(false);
+  }, [url]);
+
+  // Prefer RD transcode stream when available to improve codec compatibility
+  useEffect(() => {
+    if (!transcodeData || isYouTube) return;
+
+    const candidates = Object.values(transcodeData as Record<string, any>)
+      .filter((item: any) => item?.full)
+      .map((item: any) => ({ full: item.full as string, acodec: (item.acodec as string | undefined) || '' }));
+
+    if (candidates.length === 0) return;
+
+    const preferred = candidates.find((c) => isWebAudioCodecCompatible(c.acodec)) || candidates[0];
+
+    if (preferred?.full && preferred.full !== playbackUrl) {
+      setPlaybackUrl(preferred.full);
+      setUsingTranscode(true);
+    }
+  }, [transcodeData, isYouTube, playbackUrl]);
 
   // Fetch subtitles
   useEffect(() => {
@@ -234,7 +269,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       v.removeEventListener('loadedmetadata', detectAudioTracks);
       clearTimeout(timer);
     };
-  }, [url, isYouTube, defaultAudioLabel]);
+  }, [playbackUrl, isYouTube, defaultAudioLabel]);
 
   // Detect no-audio via Web Audio API analyzer
   useEffect(() => {
@@ -296,7 +331,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         try { ctx.close(); } catch {}
       }
     };
-  }, [url, isYouTube]);
+  }, [playbackUrl, isYouTube]);
 
   const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
     try {
@@ -743,8 +778,9 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       onTouchStart={resetHideTimer}
     >
       <video
+        key={playbackUrl}
         ref={videoRef}
-        src={url}
+        src={playbackUrl}
         className="w-full h-full object-contain"
         autoPlay
         playsInline
@@ -917,6 +953,9 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               {!canSwitchAudioTracks && (
                 <div className="px-4 py-2 text-white/40 text-xs text-center space-y-2">
                   <div>{labels.cannotSwitchAudio}</div>
+                  {(loadingTranscode || usingTranscode) && (
+                    <div className="text-primary">{labels.transcodeActive}</div>
+                  )}
                   {streamLanguages.length > 0 && onSelectAudioLanguage && (
                     <div className="pt-1">
                       <div className="text-white/60 mb-2">{labels.chooseSourceAudio}</div>
