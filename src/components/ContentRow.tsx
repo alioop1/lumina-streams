@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, memo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MovieCard } from './MovieCard';
 import { Movie } from '@/lib/mockData';
@@ -11,7 +11,7 @@ interface ContentRowProps {
   isLoading?: boolean;
 }
 
-export const ContentRow = ({ title, movies, onMovieClick, isLoading }: ContentRowProps) => {
+export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: ContentRowProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -19,19 +19,19 @@ export const ContentRow = ({ title, movies, onMovieClick, isLoading }: ContentRo
   const { dir } = useLanguage();
   const isRTL = dir === 'rtl';
 
-  const checkScroll = () => {
+  const checkScroll = useCallback(() => {
     if (!scrollRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
     const absScroll = Math.abs(scrollLeft);
     setCanScrollLeft(absScroll > 10);
     setCanScrollRight(absScroll + clientWidth < scrollWidth - 10);
-  };
+  }, []);
 
   useEffect(() => {
     checkScroll();
-  }, [movies]);
+  }, [movies, checkScroll]);
 
-  const scroll = (direction: 'left' | 'right') => {
+  const scroll = useCallback((direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
     const amount = scrollRef.current.clientWidth * 0.75;
     const scrollDir = isRTL
@@ -39,9 +39,8 @@ export const ContentRow = ({ title, movies, onMovieClick, isLoading }: ContentRo
       : (direction === 'left' ? -amount : amount);
     scrollRef.current.scrollBy({ left: scrollDir, behavior: 'smooth' });
     setTimeout(checkScroll, 400);
-  };
+  }, [isRTL, checkScroll]);
 
-  // D-pad navigation within row
   const handleCardKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
     const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
     const prevKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
@@ -62,7 +61,6 @@ export const ContentRow = ({ title, movies, onMovieClick, isLoading }: ContentRo
           cardRefs.current[index - 1]?.focus();
           cardRefs.current[index - 1]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         } else {
-          // Move focus to sidebar
           const sidebar = document.querySelector<HTMLElement>('[data-sidebar] button');
           sidebar?.focus();
         }
@@ -82,7 +80,7 @@ export const ContentRow = ({ title, movies, onMovieClick, isLoading }: ContentRo
         <div className="flex gap-3 px-4">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="flex-shrink-0 w-[140px] md:w-[180px]">
-              <div className="rounded-lg aspect-[2/3] mb-2 bg-muted animate-pulse" />
+              <div className="rounded-xl aspect-[2/3] mb-2 bg-muted animate-pulse" />
               <div className="h-4 bg-muted rounded animate-pulse mb-1" />
               <div className="h-3 bg-muted rounded animate-pulse w-2/3" />
             </div>
@@ -103,15 +101,15 @@ export const ContentRow = ({ title, movies, onMovieClick, isLoading }: ContentRo
         {canScrollLeft && (
           <button
             onClick={() => scroll('left')}
-            className="absolute start-0 top-0 bottom-0 z-10 w-10 glass hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity tv-focus"
+            className="absolute start-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-e from-background/80 to-transparent hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
           >
-            {isRTL ? <ChevronRight className="w-5 h-5 text-foreground" /> : <ChevronLeft className="w-5 h-5 text-foreground" />}
+            {isRTL ? <ChevronRight className="w-6 h-6 text-foreground" /> : <ChevronLeft className="w-6 h-6 text-foreground" />}
           </button>
         )}
         <div
           ref={scrollRef}
           onScroll={checkScroll}
-          className="flex gap-3 overflow-x-auto px-4 snap-x snap-mandatory"
+          className="flex gap-3 overflow-x-auto px-4 snap-x snap-mandatory scroll-smooth"
         >
           {movies.map((movie, i) => (
             <button
@@ -120,7 +118,7 @@ export const ContentRow = ({ title, movies, onMovieClick, isLoading }: ContentRo
               tabIndex={0}
               onKeyDown={e => handleCardKeyDown(e, i)}
               onClick={() => onMovieClick(movie)}
-              className="tv-focus flex-shrink-0 rounded-lg content-row-item text-start"
+              className="tv-focus flex-shrink-0 rounded-xl content-row-item text-start focus-card"
             >
               <MovieCard
                 movie={movie}
@@ -132,12 +130,14 @@ export const ContentRow = ({ title, movies, onMovieClick, isLoading }: ContentRo
         {canScrollRight && (
           <button
             onClick={() => scroll('right')}
-            className="absolute end-0 top-0 bottom-0 z-10 w-10 glass hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity tv-focus"
+            className="absolute end-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-s from-background/80 to-transparent hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
           >
-            {isRTL ? <ChevronLeft className="w-5 h-5 text-foreground" /> : <ChevronRight className="w-5 h-5 text-foreground" />}
+            {isRTL ? <ChevronLeft className="w-6 h-6 text-foreground" /> : <ChevronRight className="w-6 h-6 text-foreground" />}
           </button>
         )}
       </div>
     </div>
   );
-};
+});
+
+ContentRow.displayName = 'ContentRow';
