@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, X, Settings, Volume2, Subtitles, ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause, SkipForward, SkipBack, Loader2 } from 'lucide-react';
+import { ArrowLeft, X, Settings, Volume2, Subtitles, ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause, SkipForward, SkipBack, Loader2, Languages, Download } from 'lucide-react';
 import { fetchSubtitles, type SubtitleTrack } from '@/lib/opensubtitles';
 
 interface VideoPlayerProps {
@@ -100,6 +100,19 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     }
     setSettingsPanel('main');
     setShowSettings(false);
+  };
+
+  const handleDownloadSubtitle = () => {
+    const targetSub = availableSubs.find((s) => s.id === activeSub) || availableSubs[0];
+    if (!targetSub) return;
+
+    const a = document.createElement('a');
+    a.href = targetSub.url;
+    a.download = `${title}.${targetSub.lang}.vtt`;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const resetHideTimer = useCallback(() => {
@@ -348,10 +361,26 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
                 <Settings className="w-5 h-5" />
               </button>
               <button
+                onClick={() => { setSettingsPanel('audio'); setShowSettings(true); }}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+                title="Audio language"
+              >
+                <Languages className="w-5 h-5" />
+              </button>
+              <button
                 onClick={() => { setSettingsPanel('subtitles'); setShowSettings(true); }}
                 className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${activeSub ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`}
+                title="Subtitles"
               >
                 <Subtitles className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleDownloadSubtitle}
+                disabled={availableSubs.length === 0}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Download subtitle"
+              >
+                <Download className="w-5 h-5" />
               </button>
               <button onClick={toggleFullscreen} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors">
                 {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
