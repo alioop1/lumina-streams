@@ -57,7 +57,27 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       .finally(() => setLoadingSubs(false));
   }, [imdbId, mediaType, season, episode]);
 
-  const addTrackToVideo = (sub: SubtitleTrack) => {
+  // Fetch subtitle content and create blob URL to bypass CORS
+  const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
+    try {
+      const res = await fetch(subUrl);
+      const text = await res.text();
+      // Convert SRT to VTT if needed
+      let vttContent = text;
+      if (!text.trimStart().startsWith('WEBVTT')) {
+        vttContent = 'WEBVTT\n\n' + text
+          .replace(/\r\n/g, '\n')
+          .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+      }
+      const blob = new Blob([vttContent], { type: 'text/vtt' });
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      console.error('Failed to fetch subtitle:', e);
+      return subUrl; // fallback to direct URL
+    }
+  };
+
+  const addTrackToVideo = async (sub: SubtitleTrack) => {
     const v = videoRef.current;
     if (!v) return;
 
@@ -68,15 +88,16 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       else break;
     }
 
+    const blobUrl = await fetchSubAsBlob(sub.url);
+
     const track = document.createElement('track');
     track.kind = 'subtitles';
     track.label = sub.label;
     track.srclang = sub.lang;
-    track.src = sub.url;
+    track.src = blobUrl;
     track.default = true;
     v.appendChild(track);
 
-    // Ensure track is showing
     setTimeout(() => {
       if (v.textTracks[0]) {
         v.textTracks[0].mode = 'showing';
@@ -89,7 +110,6 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     if (!v) return;
 
     if (!sub) {
-      // Turn off subtitles
       for (let i = 0; i < v.textTracks.length; i++) {
         v.textTracks[i].mode = 'hidden';
       }
