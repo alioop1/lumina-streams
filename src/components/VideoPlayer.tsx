@@ -844,6 +844,23 @@ export const VideoPlayer = ({
               <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10 tv-focus">
                 <BackChevron className="w-4 h-4" /> {labels.audioLang}
               </button>
+              {/* Embedded audio tracks (from container) */}
+              {audioTracks.length > 1 && (
+                <div className="px-4 py-2 space-y-1">
+                  <div className="text-white/60 text-xs">{lang === 'he' ? 'ערוצי אודיו מובנים:' : 'Embedded audio tracks:'}</div>
+                  {audioTracks.map(track => (
+                    <button
+                      key={track.id}
+                      onClick={() => switchAudioTrack(track.id)}
+                      className={`w-full px-3 py-2 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus rounded-lg text-sm ${track.enabled ? 'text-primary' : ''}`}
+                    >
+                      {track.label} {track.lang ? `(${track.lang})` : ''}
+                      {track.enabled && <span className="text-primary">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Stream language switching (switches torrent source) */}
               {streamLanguages.length > 0 && onSelectAudioLanguage && (
                 <div className="px-4 py-2 space-y-2">
                   <div className="text-white/60 text-xs">{labels.chooseSource}</div>
