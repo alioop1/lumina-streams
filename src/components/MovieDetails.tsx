@@ -38,7 +38,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
   const detailMovie = details?.movie || movie;
   const rawDetails = details?.raw;
-  const imdbId = rawDetails?.external_ids?.imdb_id || rawDetails?.imdb_id || null;
+  const imdbId = (rawDetails as any)?.external_ids?.imdb_id || (rawDetails as any)?.imdb_id || null;
 
   const torrentType = movie.type === 'series' ? 'series' : 'movie';
   const { data: torrentioData, isLoading: torrentsLoading } = useTorrentioSearch(
