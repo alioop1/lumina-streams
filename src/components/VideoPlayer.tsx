@@ -541,7 +541,10 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     const onTimeUpdate = () => setCurrentTime(video.currentTime);
     const onDuration = () => setDuration(video.duration);
     const onWaiting = () => setIsBuffering(true);
-    const onCanPlay = () => setIsBuffering(false);
+    const onCanPlay = () => {
+      setIsBuffering(false);
+      setNoAudioDetected(false);
+    };
     const onVolumeChange = () => { setVolume(video.volume); setIsMuted(video.muted); };
 
     video.addEventListener('play', onPlay);
