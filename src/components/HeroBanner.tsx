@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Play, Plus, Info } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
