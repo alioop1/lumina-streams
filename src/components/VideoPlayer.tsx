@@ -121,15 +121,20 @@ export const VideoPlayer = ({
   const [isBuffering, setIsBuffering] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [buffered, setBuffered] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [audioTracks, setAudioTracks] = useState<{ id: number; label: string; lang: string; enabled: boolean }[]>([]);
+  const [selectedAudioTrack, setSelectedAudioTrack] = useState<number>(0);
 
   const [availableSubs, setAvailableSubs] = useState<SubtitleTrack[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
   const [activeSub, setActiveSub] = useState<string | null>(null);
   const [needsTranscodeFallback, setNeedsTranscodeFallback] = useState(false);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [resumeTime, setResumeTime] = useState(0);
 
   const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
@@ -155,13 +160,51 @@ export const VideoPlayer = ({
     downloadSubs: t('הורד כתוביות', 'Download Subtitles'),
   };
 
+  // ── Resume position key ──
+  const resumeKey = imdbId ? `resume_${imdbId}_${season || ''}_${episode || ''}` : '';
+
   useEffect(() => {
     attemptedSourcesRef.current = new Set([url]);
     setPlaybackUrl(url);
     setPlaybackMode('direct');
     setNeedsTranscodeFallback(false);
     setIsBuffering(true);
-  }, [url]);
+    setShowResumePrompt(false);
+    // Check for saved position
+    if (resumeKey) {
+      const saved = localStorage.getItem(resumeKey);
+      if (saved) {
+        const pos = parseFloat(saved);
+        if (pos > 30) { // Only show resume if >30s in
+          setResumeTime(pos);
+          setShowResumePrompt(true);
+        }
+      }
+    }
+  }, [url, resumeKey]);
+
+  // Save position periodically
+  useEffect(() => {
+    if (!resumeKey || duration < 60) return;
+    const interval = setInterval(() => {
+      const v = videoRef.current;
+      if (v && v.currentTime > 30 && v.currentTime < duration - 60) {
+        localStorage.setItem(resumeKey, String(v.currentTime));
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [resumeKey, duration]);
+
+  const handleResume = () => {
+    const v = videoRef.current;
+    if (v && resumeTime > 0) v.currentTime = resumeTime;
+    setShowResumePrompt(false);
+  };
+
+  const handleStartOver = () => {
+    setShowResumePrompt(false);
+    if (resumeKey) localStorage.removeItem(resumeKey);
+  };
 
   const getTranscodeCandidates = useCallback(() => {
     const td = transcodeData as Record<string, any> | undefined;
@@ -267,8 +310,33 @@ export const VideoPlayer = ({
 
     const onPlay = () => { setIsPlaying(true); setIsBuffering(false); };
     const onPause = () => setIsPlaying(false);
-    const onTime = () => { setCurrentTime(v.currentTime); if (!v.paused && v.readyState >= 3) setIsBuffering(false); };
-    const onDur = () => setDuration(v.duration);
+    const onTime = () => {
+      setCurrentTime(v.currentTime);
+      if (!v.paused && v.readyState >= 3) setIsBuffering(false);
+      // Update buffered
+      if (v.buffered.length > 0) {
+        const end = v.buffered.end(v.buffered.length - 1);
+        setBuffered(v.duration > 0 ? (end / v.duration) * 100 : 0);
+      }
+    };
+    const onDur = () => {
+      setDuration(v.duration);
+      // Detect embedded audio tracks (for multi-audio files)
+      const vAny = v as any;
+      if (vAny.audioTracks && vAny.audioTracks.length > 1) {
+        const tracks: { id: number; label: string; lang: string; enabled: boolean }[] = [];
+        for (let i = 0; i < vAny.audioTracks.length; i++) {
+          const t = vAny.audioTracks[i];
+          tracks.push({
+            id: i,
+            label: t.label || t.language || `Track ${i + 1}`,
+            lang: t.language || '',
+            enabled: t.enabled,
+          });
+        }
+        setAudioTracks(tracks);
+      }
+    };
     const onWait = () => setIsBuffering(true);
     const onCan = () => setIsBuffering(false);
     const onVol = () => { setVolume(v.volume); setIsMuted(v.muted); };
@@ -537,6 +605,19 @@ export const VideoPlayer = ({
   const toggleMute = () => { const v = videoRef.current; if (v) v.muted = !v.muted; };
   const setSpeed = (speed: number) => { const v = videoRef.current; if (v) v.playbackRate = speed; setPlaybackSpeed(speed); setSettingsPanel('main'); };
 
+  const switchAudioTrack = (trackId: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    const vAny = v as any;
+    if (!vAny.audioTracks) return;
+    for (let i = 0; i < vAny.audioTracks.length; i++) {
+      vAny.audioTracks[i].enabled = (i === trackId);
+    }
+    setSelectedAudioTrack(trackId);
+    setAudioTracks(prev => prev.map((t, i) => ({ ...t, enabled: i === trackId })));
+    setSettingsPanel('main');
+  };
+
   const toggleFullscreen = async () => {
     const el = containerRef.current;
     if (!el) return;
@@ -603,6 +684,24 @@ export const VideoPlayer = ({
         </div>
       )}
 
+      {/* Resume prompt */}
+      {showResumePrompt && !isBuffering && (
+        <div className="absolute top-20 start-1/2 -translate-x-1/2 z-30 bg-black/90 backdrop-blur-lg rounded-2xl border border-white/10 p-5 flex flex-col items-center gap-3 min-w-[280px] 3xl:min-w-[360px]" data-controls onClick={e => e.stopPropagation()}>
+          <p className="text-white text-sm 3xl:text-base font-medium">
+            {lang === 'he' ? 'להמשיך מאיפה שעצרת?' : 'Resume where you left off?'}
+          </p>
+          <p className="text-white/60 text-xs 3xl:text-sm">{formatTime(resumeTime)}</p>
+          <div className="flex gap-3">
+            <button onClick={handleResume} className="tv-focus bg-primary text-primary-foreground px-5 py-2.5 rounded-lg font-semibold text-sm 3xl:text-base">
+              {lang === 'he' ? 'המשך' : 'Resume'}
+            </button>
+            <button onClick={handleStartOver} className="tv-focus glass text-white px-5 py-2.5 rounded-lg text-sm 3xl:text-base">
+              {lang === 'he' ? 'מההתחלה' : 'Start Over'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Controls overlay */}
       <div
         data-controls
@@ -640,7 +739,10 @@ export const VideoPlayer = ({
             <span className="text-white text-xs 3xl:text-sm 4k:text-base min-w-[40px] 3xl:min-w-[50px]">{formatTime(currentTime)}</span>
             <div className="relative flex-1 h-6 3xl:h-8 flex items-center group">
               <div className="absolute inset-x-0 h-1 3xl:h-1.5 4k:h-2 bg-white/20 rounded-full group-hover:h-1.5 3xl:group-hover:h-2 transition-all">
-                <div className="h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
+                {/* Buffered indicator */}
+                <div className="absolute inset-y-0 start-0 bg-white/20 rounded-full transition-all" style={{ width: `${buffered}%` }} />
+                {/* Progress */}
+                <div className="absolute inset-y-0 start-0 h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
               </div>
               <input type="range" min={0} max={duration || 0} value={currentTime} onChange={handleSeek} className="absolute inset-x-0 w-full h-full opacity-0 cursor-pointer" step={0.1} />
             </div>
@@ -705,12 +807,15 @@ export const VideoPlayer = ({
                   <NavChevron className="w-4 h-4" />
                 </span>
               </button>
-              {streamLanguages.length > 0 && onSelectAudioLanguage && (
+              {(streamLanguages.length > 0 && onSelectAudioLanguage) || audioTracks.length > 1 ? (
                 <button onClick={() => setSettingsPanel('audio')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
                   <span>{labels.audioLang}</span>
-                  <NavChevron className="w-4 h-4 text-white/60" />
+                  <span className="text-white/60 flex items-center gap-1">
+                    {audioTracks.length > 1 ? `${audioTracks.find(t => t.enabled)?.label || 'Default'}` : ''}
+                    <NavChevron className="w-4 h-4" />
+                  </span>
                 </button>
-              )}
+              ) : null}
               <button onClick={() => setSettingsPanel('external')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
                 <span className="flex items-center gap-2"><ExternalLink className="w-4 h-4" /> {labels.openExternal}</span>
                 <NavChevron className="w-4 h-4 text-white/60" />
@@ -737,6 +842,23 @@ export const VideoPlayer = ({
               <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10 tv-focus">
                 <BackChevron className="w-4 h-4" /> {labels.audioLang}
               </button>
+              {/* Embedded audio tracks (from container) */}
+              {audioTracks.length > 1 && (
+                <div className="px-4 py-2 space-y-1">
+                  <div className="text-white/60 text-xs">{lang === 'he' ? 'ערוצי אודיו מובנים:' : 'Embedded audio tracks:'}</div>
+                  {audioTracks.map(track => (
+                    <button
+                      key={track.id}
+                      onClick={() => switchAudioTrack(track.id)}
+                      className={`w-full px-3 py-2 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus rounded-lg text-sm ${track.enabled ? 'text-primary' : ''}`}
+                    >
+                      {track.label} {track.lang ? `(${track.lang})` : ''}
+                      {track.enabled && <span className="text-primary">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Stream language switching (switches torrent source) */}
               {streamLanguages.length > 0 && onSelectAudioLanguage && (
                 <div className="px-4 py-2 space-y-2">
                   <div className="text-white/60 text-xs">{labels.chooseSource}</div>
