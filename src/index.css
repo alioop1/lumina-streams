@@ -56,6 +56,36 @@
     user-select: none;
   }
 
+  /* GPU-accelerated compositing for TV/streamer chipsets */
+  #root {
+    will-change: auto;
+    contain: layout style;
+  }
+
+  /* Force GPU layer promotion on key animated containers */
+  [data-nav-row],
+  .tv-focus,
+  .focus-card,
+  [data-video-player] {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  /* Reduce paint on scrollable areas */
+  .overflow-x-auto,
+  .overflow-y-auto {
+    contain: layout paint;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Optimize images globally */
+  img {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 200px;
+  }
+
   input, textarea {
     -webkit-user-select: text;
     user-select: text;
