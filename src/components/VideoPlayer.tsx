@@ -286,7 +286,7 @@ export const VideoPlayer = ({
       v.removeEventListener('volumechange', onVol);
       v.removeEventListener('error', onError);
     };
-  }, [url, isYouTube]);
+  }, [playbackUrl, isYouTube, playbackMode, fallbackToTranscode]);
 
   /* ═══ Subtitles ═══ */
   useEffect(() => {
