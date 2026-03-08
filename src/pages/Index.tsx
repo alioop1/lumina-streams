@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { HeroBanner } from '@/components/HeroBanner';
 import { ContentRow } from '@/components/ContentRow';
 import { MovieDetails } from '@/components/MovieDetails';
-import { LanguageToggle } from '@/components/LanguageToggle';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTrending, usePopular, useTopRated } from '@/hooks/useTMDB';
