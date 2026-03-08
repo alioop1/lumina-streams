@@ -371,12 +371,12 @@ export const VideoPlayer = ({
     let href = playbackUrl;
     if (player === 'vlc') {
       href = isAndroid
-        ? `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=org.videolan.vlc;type=video/*;S.title=${encodeURIComponent(title)};end`
-        : `vlc://${url}`;
+        ? `intent://${playbackUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=org.videolan.vlc;type=video/*;S.title=${encodeURIComponent(title)};end`
+        : `vlc://${playbackUrl}`;
     } else if (player === 'mx' && isAndroid) {
-      href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.mxtech.videoplayer.ad;type=video/*;S.title=${encodeURIComponent(title)};end`;
+      href = `intent://${playbackUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.mxtech.videoplayer.ad;type=video/*;S.title=${encodeURIComponent(title)};end`;
     } else if (player === 'system' && isAndroid) {
-      href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;type=video/*;S.title=${encodeURIComponent(title)};end`;
+      href = `intent://${playbackUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;type=video/*;S.title=${encodeURIComponent(title)};end`;
     }
     window.location.href = href;
   };
