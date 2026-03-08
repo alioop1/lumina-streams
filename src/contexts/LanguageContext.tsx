@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { Language, translations, TranslationKey } from '@/lib/translations';
 
 interface LanguageContextType {
@@ -19,11 +19,15 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     setLang(prev => {
       const next = prev === 'he' ? 'en' : 'he';
       localStorage.setItem('app-lang', next);
-      document.documentElement.lang = next;
-      document.documentElement.dir = next === 'he' ? 'rtl' : 'ltr';
       return next;
     });
   }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
+    document.body.dir = lang === 'he' ? 'rtl' : 'ltr';
+  }, [lang]);
 
   const t = useCallback((key: TranslationKey) => {
     return translations[lang][key];
