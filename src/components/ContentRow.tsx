@@ -114,7 +114,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
         <div
           ref={scrollRef}
           onScroll={checkScroll}
-          className="flex gap-3 overflow-x-auto px-4 snap-x snap-mandatory scroll-smooth"
+          className="flex gap-3 overflow-x-auto px-4 snap-x snap-mandatory"
         >
           {movies.map((movie, i) => (
             <button

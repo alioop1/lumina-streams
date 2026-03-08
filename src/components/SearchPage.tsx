@@ -4,6 +4,7 @@ import { Movie } from '@/lib/mockData';
 import { MovieCard } from './MovieCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSearch, useGenres, useDiscover } from '@/hooks/useTMDB';
+import { useIsTVDevice } from '@/hooks/use-tv';
 import { cn } from '@/lib/utils';
 
 interface SearchPageProps {
