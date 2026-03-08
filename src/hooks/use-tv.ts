@@ -97,40 +97,6 @@ const isHTMLElementVisible = (el: HTMLElement) => {
   );
 };
 
-const getCenter = (el: HTMLElement) => {
-  const rect = el.getBoundingClientRect();
-  return {
-    x: rect.left + rect.width / 2,
-    y: rect.top + rect.height / 2,
-  };
-};
-
-const getSpatialNext = (
-  current: HTMLElement,
-  focusable: HTMLElement[],
-  direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
-) => {
-  const currentCenter = getCenter(current);
-  const candidates = focusable
-    .filter((el) => el !== current)
-    .map((el) => ({ el, center: getCenter(el) }))
-    .filter(({ center }) => {
-      if (direction === 'ArrowRight') return center.x > currentCenter.x + 4;
-      if (direction === 'ArrowLeft') return center.x < currentCenter.x - 4;
-      if (direction === 'ArrowDown') return center.y > currentCenter.y + 4;
-      return center.y < currentCenter.y - 4;
-    })
-    .map(({ el, center }) => {
-      const dx = Math.abs(center.x - currentCenter.x);
-      const dy = Math.abs(center.y - currentCenter.y);
-      const primary = direction === 'ArrowLeft' || direction === 'ArrowRight' ? dx : dy;
-      const secondary = direction === 'ArrowLeft' || direction === 'ArrowRight' ? dy : dx;
-      return { el, score: primary * 10 + secondary };
-    })
-    .sort((a, b) => a.score - b.score);
-
-  return candidates[0]?.el ?? null;
-};
 
 export const useTVGlobalNavigation = (enabled: boolean) => {
   const focusableSelector = useMemo(() => '.tv-focus', []);
