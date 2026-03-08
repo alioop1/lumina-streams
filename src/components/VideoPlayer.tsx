@@ -114,7 +114,7 @@ const findNextFocusable = (
   return filtered[0] ?? null;
 };
 
-export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, episode, rdFileId }: VideoPlayerProps) => {
+export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, episode, rdFileId, streamLanguages = [], onSelectAudioLanguage }: VideoPlayerProps) => {
   const { lang, dir } = useLanguage();
   const isRTL = dir === 'rtl';
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
