@@ -159,6 +159,7 @@ export const VideoPlayer = ({
     attemptedSourcesRef.current = new Set([url]);
     setPlaybackUrl(url);
     setPlaybackMode('direct');
+    setNeedsTranscodeFallback(false);
     setIsBuffering(true);
   }, [url]);
 
