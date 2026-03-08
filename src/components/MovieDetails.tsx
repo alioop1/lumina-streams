@@ -542,7 +542,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
             {/* Series torrent results */}
             {showTorrents && selectedEpisode !== null && (
-              <div className="mt-6 max-w-3xl">
+              <div className="mt-6 3xl:mt-8 max-w-3xl 3xl:max-w-4xl 4k:max-w-5xl">
                 {renderTorrentResults()}
               </div>
             )}
