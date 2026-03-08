@@ -207,7 +207,7 @@ const SettingsPage = () => {
       </div>
 
       {/* Settings grid */}
-      <div data-nav-row="settings-list" className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-4xl">
+      <div data-nav-row="settings-list" className="space-y-3 max-w-3xl">
         {settingsItems.map(item =>
           item.isLang ? (
             <LanguageToggle key={item.key} variant="setting-tv" settingItem={{ ...item, icon: iconMap[item.key] }} />
