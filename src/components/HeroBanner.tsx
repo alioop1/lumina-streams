@@ -120,8 +120,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
             onClick={handlePlay}
             className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-3 rounded-lg transition-all glow-red tv-focus"
             tabIndex={0}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
           >
             <Play className="w-5 h-5 fill-current" />
             <span>{t('play')}</span>
