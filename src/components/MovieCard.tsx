@@ -22,7 +22,7 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
           <img
             src={movie.poster}
             alt={movie.title}
-            className="w-full h-full object-cover rounded-lg"
+            className="w-full h-full object-cover rounded-xl"
             loading="lazy"
             decoding="async"
           />
