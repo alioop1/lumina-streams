@@ -77,8 +77,9 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             setRdFileId(result2.fileId);
           }
       } else {
-        const result = await unrestrict.mutateAsync(link);
-        setStreamUrl(result.download);
+        const result3 = await unrestrict.mutateAsync(link);
+        setStreamUrl(result3.download);
+        setRdFileId(result3.id);
       }
     } catch (e) {
       console.error('Stream select failed:', e);
