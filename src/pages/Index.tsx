@@ -28,7 +28,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <LanguageToggle className="fixed top-4 start-4 z-50" />
       <HeroBanner movies={trending || []} onInfoClick={setSelectedMovie} />
 
       <div className="mt-6 space-y-2">
