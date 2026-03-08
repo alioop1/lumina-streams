@@ -132,36 +132,15 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
 
-  /* Android TV D-pad focus styles - large, visible ring for 10-foot UI */
+  /* Android TV D-pad focus styles */
   .tv-focus {
     @apply outline-none;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, outline 0.18s ease, background-color 0.18s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   }
 
   .tv-focus:focus-visible {
-    @apply ring-2 ring-primary ring-offset-2 ring-offset-background;
-    transform: scale(1.05);
+    @apply outline-none;
     z-index: 10;
-    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.3),
-                0 0 20px -4px hsl(var(--primary) / 0.4);
-  }
-
-  .tv-device .tv-focus {
-    min-height: 2.75rem;
-  }
-
-  .tv-device .tv-focus:focus-visible {
-    transform: scale(1.08);
-    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.45),
-                0 0 26px -2px hsl(var(--primary) / 0.45);
-  }
-
-  .tv-device .content-row-item {
-    margin-block: 0.4rem;
-  }
-
-  .tv-device .font-display {
-    letter-spacing: 0.06em;
   }
 
   /* Ensure focus is always visible - critical for Android TV */
@@ -171,31 +150,33 @@
 
   /* Movie card poster focus/hover styles */
   .focus-card {
-    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                box-shadow 0.3s ease;
+    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                box-shadow 0.25s ease;
+    border-radius: 0.75rem;
   }
 
   .focus-card:hover,
   .focus-card:focus-visible {
-    transform: scale(1.08);
+    transform: scale(1.06);
     z-index: 20;
   }
 
   .focus-card:focus-visible {
     outline: none;
+    /* Remove any ring from the button wrapper */
+    ring: none;
+    box-shadow: none;
   }
 
   .focus-card:focus-visible .movie-card-poster {
-    border-color: hsl(var(--primary));
-    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.95),
-                0 0 14px 1px hsl(var(--primary) / 0.35),
-                0 10px 24px -8px hsl(0 0% 0% / 0.55);
+    border-color: hsl(var(--primary) / 0.85);
+    box-shadow: 0 0 0 1.5px hsl(var(--primary) / 0.85),
+                0 4px 16px -4px hsl(0 0% 0% / 0.5);
   }
 
   .focus-card:hover .movie-card-poster {
-    border-color: hsl(var(--primary) / 0.8);
-    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.55),
-                0 0 10px 1px hsl(var(--primary) / 0.22),
-                0 8px 20px -8px hsl(0 0% 0% / 0.5);
+    border-color: hsl(var(--primary) / 0.5);
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.5),
+                0 4px 12px -4px hsl(0 0% 0% / 0.4);
   }
 }
