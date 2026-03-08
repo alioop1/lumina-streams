@@ -93,8 +93,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
             <span>{t('play')}</span>
           </motion.button>
           <button
-            ref={el => { buttonRefs.current[1] = el; }}
-            onKeyDown={e => handleKeyDown(e, 1)}
             onClick={() => onInfoClick(movie)}
             className="flex items-center gap-2 glass hover:bg-accent px-6 py-3 rounded-lg transition-all text-foreground tv-focus"
             tabIndex={0}
