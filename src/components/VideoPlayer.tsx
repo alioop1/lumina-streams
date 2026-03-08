@@ -943,6 +943,13 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={toggleFullscreen} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
                 {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
               </button>
+              <button
+                onClick={() => openInExternalPlayer('vlc')}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus"
+                title={labels.openExternal}
+              >
+                <ExternalLink className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
