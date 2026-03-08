@@ -53,6 +53,14 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
     torrentType === 'series' && selectedEpisode !== null ? selectedEpisode : undefined
   );
   const streams = torrentioData?.streams || [];
+  const displayStreams = [...streams].sort((a, b) => {
+    const pa = parseTorrentioTitle(a.title || '');
+    const pb = parseTorrentioTitle(b.title || '');
+
+    if (pa.videoCompatible !== pb.videoCompatible) return pa.videoCompatible ? -1 : 1;
+    if (pa.audioCompatible !== pb.audioCompatible) return pa.audioCompatible ? -1 : 1;
+    return pb.seeds - pa.seeds;
+  });
 
   const [loadingStreamIdx, setLoadingStreamIdx] = useState<number | null>(null);
 
