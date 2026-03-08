@@ -226,9 +226,13 @@ export const VideoPlayer = ({
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (!data.fatal) return;
         console.error('HLS fatal error:', data.type, data.details);
+
         if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
           hls.recoverMediaError();
-        } else {
+          return;
+        }
+
+        if (!fallbackToTranscode(`hls ${data.details || data.type}`)) {
           setIsBuffering(false);
         }
       });
