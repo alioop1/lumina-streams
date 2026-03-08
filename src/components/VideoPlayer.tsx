@@ -134,8 +134,8 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
 
-  const [rdAudioOptions, setRdAudioOptions] = useState<RDAudioOption[]>([]);
-  const [activeAudio, setActiveAudio] = useState<string | null>(null);
+  const [embeddedAudioTracks, setEmbeddedAudioTracks] = useState<AudioTrackInfo[]>([]);
+  const [activeAudioIdx, setActiveAudioIdx] = useState<number>(0);
   const [loadingAudio, setLoadingAudio] = useState(false);
 
   const [availableSubs, setAvailableSubs] = useState<SubtitleTrack[]>([]);
