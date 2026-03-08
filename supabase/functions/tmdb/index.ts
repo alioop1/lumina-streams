@@ -39,7 +39,7 @@ serve(async (req) => {
         break;
       case 'details': {
         const type = params?.media_type || 'movie';
-        url = `${TMDB_BASE}/${type}/${params?.id}?api_key=${TMDB_API_KEY}&language=${langParam}&append_to_response=credits,videos,recommendations,similar`;
+        url = `${TMDB_BASE}/${type}/${params?.id}?api_key=${TMDB_API_KEY}&language=${langParam}&append_to_response=credits,videos,recommendations,similar,external_ids`;
         break;
       }
       case 'season': {

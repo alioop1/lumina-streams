@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { ArrowRight, ArrowLeft, Play, Star, Plus, Share2, Link, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Play, Star, Plus, Share2, Link, Loader2, Search, Download } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMovieDetails, useSeason } from '@/hooks/useTMDB';
-import { useRDUnrestrict } from '@/hooks/useRealDebrid';
+import { useRDUnrestrict, useRDAddMagnet } from '@/hooks/useRealDebrid';
+import { useTorrentioSearch } from '@/hooks/useTorrentio';
+import { parseTorrentioTitle, streamToMagnet, type TorrentioStream } from '@/lib/torrentio';
 import { VideoPlayer } from './VideoPlayer';
 
 interface MovieDetailsProps {
@@ -30,10 +32,43 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkInput, setLinkInput] = useState('');
+  const [showTorrents, setShowTorrents] = useState(false);
   const unrestrict = useRDUnrestrict();
+  const addMagnet = useRDAddMagnet();
 
   const detailMovie = details?.movie || movie;
   const rawDetails = details?.raw;
+  const imdbId = (rawDetails as any)?.external_ids?.imdb_id || (rawDetails as any)?.imdb_id || null;
+
+  const torrentType = movie.type === 'series' ? 'series' : 'movie';
+  const { data: torrentioData, isLoading: torrentsLoading } = useTorrentioSearch(
+    showTorrents ? torrentType : null,
+    showTorrents ? imdbId : null
+  );
+  const streams = torrentioData?.streams || [];
+
+  const handleStreamSelect = async (stream: TorrentioStream) => {
+    const link = streamToMagnet(stream);
+    if (!link) return;
+    try {
+      if (link.startsWith('magnet:')) {
+        const result = await addMagnet.mutateAsync(link);
+        // For direct streaming, try unrestricting
+      } else {
+        const result = await unrestrict.mutateAsync(link);
+        setStreamUrl(result.download);
+      }
+    } catch (e) {
+      console.error('Stream select failed:', e);
+      // Fallback: try unrestricting the link
+      try {
+        const result = await unrestrict.mutateAsync(link);
+        setStreamUrl(result.download);
+      } catch (e2) {
+        console.error('Unrestrict fallback failed:', e2);
+      }
+    }
+  };
 
   const handleUnrestrict = async () => {
     if (!linkInput.trim()) return;
@@ -106,11 +141,17 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
         <div className="flex gap-3">
           <button
-            onClick={() => setShowLinkInput(true)}
+            onClick={() => setShowTorrents(!showTorrents)}
             className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold glow-red transition-all hover:bg-primary/90 tv-focus"
           >
-            <Play className="w-5 h-5 fill-current" />
-            {t('playNow')}
+            <Search className="w-5 h-5" />
+            {lang === 'he' ? 'חפש טורנטים' : 'Find Torrents'}
+          </button>
+          <button
+            onClick={() => setShowLinkInput(true)}
+            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus"
+          >
+            <Link className="w-5 h-5" />
           </button>
           <button className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus">
             <Plus className="w-6 h-6" />
@@ -119,6 +160,57 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             <Share2 className="w-5 h-5" />
           </button>
         </div>
+
+        {showTorrents && (
+          <div className="space-y-3">
+            <h3 className="font-semibold text-foreground flex items-center gap-2">
+              <Search className="w-4 h-4 text-primary" />
+              {lang === 'he' ? 'תוצאות Torrentio' : 'Torrentio Results'}
+              {!imdbId && (
+                <span className="text-xs text-muted-foreground font-normal">
+                  ({lang === 'he' ? 'ממתין ל-IMDB ID...' : 'Waiting for IMDB ID...'})
+                </span>
+              )}
+            </h3>
+            {torrentsLoading && (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              </div>
+            )}
+            {!torrentsLoading && streams.length === 0 && imdbId && (
+              <div className="glass rounded-xl p-4 text-center text-muted-foreground text-sm">
+                {lang === 'he' ? 'לא נמצאו טורנטים' : 'No torrents found'}
+              </div>
+            )}
+            {streams.map((stream: TorrentioStream, idx: number) => {
+              const parsed = parseTorrentioTitle(stream.title || '');
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleStreamSelect(stream)}
+                  className="w-full glass rounded-xl p-3 flex items-start gap-3 tv-focus text-start hover:bg-accent/50 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Download className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground" dir="ltr">
+                      {stream.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2" dir="ltr">
+                      {parsed.quality}
+                    </p>
+                    <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                      {parsed.size && <span>💾 {parsed.size}</span>}
+                      {parsed.seeds > 0 && <span>👤 {parsed.seeds}</span>}
+                      {parsed.source && <span className="truncate">{parsed.source}</span>}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {showLinkInput && (
           <div className="glass rounded-xl p-4 space-y-3">
