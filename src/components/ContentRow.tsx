@@ -44,6 +44,8 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
   }, [isRTL, isTVDevice, checkScroll]);
 
   const handleCardKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
+    if (isTVDevice) return;
+
     const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
     const prevKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
 
@@ -53,7 +55,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
         e.stopPropagation();
         if (index < movies.length - 1) {
           cardRefs.current[index + 1]?.focus();
-          cardRefs.current[index + 1]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          cardRefs.current[index + 1]?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
         }
         break;
       case prevKey:
@@ -61,7 +63,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
         e.stopPropagation();
         if (index > 0) {
           cardRefs.current[index - 1]?.focus();
-          cardRefs.current[index - 1]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          cardRefs.current[index - 1]?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
         } else {
           const sidebar = document.querySelector<HTMLElement>('[data-sidebar] button');
           sidebar?.focus();
@@ -73,7 +75,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
         onMovieClick(movies[index]);
         break;
     }
-  }, [isRTL, movies, onMovieClick]);
+  }, [isRTL, isTVDevice, movies, onMovieClick]);
 
   if (isLoading) {
     return (
