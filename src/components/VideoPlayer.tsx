@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, X, Settings, Volume2, Subtitles, ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause, SkipForward, SkipBack, Loader2, Languages, Download } from 'lucide-react';
+import { ArrowLeft, ArrowRight, X, Settings, Volume2, Subtitles, ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause, SkipForward, SkipBack, Loader2, Languages, Download } from 'lucide-react';
 import { fetchSubtitles, type SubtitleTrack } from '@/lib/opensubtitles';
 import { realDebrid } from '@/lib/realDebrid';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface VideoPlayerProps {
   url: string;
@@ -11,7 +12,7 @@ interface VideoPlayerProps {
   mediaType?: 'movie' | 'series';
   season?: number;
   episode?: number;
-  rdFileId?: string | null; // Real-Debrid file ID for transcode/audio
+  rdFileId?: string | null;
 }
 
 type SettingsPanel = 'main' | 'speed' | 'audio' | 'subtitles';
@@ -22,6 +23,9 @@ interface RDAudioOption {
 }
 
 export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, episode, rdFileId }: VideoPlayerProps) => {
+  const { lang, dir } = useLanguage();
+  const isRTL = dir === 'rtl';
+  const BackArrow = isRTL ? ArrowRight : ArrowLeft;
   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -39,26 +43,39 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
 
-  // Audio from RD transcode
   const [rdAudioOptions, setRdAudioOptions] = useState<RDAudioOption[]>([]);
   const [activeAudio, setActiveAudio] = useState<string | null>(null);
   const [loadingAudio, setLoadingAudio] = useState(false);
 
-  // Subtitles state
   const [availableSubs, setAvailableSubs] = useState<SubtitleTrack[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
   const [activeSub, setActiveSub] = useState<string | null>(null);
 
   const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
-  // Fetch subtitles from OpenSubtitles v3 Stremio addon
+  // i18n labels
+  const labels = {
+    subtitles: lang === 'he' ? 'כתוביות' : 'Subtitles',
+    audio: lang === 'he' ? 'אודיו' : 'Audio',
+    downloadSubs: lang === 'he' ? 'הורד כתוביות' : 'Download Subtitles',
+    playbackSpeed: lang === 'he' ? 'מהירות ניגון' : 'Playback Speed',
+    audioLang: lang === 'he' ? 'שפת אודיו' : 'Audio Language',
+    normal: lang === 'he' ? 'רגיל' : 'Normal',
+    off: lang === 'he' ? 'כבוי' : 'Off',
+    default: lang === 'he' ? 'ברירת מחדל' : 'Default',
+    loading: lang === 'he' ? 'טוען...' : 'Loading...',
+    loadingSubs: lang === 'he' ? 'טוען כתוביות...' : 'Loading subtitles...',
+    noAudio: lang === 'he' ? 'אין רצועות אודיו נוספות' : 'No additional audio tracks',
+    noSubs: lang === 'he' ? 'אין כתוביות זמינות' : 'No subtitles available',
+  };
+
+  // Fetch subtitles
   useEffect(() => {
     if (!imdbId || isYouTube) return;
     setLoadingSubs(true);
     fetchSubtitles(mediaType || 'movie', imdbId, season, episode)
       .then(subs => {
         setAvailableSubs(subs);
-        // Auto-select Hebrew if available
         const heb = subs.find(s => s.lang === 'heb');
         if (heb) {
           setActiveSub(heb.id);
@@ -68,7 +85,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       .finally(() => setLoadingSubs(false));
   }, [imdbId, mediaType, season, episode]);
 
-  // Fetch audio tracks from RD transcode API
+  // Fetch audio tracks
   useEffect(() => {
     if (!rdFileId || isYouTube) return;
     setLoadingAudio(true);
@@ -87,12 +104,10 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       .finally(() => setLoadingAudio(false));
   }, [rdFileId]);
 
-  // Fetch subtitle content and create blob URL to bypass CORS
   const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
     try {
       const res = await fetch(subUrl);
       const text = await res.text();
-      // Convert SRT to VTT if needed
       let vttContent = text;
       if (!text.trimStart().startsWith('WEBVTT')) {
         vttContent = 'WEBVTT\n\n' + text
@@ -103,23 +118,19 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       return URL.createObjectURL(blob);
     } catch (e) {
       console.error('Failed to fetch subtitle:', e);
-      return subUrl; // fallback to direct URL
+      return subUrl;
     }
   };
 
   const addTrackToVideo = async (sub: SubtitleTrack) => {
     const v = videoRef.current;
     if (!v) return;
-
-    // Remove existing tracks
     while (v.textTracks.length > 0) {
       const track = v.querySelector('track');
       if (track) track.remove();
       else break;
     }
-
     const blobUrl = await fetchSubAsBlob(sub.url);
-
     const track = document.createElement('track');
     track.kind = 'subtitles';
     track.label = sub.label;
@@ -127,22 +138,16 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     track.src = blobUrl;
     track.default = true;
     v.appendChild(track);
-
     setTimeout(() => {
-      if (v.textTracks[0]) {
-        v.textTracks[0].mode = 'showing';
-      }
+      if (v.textTracks[0]) v.textTracks[0].mode = 'showing';
     }, 100);
   };
 
   const selectSubtitle = (sub: SubtitleTrack | null) => {
     const v = videoRef.current;
     if (!v) return;
-
     if (!sub) {
-      for (let i = 0; i < v.textTracks.length; i++) {
-        v.textTracks[i].mode = 'hidden';
-      }
+      for (let i = 0; i < v.textTracks.length; i++) v.textTracks[i].mode = 'hidden';
       setActiveSub(null);
     } else {
       setActiveSub(sub.id);
@@ -155,7 +160,6 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const handleDownloadSubtitle = () => {
     const targetSub = availableSubs.find((s) => s.id === activeSub) || availableSubs[0];
     if (!targetSub) return;
-
     const a = document.createElement('a');
     a.href = targetSub.url;
     a.download = `${title}.${targetSub.lang}.vtt`;
@@ -181,7 +185,6 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
     const onTimeUpdate = () => setCurrentTime(video.currentTime);
@@ -212,6 +215,82 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       video.removeEventListener('volumechange', onVolumeChange);
     };
   }, []);
+
+  // ========== Android TV D-pad / Remote keyboard handler ==========
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const v = videoRef.current;
+      if (!v) return;
+
+      // If settings panel is open, let it handle navigation
+      if (showSettings) {
+        if (e.key === 'Escape' || e.key === 'Backspace') {
+          e.preventDefault();
+          if (settingsPanel !== 'main') setSettingsPanel('main');
+          else setShowSettings(false);
+        }
+        return;
+      }
+
+      resetHideTimer();
+
+      switch (e.key) {
+        case ' ':
+        case 'Enter':
+        case 'MediaPlayPause':
+          e.preventDefault();
+          v.paused ? v.play() : v.pause();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          v.currentTime = Math.max(0, v.currentTime - 10);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          v.currentTime = Math.min(v.duration, v.currentTime + 10);
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          v.volume = Math.min(1, v.volume + 0.1);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          v.volume = Math.max(0, v.volume - 0.1);
+          break;
+        case 'Escape':
+        case 'Backspace':
+          e.preventDefault();
+          onBack();
+          break;
+        case 'f':
+        case 'F':
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+        case 'm':
+        case 'M':
+          e.preventDefault();
+          v.muted = !v.muted;
+          break;
+        case 'MediaStop':
+          e.preventDefault();
+          v.pause();
+          onBack();
+          break;
+        case 'MediaRewind':
+          e.preventDefault();
+          v.currentTime = Math.max(0, v.currentTime - 30);
+          break;
+        case 'MediaFastForward':
+          e.preventDefault();
+          v.currentTime = Math.min(v.duration, v.currentTime + 30);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSettings, settingsPanel, onBack, resetHideTimer]);
 
   const togglePlay = () => {
     const v = videoRef.current;
@@ -289,13 +368,15 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   };
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const NavChevron = isRTL ? ChevronRight : ChevronLeft;
+  const BackChevron = isRTL ? ChevronLeft : ChevronRight;
 
   if (isYouTube) {
     return (
-      <div className="fixed inset-0 z-50 bg-black flex flex-col">
-        <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between">
+      <div className="fixed inset-0 z-50 bg-black flex flex-col" dir={dir}>
+        <div className="absolute top-4 start-4 end-4 z-10 flex items-center justify-between">
           <button onClick={onBack} className="glass w-10 h-10 rounded-full flex items-center justify-center text-foreground tv-focus">
-            <ArrowLeft className="w-5 h-5" />
+            <BackArrow className="w-5 h-5" />
           </button>
           <h2 className="text-foreground text-sm font-medium truncate max-w-[60%]">{title}</h2>
           <button onClick={onBack} className="glass w-10 h-10 rounded-full flex items-center justify-center text-foreground tv-focus">
@@ -307,11 +388,12 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     );
   }
 
-  const activeSubLabel = availableSubs.find(s => s.id === activeSub)?.label || 'כבוי';
+  const activeSubLabel = availableSubs.find(s => s.id === activeSub)?.label || labels.off;
 
   return (
     <div
       ref={containerRef}
+      dir={dir}
       className="fixed inset-0 z-50 bg-black flex items-center justify-center cursor-pointer select-none"
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('[data-controls]')) return;
@@ -327,7 +409,6 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         className="w-full h-full object-contain"
         autoPlay
         playsInline
-        
       />
 
       {isBuffering && (
@@ -336,34 +417,34 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         </div>
       )}
 
-      {/* Always-visible floating toolbar - top right */}
+      {/* Floating toolbar - top end */}
       <div
         data-controls
-        className="absolute top-16 right-4 z-20 flex flex-col gap-2"
+        className="absolute top-16 end-4 z-20 flex flex-col gap-2"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={() => { setSettingsPanel('subtitles'); setShowSettings(true); setShowControls(true); }}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-md transition-colors ${activeSub ? 'bg-primary/80 text-white' : 'bg-black/60 text-white hover:bg-black/80'}`}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-md transition-colors tv-focus ${activeSub ? 'bg-primary/80 text-white' : 'bg-black/60 text-white hover:bg-black/80'}`}
         >
           <Subtitles className="w-4 h-4" />
-          <span className="text-xs font-medium">כתוביות</span>
+          <span className="text-xs font-medium">{labels.subtitles}</span>
           {loadingSubs && <Loader2 className="w-3 h-3 animate-spin" />}
         </button>
         <button
           onClick={() => { setSettingsPanel('audio'); setShowSettings(true); setShowControls(true); }}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/60 text-white hover:bg-black/80 backdrop-blur-md transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/60 text-white hover:bg-black/80 backdrop-blur-md transition-colors tv-focus"
         >
           <Languages className="w-4 h-4" />
-          <span className="text-xs font-medium">אודיו</span>
+          <span className="text-xs font-medium">{labels.audio}</span>
         </button>
         <button
           onClick={handleDownloadSubtitle}
           disabled={availableSubs.length === 0}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/60 text-white hover:bg-black/80 backdrop-blur-md transition-colors disabled:opacity-30"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/60 text-white hover:bg-black/80 backdrop-blur-md transition-colors disabled:opacity-30 tv-focus"
         >
           <Download className="w-4 h-4" />
-          <span className="text-xs font-medium">הורד כתוביות</span>
+          <span className="text-xs font-medium">{labels.downloadSubs}</span>
         </button>
       </div>
 
@@ -374,24 +455,24 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       >
         {/* Top bar */}
         <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/70 to-transparent">
-          <button onClick={onBack} className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
+          <button onClick={onBack} className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
+            <BackArrow className="w-5 h-5" />
           </button>
           <h2 className="text-white text-sm font-medium truncate max-w-[60%]">{title}</h2>
-          <button onClick={onBack} className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors">
+          <button onClick={onBack} className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Center controls */}
         <div className="flex items-center justify-center gap-8">
-          <button onClick={() => seek(-10)} className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors">
+          <button onClick={() => seek(-10)} className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
             <SkipBack className="w-6 h-6" />
           </button>
-          <button onClick={togglePlay} className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-white hover:bg-white/30 transition-colors">
-            {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+          <button onClick={togglePlay} className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-white hover:bg-white/30 transition-colors tv-focus">
+            {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ms-1" />}
           </button>
-          <button onClick={() => seek(10)} className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors">
+          <button onClick={() => seek(10)} className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
             <SkipForward className="w-6 h-6" />
           </button>
         </div>
@@ -411,7 +492,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button onClick={toggleMute} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors">
+              <button onClick={toggleMute} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
                 <Volume2 className="w-5 h-5" />
               </button>
               <div className="w-20 relative h-6 flex items-center">
@@ -424,32 +505,29 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
             </div>
 
             <div className="flex items-center gap-1">
-              <button onClick={() => { setShowSettings(!showSettings); setSettingsPanel('main'); }} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors">
+              <button onClick={() => { setShowSettings(!showSettings); setSettingsPanel('main'); }} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
                 <Settings className="w-5 h-5" />
               </button>
               <button
                 onClick={() => { setSettingsPanel('audio'); setShowSettings(true); }}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors"
-                title="Audio language"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus"
               >
                 <Languages className="w-5 h-5" />
               </button>
               <button
                 onClick={() => { setSettingsPanel('subtitles'); setShowSettings(true); }}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${activeSub ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`}
-                title="Subtitles"
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors tv-focus ${activeSub ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`}
               >
                 <Subtitles className="w-5 h-5" />
               </button>
               <button
                 onClick={handleDownloadSubtitle}
                 disabled={availableSubs.length === 0}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Download subtitle"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed tv-focus"
               >
                 <Download className="w-5 h-5" />
               </button>
-              <button onClick={toggleFullscreen} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors">
+              <button onClick={toggleFullscreen} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
                 {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
               </button>
             </div>
@@ -461,29 +539,29 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       {showSettings && showControls && (
         <div
           data-controls
-          className="absolute bottom-24 right-4 w-64 max-h-80 overflow-y-auto bg-black/90 backdrop-blur-lg rounded-xl border border-white/10 text-white text-sm"
+          className="absolute bottom-24 end-4 w-64 max-h-80 overflow-y-auto bg-black/90 backdrop-blur-lg rounded-xl border border-white/10 text-white text-sm"
           onClick={(e) => e.stopPropagation()}
         >
           {settingsPanel === 'main' && (
             <div className="py-1">
-              <button onClick={() => setSettingsPanel('speed')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors">
-                <span>מהירות ניגון</span>
-                <span className="text-white/60 flex items-center gap-1">{playbackSpeed === 1 ? 'רגיל' : `${playbackSpeed}x`} <ChevronLeft className="w-4 h-4" /></span>
+              <button onClick={() => setSettingsPanel('speed')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
+                <span>{labels.playbackSpeed}</span>
+                <span className="text-white/60 flex items-center gap-1">{playbackSpeed === 1 ? labels.normal : `${playbackSpeed}x`} <NavChevron className="w-4 h-4" /></span>
               </button>
-              <button onClick={() => setSettingsPanel('audio')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors">
-                <span>שפת אודיו</span>
+              <button onClick={() => setSettingsPanel('audio')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
+                <span>{labels.audioLang}</span>
                 <span className="text-white/60 flex items-center gap-1">
-                  {rdAudioOptions.find(o => o.url === activeAudio)?.label || 'ברירת מחדל'}
+                  {rdAudioOptions.find(o => o.url === activeAudio)?.label || labels.default}
                   {loadingAudio && <Loader2 className="w-3 h-3 animate-spin" />}
-                  <ChevronLeft className="w-4 h-4" />
+                  <NavChevron className="w-4 h-4" />
                 </span>
               </button>
-              <button onClick={() => setSettingsPanel('subtitles')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors">
-                <span>כתוביות</span>
+              <button onClick={() => setSettingsPanel('subtitles')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
+                <span>{labels.subtitles}</span>
                 <span className="text-white/60 flex items-center gap-1">
                   {activeSubLabel}
                   {loadingSubs && <Loader2 className="w-3 h-3 animate-spin" />}
-                  <ChevronLeft className="w-4 h-4" />
+                  <NavChevron className="w-4 h-4" />
                 </span>
               </button>
             </div>
@@ -491,12 +569,12 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
           {settingsPanel === 'speed' && (
             <div className="py-1">
-              <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10">
-                <ChevronRight className="w-4 h-4" /> מהירות ניגון
+              <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10 tv-focus">
+                <BackChevron className="w-4 h-4" /> {labels.playbackSpeed}
               </button>
               {speeds.map(s => (
-                <button key={s} onClick={() => setSpeed(s)} className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between ${playbackSpeed === s ? 'text-primary' : ''}`}>
-                  {s === 1 ? 'רגיל (1x)' : `${s}x`}
+                <button key={s} onClick={() => setSpeed(s)} className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus ${playbackSpeed === s ? 'text-primary' : ''}`}>
+                  {s === 1 ? `${labels.normal} (1x)` : `${s}x`}
                   {playbackSpeed === s && <span className="text-primary">✓</span>}
                 </button>
               ))}
@@ -505,16 +583,16 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
           {settingsPanel === 'audio' && (
             <div className="py-1">
-              <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10">
-                <ChevronRight className="w-4 h-4" /> שפת אודיו
+              <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10 tv-focus">
+                <BackChevron className="w-4 h-4" /> {labels.audioLang}
               </button>
               {rdAudioOptions.length === 0 ? (
                 <div className="px-4 py-3 text-white/40 text-center">
-                  {loadingAudio ? 'טוען...' : 'אין רצועות אודיו נוספות'}
+                  {loadingAudio ? labels.loading : labels.noAudio}
                 </div>
               ) : (
                 rdAudioOptions.map((opt, i) => (
-                  <button key={i} onClick={() => selectAudioTrack(opt)} className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between ${activeAudio === opt.url ? 'text-primary' : ''}`}>
+                  <button key={i} onClick={() => selectAudioTrack(opt)} className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus ${activeAudio === opt.url ? 'text-primary' : ''}`}>
                     {opt.label}
                     {activeAudio === opt.url && <span className="text-primary">✓</span>}
                   </button>
@@ -525,33 +603,33 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
           {settingsPanel === 'subtitles' && (
             <div className="py-1">
-              <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10">
-                <ChevronRight className="w-4 h-4" /> כתוביות
+              <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10 tv-focus">
+                <BackChevron className="w-4 h-4" /> {labels.subtitles}
               </button>
               {loadingSubs && (
                 <div className="px-4 py-3 flex items-center justify-center gap-2 text-white/40">
-                  <Loader2 className="w-4 h-4 animate-spin" /> טוען כתוביות...
+                  <Loader2 className="w-4 h-4 animate-spin" /> {labels.loadingSubs}
                 </div>
               )}
               <button
                 onClick={() => selectSubtitle(null)}
-                className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between ${!activeSub ? 'text-primary' : ''}`}
+                className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus ${!activeSub ? 'text-primary' : ''}`}
               >
-                כבוי
+                {labels.off}
                 {!activeSub && <span className="text-primary">✓</span>}
               </button>
               {availableSubs.map(sub => (
                 <button
                   key={sub.id}
                   onClick={() => selectSubtitle(sub)}
-                  className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between ${activeSub === sub.id ? 'text-primary' : ''}`}
+                  className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus ${activeSub === sub.id ? 'text-primary' : ''}`}
                 >
                   {sub.label}
                   {activeSub === sub.id && <span className="text-primary">✓</span>}
                 </button>
               ))}
               {!loadingSubs && availableSubs.length === 0 && (
-                <div className="px-4 py-3 text-white/40 text-center">אין כתוביות זמינות</div>
+                <div className="px-4 py-3 text-white/40 text-center">{labels.noSubs}</div>
               )}
             </div>
           )}

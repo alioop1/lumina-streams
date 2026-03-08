@@ -66,9 +66,18 @@
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
+    /* Prevent text selection on TV - better for D-pad nav */
+    -webkit-user-select: none;
+    user-select: none;
   }
 
-  /* Hide scrollbar for clean mobile look */
+  /* Allow text selection in inputs */
+  input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* Hide scrollbar for clean TV look */
   ::-webkit-scrollbar {
     display: none;
   }
@@ -123,15 +132,23 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
 
-  /* Android TV D-pad focus styles */
+  /* Android TV D-pad focus styles - large, visible ring for 10-foot UI */
   .tv-focus {
     @apply outline-none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, outline 0.2s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, outline 0.15s ease;
   }
 
   .tv-focus:focus-visible {
     @apply ring-2 ring-primary ring-offset-2 ring-offset-background;
     transform: scale(1.05);
     z-index: 10;
+    /* Extra glow for visibility on TV screens at distance */
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.3),
+                0 0 20px -4px hsl(var(--primary) / 0.4);
+  }
+
+  /* Ensure focus is always visible - critical for Android TV */
+  :focus-visible {
+    outline: none;
   }
 }

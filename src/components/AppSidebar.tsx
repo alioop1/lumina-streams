@@ -37,26 +37,22 @@ export const AppSidebar = () => {
       case 'ArrowRight':
         e.preventDefault();
         if (isRTL) {
-          // In RTL, ArrowRight opens sidebar
           setExpanded(true);
         } else {
-          // In LTR, ArrowRight exits sidebar
           setExpanded(false);
           const mainContent = document.querySelector('main');
-          const firstFocusable = mainContent?.querySelector<HTMLElement>('[tabindex], a, button, input');
+          const firstFocusable = mainContent?.querySelector<HTMLElement>('.tv-focus, [tabindex], a, button, input');
           firstFocusable?.focus();
         }
         break;
       case 'ArrowLeft':
         e.preventDefault();
         if (isRTL) {
-          // In RTL, ArrowLeft exits sidebar
           setExpanded(false);
           const mainContent = document.querySelector('main');
-          const firstFocusable = mainContent?.querySelector<HTMLElement>('[tabindex], a, button, input');
+          const firstFocusable = mainContent?.querySelector<HTMLElement>('.tv-focus, [tabindex], a, button, input');
           firstFocusable?.focus();
         } else {
-          // In LTR, ArrowLeft opens sidebar
           setExpanded(true);
         }
         break;
@@ -90,6 +86,7 @@ export const AppSidebar = () => {
   return (
     <div
       ref={sidebarRef}
+      data-sidebar
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}
       onKeyDown={handleKeyDown}
@@ -124,7 +121,7 @@ export const AppSidebar = () => {
               key={path}
               ref={el => { buttonRefs.current[index] = el; }}
               onClick={() => navigate(path)}
-              onFocus={() => setFocusedIndex(index)}
+              onFocus={() => { setFocusedIndex(index); setExpanded(true); }}
               tabIndex={0}
               className={cn(
                 'tv-focus relative flex items-center gap-3 rounded-lg',

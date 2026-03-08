@@ -61,6 +61,10 @@ export const ContentRow = ({ title, movies, onMovieClick, isLoading }: ContentRo
         if (index > 0) {
           cardRefs.current[index - 1]?.focus();
           cardRefs.current[index - 1]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        } else {
+          // Move focus to sidebar
+          const sidebar = document.querySelector<HTMLElement>('[data-sidebar] button');
+          sidebar?.focus();
         }
         break;
       case 'Enter':
@@ -110,19 +114,19 @@ export const ContentRow = ({ title, movies, onMovieClick, isLoading }: ContentRo
           className="flex gap-3 overflow-x-auto px-4 snap-x snap-mandatory"
         >
           {movies.map((movie, i) => (
-            <div
+            <button
               key={`${movie.id}-${i}`}
-              ref={el => { cardRefs.current[i] = el as any; }}
+              ref={el => { cardRefs.current[i] = el; }}
               tabIndex={0}
               onKeyDown={e => handleCardKeyDown(e, i)}
-              className="tv-focus flex-shrink-0 rounded-lg"
+              onClick={() => onMovieClick(movie)}
+              className="tv-focus flex-shrink-0 rounded-lg content-row-item text-start"
             >
               <MovieCard
                 movie={movie}
-                onClick={() => onMovieClick(movie)}
                 index={i}
               />
-            </div>
+            </button>
           ))}
         </div>
         {canScrollRight && (
