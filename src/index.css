@@ -140,25 +140,22 @@
     box-shadow: 0 0 0 2px hsl(var(--primary) / 0.8);
   }
 
-  /* Content row cards: smooth zoom, NO border/ring — GPU-accelerated */
+  /* Content row cards: smooth zoom without hard frame */
   .focus-card {
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    transition: transform 0.14s ease-out;
     will-change: transform;
-    border-radius: 0.75rem;
   }
 
   .focus-card:focus-visible {
     outline: none;
-    transform: scale(1.1);
+    box-shadow: none;
+    transform: scale(1.08);
     z-index: 20;
-    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.8),
-                0 0 20px 4px hsl(var(--primary) / 0.3),
-                0 12px 40px -8px hsl(0 0% 0% / 0.8);
-    border-radius: 0.75rem;
   }
 
   .focus-card:focus-visible .movie-card-poster {
-    border-radius: 0.75rem;
+    box-shadow: 0 8px 30px -4px hsl(0 0% 0% / 0.7);
+    border-radius: 0.5rem;
   }
 
   .focus-card:focus-visible .movie-card-overlay {
