@@ -26,9 +26,6 @@
     --input: 0 0% 15%;
     --ring: 0 80% 50%;
     --radius: 0.75rem;
-    --glass: 0 0% 100% / 0.06;
-    --glass-border: 0 0% 100% / 0.1;
-    --netflix-red: 0 80% 50%;
     --sidebar-background: 0 0% 4%;
     --sidebar-foreground: 0 0% 85%;
     --sidebar-primary: 0 80% 50%;
@@ -67,79 +64,36 @@
 }
 
 @layer utilities {
-  .glass {
-    background: hsl(var(--glass));
-    backdrop-filter: blur(20px) saturate(1.5);
-    -webkit-backdrop-filter: blur(20px) saturate(1.5);
-    border: 1px solid hsl(var(--glass-border));
-  }
-
-  .text-display {
-    font-family: 'Bebas Neue', sans-serif;
-    letter-spacing: 0.05em;
-  }
-
-  .gradient-fade-bottom {
-    background: linear-gradient(to top, hsl(0 0% 0%) 0%, transparent 100%);
-  }
-
-  .glow-red {
-    box-shadow: 0 0 30px -5px hsl(var(--netflix-red) / 0.5),
-                0 0 60px -10px hsl(var(--netflix-red) / 0.3);
-  }
-
-  .text-glow {
-    text-shadow: 0 0 20px hsl(var(--netflix-red) / 0.5);
-  }
-
   /* ═══════════════════════════════════════════
      TV FOCUS SYSTEM
-     Every focusable element uses .tv-focus
-     Focus is ALWAYS visible via :focus-visible
+     Single clean focus ring for all elements.
+     No hover effects — remote only.
      ═══════════════════════════════════════════ */
 
   .tv-focus {
     outline: none;
-    transition: box-shadow 0.1s ease, background-color 0.1s ease;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
   }
 
-  /* Clear white border when focused — always visible */
   .tv-focus:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px hsl(var(--foreground) / 0.9), 0 0 16px 2px hsl(var(--primary) / 0.4);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.9);
     border-radius: 0.5rem;
     z-index: 20;
   }
 
-  /* Sidebar items: subtle bg change on focus */
-  [data-sidebar] .tv-focus:focus-visible {
+  /* Sidebar items: subtle bg tint on focus */
+  [data-nav-region="sidebar"] .tv-focus:focus-visible {
     background-color: hsl(var(--sidebar-accent));
     box-shadow: 0 0 0 2px hsl(var(--primary) / 0.8);
   }
 
-  /* Movie cards: scale up slightly + bright border */
-  .focus-card {
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-    outline: none !important;
-  }
-
-  .focus-card:focus-visible {
+  /* Movie cards: slight scale on focus */
+  [data-nav-row] button.tv-focus:focus-visible {
     transform: scale(1.05);
-    z-index: 20;
-    outline: none !important;
   }
 
-  .focus-card:focus-visible .movie-card-poster {
-    box-shadow: 0 0 0 3px hsl(var(--foreground) / 0.9), 0 0 20px 4px hsl(var(--primary) / 0.3);
-    border-radius: 0.5rem;
-  }
-
-  .focus-card:focus-visible .movie-card-overlay {
-    opacity: 1;
-  }
-
-  /* Remove all hover effects — TV is focus-only */
-  :focus-visible {
-    outline: none;
-  }
+  /* Kill all hover effects */
+  * { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: none; }
 }

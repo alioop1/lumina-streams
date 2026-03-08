@@ -19,34 +19,35 @@ export const AppSidebar = () => {
   const isRTL = dir === 'rtl';
 
   return (
-    <div
-      data-sidebar
+    <nav
+      data-nav-region="sidebar"
       className={cn(
         'fixed top-0 h-full z-50 flex flex-col w-56',
-        'bg-[hsl(var(--sidebar-background))]',
-        isRTL ? 'right-0 border-s border-[hsl(var(--sidebar-border))]' : 'left-0 border-e border-[hsl(var(--sidebar-border))]'
+        'bg-sidebar border-sidebar-border',
+        isRTL ? 'right-0 border-s' : 'left-0 border-e'
       )}
     >
       {/* Logo */}
-      <div className="h-16 flex items-center px-5 shrink-0 border-b border-[hsl(var(--sidebar-border))]">
+      <div className="h-16 flex items-center px-5 shrink-0 border-b border-sidebar-border">
         <Compass className="w-7 h-7 text-primary shrink-0" />
-        <span className="text-display text-lg text-foreground ms-2">STREAM</span>
+        <span className="font-display text-lg text-foreground ms-2 tracking-wider">STREAM</span>
       </div>
 
-      {/* Navigation - each button is tv-focus */}
-      <nav className="flex-1 flex flex-col pt-4 gap-1 px-2">
+      {/* Nav items */}
+      <div className="flex-1 flex flex-col pt-4 gap-1 px-2">
         {tabs.map(({ icon: Icon, labelKey, path }) => {
           const active = location.pathname === path;
           return (
             <button
               key={path}
+              tabIndex={0}
               onClick={() => navigate(path)}
               className={cn(
-                'tv-focus relative flex items-center gap-3 rounded-lg px-4 h-12 outline-none',
+                'tv-focus relative flex items-center gap-3 rounded-lg px-4 h-12',
                 'transition-colors duration-100',
                 active
-                  ? 'bg-primary/15 text-primary'
-                  : 'text-[hsl(var(--sidebar-foreground))]'
+                  ? 'bg-primary/15 text-primary tv-sidebar-active'
+                  : 'text-sidebar-foreground'
               )}
             >
               {active && (
@@ -60,7 +61,7 @@ export const AppSidebar = () => {
             </button>
           );
         })}
-      </nav>
-    </div>
+      </div>
+    </nav>
   );
 };
