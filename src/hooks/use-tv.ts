@@ -118,7 +118,6 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
 
       // Enter → click
       if (key === 'Enter') {
-        const active = document.activeElement as HTMLElement;
         if (active && active !== document.body) {
           e.preventDefault();
           active.click();
@@ -138,7 +137,6 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       e.preventDefault();
       e.stopPropagation();
 
-      const active = document.activeElement as HTMLElement;
       const sidebarItems = getSidebarItems();
       const rows = getContentRows();
 
