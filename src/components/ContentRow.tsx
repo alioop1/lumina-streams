@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MovieCard } from './MovieCard';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsTVDevice } from '@/hooks/use-tv';
 
 interface ContentRowProps {
   title: string;
