@@ -18,6 +18,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const { dir } = useLanguage();
+  const isTVDevice = useIsTVDevice();
   const isRTL = dir === 'rtl';
 
   const checkScroll = useCallback(() => {
