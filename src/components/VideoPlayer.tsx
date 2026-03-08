@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import Hls from 'hls.js';
 import {
   ArrowLeft, ArrowRight, X, Settings, Volume2, Subtitles,
   ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause,
@@ -6,6 +7,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { fetchSubtitles, type SubtitleTrack } from '@/lib/opensubtitles';
+import { useRDTranscode } from '@/hooks/useRealDebrid';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ═══════════════════ Types ═══════════════════ */
