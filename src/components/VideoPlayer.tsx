@@ -1,13 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import Hls from 'hls.js';
 import {
   ArrowLeft, ArrowRight, X, Settings, Volume2, Subtitles,
   ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause,
   SkipForward, SkipBack, Loader2, Languages, Download,
-  ExternalLink, Monitor,
+  ExternalLink,
 } from 'lucide-react';
 import { fetchSubtitles, type SubtitleTrack } from '@/lib/opensubtitles';
-import { useRDTranscode } from '@/hooks/useRealDebrid';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ═══════════════════ Types ═══════════════════ */
@@ -26,13 +24,6 @@ interface VideoPlayerProps {
 }
 
 type SettingsPanel = 'main' | 'speed' | 'audio' | 'subtitles' | 'external';
-
-interface AudioTrackInfo {
-  id: number;
-  label: string;
-  language: string;
-  active: boolean;
-}
 
 /* ═══════════════════ TV-remote helpers ═══════════════════ */
 
@@ -102,7 +93,7 @@ const findNext = (
 
 export const VideoPlayer = ({
   url, title, onBack, imdbId, mediaType, season, episode,
-  rdFileId, streamLanguages = [], onSelectAudioLanguage,
+  rdFileId: _rdFileId, streamLanguages = [], onSelectAudioLanguage,
 }: VideoPlayerProps) => {
   const { lang, dir } = useLanguage();
   const isRTL = dir === 'rtl';
@@ -111,15 +102,10 @@ export const VideoPlayer = ({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const hlsRef = useRef<Hls | null>(null);
   const hideTimerRef = useRef<number | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
-  const networkErrorCountRef = useRef(0);
-
-  const { data: transcodeData } = useRDTranscode(rdFileId || null);
 
   // ── State ──
-  const [playbackUrl, setPlaybackUrl] = useState(url);
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsPanel, setSettingsPanel] = useState<SettingsPanel>('main');
@@ -131,9 +117,6 @@ export const VideoPlayer = ({
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-
-  const [audioTracks, setAudioTracks] = useState<AudioTrackInfo[]>([]);
-  const [activeAudioId, setActiveAudioId] = useState<number>(-1);
 
   const [availableSubs, setAvailableSubs] = useState<SubtitleTrack[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
@@ -163,236 +146,59 @@ export const VideoPlayer = ({
     downloadSubs: t('הורד כתוביות', 'Download Subtitles'),
   };
 
-  /* ═══ Determine best playback URL from transcode data ═══ */
-  useEffect(() => {
-    if (!transcodeData || isYouTube) return;
-
-    // Prefer HLS for audio track switching, then liveMP4 for compatibility
-    const td = transcodeData as Record<string, any>;
-    const hlsUrl = td.apple?.full as string | undefined;
-    const mp4Url = td.liveMP4?.full as string | undefined;
-
-    // Check if browser supports HLS natively or via hls.js
-    if (hlsUrl && (Hls.isSupported() || videoRef.current?.canPlayType('application/vnd.apple.mpegurl'))) {
-      setPlaybackUrl(hlsUrl);
-    } else if (mp4Url) {
-      setPlaybackUrl(mp4Url);
-    }
-  }, [transcodeData, isYouTube]);
-
-  /* ═══ HLS.js / native playback engine ═══ */
+  /* ═══ Direct video playback — like Stremio ═══ */
   useEffect(() => {
     const video = videoRef.current;
     if (!video || isYouTube) return;
 
-    // Destroy previous HLS instance
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-      hlsRef.current = null;
-    }
+    video.src = url;
+    video.load();
+    video.play().catch(() => {});
+  }, [url, isYouTube]);
 
-    const isHls = playbackUrl.includes('.m3u8');
-
-    if (isHls && Hls.isSupported()) {
-      networkErrorCountRef.current = 0;
-
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: false,
-        maxBufferLength: 30,
-        maxMaxBufferLength: 60,
-      });
-      hlsRef.current = hls;
-
-      const switchToMp4Fallback = (reason: string) => {
-        const td = transcodeData as Record<string, any> | undefined;
-        const fallbackUrl = (td?.liveMP4?.full as string | undefined) || url;
-
-        if (fallbackUrl && fallbackUrl !== playbackUrl) {
-          console.warn(`HLS fallback to MP4: ${reason}`);
-          hls.destroy();
-          hlsRef.current = null;
-          setIsBuffering(true);
-          setPlaybackUrl(fallbackUrl);
-          return true;
-        }
-
-        return false;
-      };
-
-      hls.loadSource(playbackUrl);
-      hls.attachMedia(video);
-
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setIsBuffering(false);
-        video.play().catch(() => {});
-        updateHlsAudioTracks(hls);
-      });
-
-      hls.on(Hls.Events.FRAG_BUFFERED, () => {
-        setIsBuffering(false);
-      });
-
-      hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, () => {
-        updateHlsAudioTracks(hls);
-      });
-
-      hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, () => {
-        updateHlsAudioTracks(hls);
-      });
-
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (!data.fatal) return;
-
-        const detail = String(data.details || 'unknown');
-        console.error('HLS fatal error:', data.type, detail);
-
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-          networkErrorCountRef.current += 1;
-          const isTimeout = [
-            'manifestLoadTimeOut',
-            'levelLoadTimeOut',
-            'audioTrackLoadTimeOut',
-            'fragLoadTimeOut',
-            'keyLoadTimeOut',
-          ].includes(detail);
-
-          // Avoid endless buffering loops on RD segment timeouts
-          if (isTimeout || networkErrorCountRef.current >= 2) {
-            const switched = switchToMp4Fallback(`network ${detail}`);
-            if (!switched) setIsBuffering(false);
-            return;
-          }
-
-          hls.startLoad();
-          return;
-        }
-
-        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-          hls.recoverMediaError();
-          return;
-        }
-
-        const switched = switchToMp4Fallback(`fatal ${detail}`);
-        if (!switched) setIsBuffering(false);
-      });
-
-      return () => {
-        hls.destroy();
-        hlsRef.current = null;
-      };
-    } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Safari native HLS
-      video.src = playbackUrl;
-      video.play().catch(() => {});
-
-      // Safari exposes audioTracks natively
-      const detectNativeTracks = () => {
-        const vAny = video as any;
-        if (vAny.audioTracks && vAny.audioTracks.length > 0) {
-          const tracks: AudioTrackInfo[] = [];
-          for (let i = 0; i < vAny.audioTracks.length; i++) {
-            const tk = vAny.audioTracks[i];
-            tracks.push({
-              id: i,
-              label: tk.label || tk.language || `Track ${i + 1}`,
-              language: tk.language || '',
-              active: tk.enabled,
-            });
-          }
-          setAudioTracks(tracks);
-          const active = tracks.find(tk => tk.active);
-          if (active) setActiveAudioId(active.id);
-        }
-      };
-      video.addEventListener('loadedmetadata', detectNativeTracks);
-      const timer = setTimeout(detectNativeTracks, 2000);
-      return () => {
-        video.removeEventListener('loadedmetadata', detectNativeTracks);
-        clearTimeout(timer);
-      };
-    } else {
-      // Direct MP4/WebM playback
-      video.src = playbackUrl;
-      video.play().catch(() => {});
-
-      // Try native audioTracks API
-      const detectNativeTracks = () => {
-        const vAny = video as any;
-        if (vAny.audioTracks && vAny.audioTracks.length > 0) {
-          const tracks: AudioTrackInfo[] = [];
-          for (let i = 0; i < vAny.audioTracks.length; i++) {
-            const tk = vAny.audioTracks[i];
-            tracks.push({
-              id: i,
-              label: tk.label || tk.language || `Track ${i + 1}`,
-              language: tk.language || '',
-              active: tk.enabled,
-            });
-          }
-          setAudioTracks(tracks);
-          const active = tracks.find(tk => tk.active);
-          if (active) setActiveAudioId(active.id);
-        } else {
-          setAudioTracks([{ id: 0, label: labels.default, language: '', active: true }]);
-          setActiveAudioId(0);
-        }
-      };
-      video.addEventListener('loadedmetadata', detectNativeTracks);
-      const timer = setTimeout(detectNativeTracks, 2000);
-      return () => {
-        video.removeEventListener('loadedmetadata', detectNativeTracks);
-        clearTimeout(timer);
-      };
-    }
-  }, [playbackUrl, isYouTube, transcodeData, url]);
-
-  const updateHlsAudioTracks = (hls: Hls) => {
-    const hlsTracks = hls.audioTracks;
-    if (!hlsTracks || hlsTracks.length === 0) {
-      setAudioTracks([{ id: 0, label: labels.default, language: '', active: true }]);
-      setActiveAudioId(0);
-      return;
-    }
-    const tracks: AudioTrackInfo[] = hlsTracks.map((tk, idx) => ({
-      id: idx,
-      label: tk.name || tk.lang || `Track ${idx + 1}`,
-      language: tk.lang || '',
-      active: idx === hls.audioTrack,
-    }));
-    setAudioTracks(tracks);
-    setActiveAudioId(hls.audioTrack);
-  };
-
-  const switchAudioTrack = (trackId: number) => {
-    const hls = hlsRef.current;
-    if (hls) {
-      // HLS.js audio track switching
-      hls.audioTrack = trackId;
-      setActiveAudioId(trackId);
-    } else {
-      // Native audioTracks API (Safari, some Chromium)
-      const video = videoRef.current;
-      if (!video) return;
-      const vAny = video as any;
-      if (vAny.audioTracks) {
-        for (let i = 0; i < vAny.audioTracks.length; i++) {
-          vAny.audioTracks[i].enabled = i === trackId;
-        }
-        setActiveAudioId(trackId);
-      }
-    }
-    setSettingsPanel('main');
-    setShowSettings(false);
-  };
-
-  /* ═══ Reset on URL change ═══ */
+  /* ═══ Video events ═══ */
   useEffect(() => {
-    setPlaybackUrl(url);
-    setAudioTracks([]);
-    setActiveAudioId(-1);
-    setIsBuffering(true);
-  }, [url]);
+    const v = videoRef.current;
+    if (!v || isYouTube) return;
+
+    const onPlay = () => { setIsPlaying(true); setIsBuffering(false); };
+    const onPause = () => setIsPlaying(false);
+    const onTime = () => { setCurrentTime(v.currentTime); if (!v.paused && v.readyState >= 3) setIsBuffering(false); };
+    const onDur = () => setDuration(v.duration);
+    const onWait = () => setIsBuffering(true);
+    const onCan = () => setIsBuffering(false);
+    const onVol = () => { setVolume(v.volume); setIsMuted(v.muted); };
+    const onError = () => {
+      console.error('Video error:', v.error?.message, v.error?.code);
+      setIsBuffering(false);
+    };
+
+    v.addEventListener('play', onPlay);
+    v.addEventListener('pause', onPause);
+    v.addEventListener('timeupdate', onTime);
+    v.addEventListener('loadedmetadata', onDur);
+    v.addEventListener('durationchange', onDur);
+    v.addEventListener('waiting', onWait);
+    v.addEventListener('canplay', onCan);
+    v.addEventListener('canplaythrough', onCan);
+    v.addEventListener('playing', onCan);
+    v.addEventListener('volumechange', onVol);
+    v.addEventListener('error', onError);
+
+    return () => {
+      v.removeEventListener('play', onPlay);
+      v.removeEventListener('pause', onPause);
+      v.removeEventListener('timeupdate', onTime);
+      v.removeEventListener('loadedmetadata', onDur);
+      v.removeEventListener('durationchange', onDur);
+      v.removeEventListener('waiting', onWait);
+      v.removeEventListener('canplay', onCan);
+      v.removeEventListener('canplaythrough', onCan);
+      v.removeEventListener('playing', onCan);
+      v.removeEventListener('volumechange', onVol);
+      v.removeEventListener('error', onError);
+    };
+  }, [url, isYouTube]);
 
   /* ═══ Subtitles ═══ */
   useEffect(() => {
@@ -485,41 +291,6 @@ export const VideoPlayer = ({
     resetHideTimer();
     return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); };
   }, [resetHideTimer]);
-
-  /* ═══ Video events ═══ */
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    const onPlay = () => { setIsPlaying(true); setIsBuffering(false); };
-    const onPause = () => setIsPlaying(false);
-    const onTime = () => { setCurrentTime(v.currentTime); if (!v.paused && v.readyState >= 3) setIsBuffering(false); };
-    const onDur = () => setDuration(v.duration);
-    const onWait = () => setIsBuffering(true);
-    const onCan = () => setIsBuffering(false);
-    const onVol = () => { setVolume(v.volume); setIsMuted(v.muted); };
-    v.addEventListener('play', onPlay);
-    v.addEventListener('pause', onPause);
-    v.addEventListener('timeupdate', onTime);
-    v.addEventListener('loadedmetadata', onDur);
-    v.addEventListener('durationchange', onDur);
-    v.addEventListener('waiting', onWait);
-    v.addEventListener('canplay', onCan);
-    v.addEventListener('canplaythrough', onCan);
-    v.addEventListener('playing', onCan);
-    v.addEventListener('volumechange', onVol);
-    return () => {
-      v.removeEventListener('play', onPlay);
-      v.removeEventListener('pause', onPause);
-      v.removeEventListener('timeupdate', onTime);
-      v.removeEventListener('loadedmetadata', onDur);
-      v.removeEventListener('durationchange', onDur);
-      v.removeEventListener('waiting', onWait);
-      v.removeEventListener('canplay', onCan);
-      v.removeEventListener('canplaythrough', onCan);
-      v.removeEventListener('playing', onCan);
-      v.removeEventListener('volumechange', onVol);
-    };
-  }, [playbackUrl]);
 
   /* ═══ TV remote navigation ═══ */
   useEffect(() => {
@@ -778,9 +549,6 @@ export const VideoPlayer = ({
               <button onClick={() => { setShowSettings(!showSettings); setSettingsPanel('main'); }} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
                 <Settings className="w-5 h-5" />
               </button>
-              <button onClick={() => { setSettingsPanel('audio'); setShowSettings(true); }} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
-                <Languages className="w-5 h-5" />
-              </button>
               <button onClick={() => { setSettingsPanel('subtitles'); setShowSettings(true); }} className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors tv-focus ${activeSub ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`}>
                 <Subtitles className="w-5 h-5" />
               </button>
@@ -812,13 +580,6 @@ export const VideoPlayer = ({
                 <span>{labels.playbackSpeed}</span>
                 <span className="text-white/60 flex items-center gap-1">{playbackSpeed === 1 ? labels.normal : `${playbackSpeed}x`} <NavChevron className="w-4 h-4" /></span>
               </button>
-              <button onClick={() => setSettingsPanel('audio')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
-                <span>{labels.audioLang}</span>
-                <span className="text-white/60 flex items-center gap-1">
-                  {audioTracks.find(t => t.id === activeAudioId)?.label || labels.default}
-                  <NavChevron className="w-4 h-4" />
-                </span>
-              </button>
               <button onClick={() => setSettingsPanel('subtitles')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
                 <span>{labels.subtitles}</span>
                 <span className="text-white/60 flex items-center gap-1">
@@ -827,6 +588,12 @@ export const VideoPlayer = ({
                   <NavChevron className="w-4 h-4" />
                 </span>
               </button>
+              {streamLanguages.length > 0 && onSelectAudioLanguage && (
+                <button onClick={() => setSettingsPanel('audio')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
+                  <span>{labels.audioLang}</span>
+                  <NavChevron className="w-4 h-4 text-white/60" />
+                </button>
+              )}
               <button onClick={() => setSettingsPanel('external')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
                 <span className="flex items-center gap-2"><ExternalLink className="w-4 h-4" /> {labels.openExternal}</span>
                 <NavChevron className="w-4 h-4 text-white/60" />
@@ -853,27 +620,8 @@ export const VideoPlayer = ({
               <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10 tv-focus">
                 <BackChevron className="w-4 h-4" /> {labels.audioLang}
               </button>
-              {audioTracks.length === 0 ? (
-                <div className="px-4 py-3 text-white/40 text-center">{labels.loading}</div>
-              ) : (
-                audioTracks.map(track => (
-                  <button
-                    key={track.id}
-                    onClick={() => switchAudioTrack(track.id)}
-                    className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus ${activeAudioId === track.id ? 'text-primary' : ''}`}
-                  >
-                    <div>
-                      <div>{track.label}</div>
-                      {track.language && track.language !== track.label && <div className="text-xs text-white/40">{track.language}</div>}
-                    </div>
-                    {activeAudioId === track.id && <span className="w-2 h-2 rounded-full bg-green-400" />}
-                  </button>
-                ))
-              )}
-
-              {/* Source language switching fallback */}
               {streamLanguages.length > 0 && onSelectAudioLanguage && (
-                <div className="border-t border-white/10 px-4 py-2 space-y-2">
+                <div className="px-4 py-2 space-y-2">
                   <div className="text-white/60 text-xs">{labels.chooseSource}</div>
                   <div className="flex flex-wrap gap-2">
                     {streamLanguages.map(language => (
@@ -911,7 +659,7 @@ export const VideoPlayer = ({
                   {activeSub === sub.id && <span className="text-primary">✓</span>}
                 </button>
               ))}
-              {!loadingSubs && !availableSubs.length && (
+              {!loadingSubs && availableSubs.length === 0 && (
                 <div className="px-4 py-3 text-white/40 text-center">{labels.noSubs}</div>
               )}
             </div>
@@ -923,15 +671,9 @@ export const VideoPlayer = ({
                 <BackChevron className="w-4 h-4" /> {labels.openExternal}
               </button>
               <div className="px-4 py-2 text-white/40 text-xs">{labels.externalHint}</div>
-              <button onClick={() => openExternal('vlc')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
-                <ExternalLink className="w-4 h-4 text-primary" /> {labels.openVlc}
-              </button>
-              <button onClick={() => openExternal('mx')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
-                <ExternalLink className="w-4 h-4 text-primary" /> {labels.openMx}
-              </button>
-              <button onClick={() => openExternal('system')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors tv-focus">
-                <Monitor className="w-4 h-4 text-primary" /> {labels.openSystem}
-              </button>
+              <button onClick={() => openExternal('vlc')} className="w-full px-4 py-3 text-start hover:bg-white/10 transition-colors tv-focus">{labels.openVlc}</button>
+              <button onClick={() => openExternal('mx')} className="w-full px-4 py-3 text-start hover:bg-white/10 transition-colors tv-focus">{labels.openMx}</button>
+              <button onClick={() => openExternal('system')} className="w-full px-4 py-3 text-start hover:bg-white/10 transition-colors tv-focus">{labels.openSystem}</button>
             </div>
           )}
         </div>
