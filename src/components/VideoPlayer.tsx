@@ -305,81 +305,210 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     };
   }, []);
 
-  // ========== Android TV D-pad / Remote keyboard handler ==========
+  // ========== Smart TV remote navigation ==========
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const v = videoRef.current;
-      if (!v) return;
+      const root = containerRef.current;
+      if (!v || !root) return;
 
-      // If settings panel is open, let it handle navigation
-      if (showSettings) {
-        if (e.key === 'Escape' || e.key === 'Backspace') {
-          e.preventDefault();
+      const key = normalizePlayerKey(e);
+      if (!key) return;
+
+      const active = document.activeElement as HTMLElement | null;
+      const activeInsidePlayer = !!active && root.contains(active);
+      const activeInSettings = !!active?.closest('[data-player-settings-panel="true"]');
+
+      const focusDefaultControl = () => {
+        const fallback = root.querySelector<HTMLElement>('[data-player-default="true"]');
+        fallback?.focus();
+      };
+
+      // Always keep controls visible on remote interaction
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'MediaPlayPause'].includes(key)) {
+        resetHideTimer();
+      }
+
+      if (key === 'Back') {
+        e.preventDefault();
+        if (showSettings) {
           if (settingsPanel !== 'main') setSettingsPanel('main');
-          else setShowSettings(false);
+          else {
+            setShowSettings(false);
+            requestAnimationFrame(focusDefaultControl);
+          }
+          return;
+        }
+        onBack();
+        return;
+      }
+
+      if (showSettings) {
+        const settingsPanelEl = root.querySelector<HTMLElement>('[data-player-settings-panel="true"]');
+        const settingsItems = settingsPanelEl ? getFocusable(settingsPanelEl) : [];
+
+        if (settingsItems.length === 0) return;
+
+        if (!activeInSettings) {
+          e.preventDefault();
+          settingsItems[0].focus();
+          return;
+        }
+
+        const index = active ? settingsItems.indexOf(active) : -1;
+
+        if (key === 'Enter') {
+          e.preventDefault();
+          active?.click();
+          return;
+        }
+
+        if (key === 'ArrowDown' || key === 'ArrowUp') {
+          e.preventDefault();
+          const nextIndex = key === 'ArrowDown'
+            ? Math.min(settingsItems.length - 1, index + 1)
+            : Math.max(0, index - 1);
+          settingsItems[Math.max(0, nextIndex)]?.focus();
+          return;
+        }
+
+        // Close settings with sideways arrow toward player controls
+        const towardControls = isRTL ? 'ArrowRight' : 'ArrowLeft';
+        if (key === towardControls && settingsPanel === 'main') {
+          e.preventDefault();
+          setShowSettings(false);
+          requestAnimationFrame(focusDefaultControl);
         }
         return;
       }
 
-      resetHideTimer();
+      if (key === 'Enter') {
+        if (activeInsidePlayer && active?.classList.contains('tv-focus')) {
+          e.preventDefault();
+          active.click();
+          return;
+        }
+        e.preventDefault();
+        v.paused ? v.play() : v.pause();
+        return;
+      }
 
-      switch (e.key) {
-        case ' ':
-        case 'Enter':
-        case 'MediaPlayPause':
-          e.preventDefault();
-          v.paused ? v.play() : v.pause();
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          v.currentTime = Math.max(0, v.currentTime - 10);
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          v.currentTime = Math.min(v.duration, v.currentTime + 10);
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          v.volume = Math.min(1, v.volume + 0.1);
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          v.volume = Math.max(0, v.volume - 0.1);
-          break;
-        case 'Escape':
-        case 'Backspace':
-          e.preventDefault();
-          onBack();
-          break;
-        case 'f':
-        case 'F':
-          e.preventDefault();
-          toggleFullscreen();
-          break;
-        case 'm':
-        case 'M':
-          e.preventDefault();
-          v.muted = !v.muted;
-          break;
-        case 'MediaStop':
-          e.preventDefault();
-          v.pause();
-          onBack();
-          break;
-        case 'MediaRewind':
-          e.preventDefault();
-          v.currentTime = Math.max(0, v.currentTime - 30);
-          break;
-        case 'MediaFastForward':
-          e.preventDefault();
-          v.currentTime = Math.min(v.duration, v.currentTime + 30);
-          break;
+      if (key === 'MediaPlayPause') {
+        e.preventDefault();
+        v.paused ? v.play() : v.pause();
+        return;
+      }
+
+      if (key === 'MediaStop') {
+        e.preventDefault();
+        v.pause();
+        onBack();
+        return;
+      }
+
+      if (key === 'f') {
+        e.preventDefault();
+        toggleFullscreen();
+        return;
+      }
+
+      if (key === 'm') {
+        e.preventDefault();
+        v.muted = !v.muted;
+        return;
+      }
+
+      if (key === 'MediaRewind') {
+        e.preventDefault();
+        v.currentTime = Math.max(0, v.currentTime - 30);
+        return;
+      }
+
+      if (key === 'MediaFastForward') {
+        e.preventDefault();
+        v.currentTime = Math.min(v.duration, v.currentTime + 30);
+        return;
+      }
+
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+        e.preventDefault();
+
+        // If overlay is hidden, arrows act as quick playback controls
+        if (!showControls) {
+          if (key === 'ArrowLeft') v.currentTime = Math.max(0, v.currentTime - 10);
+          if (key === 'ArrowRight') v.currentTime = Math.min(v.duration, v.currentTime + 10);
+          if (key === 'ArrowUp') v.volume = Math.min(1, v.volume + 0.1);
+          if (key === 'ArrowDown') v.volume = Math.max(0, v.volume - 0.1);
+          return;
+        }
+
+        const controls = getFocusable(root).filter((el) => !el.closest('[data-player-settings-panel="true"]'));
+        if (controls.length === 0) return;
+
+        const current = activeInsidePlayer && active?.classList.contains('tv-focus') ? active : null;
+        if (!current) {
+          focusDefaultControl();
+          return;
+        }
+
+        const next = findNextFocusable(current, key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight', controls);
+        if (next) {
+          next.focus();
+          lastFocusedControlRef.current = next;
+          return;
+        }
+
+        // Smart fallback if no focus target in that direction
+        if (key === 'ArrowLeft') v.currentTime = Math.max(0, v.currentTime - 10);
+        if (key === 'ArrowRight') v.currentTime = Math.min(v.duration, v.currentTime + 10);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSettings, settingsPanel, onBack, resetHideTimer]);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [showSettings, settingsPanel, onBack, resetHideTimer, showControls, isRTL]);
+
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    const onFocusIn = (event: FocusEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target || !target.classList.contains('tv-focus')) return;
+      if (target.closest('[data-player-settings-panel="true"]')) return;
+      lastFocusedControlRef.current = target;
+    };
+
+    root.addEventListener('focusin', onFocusIn);
+    return () => root.removeEventListener('focusin', onFocusIn);
+  }, []);
+
+  useEffect(() => {
+    if (!showControls || showSettings) return;
+    const root = containerRef.current;
+    if (!root) return;
+
+    const active = document.activeElement as HTMLElement | null;
+    const activeIsUsable = !!active && root.contains(active) && active.classList.contains('tv-focus') && !active.closest('[data-player-settings-panel="true"]');
+    if (activeIsUsable) return;
+
+    const preferred = (lastFocusedControlRef.current && root.contains(lastFocusedControlRef.current))
+      ? lastFocusedControlRef.current
+      : root.querySelector<HTMLElement>('[data-player-default="true"]');
+
+    if (preferred) requestAnimationFrame(() => preferred.focus());
+  }, [showControls, showSettings]);
+
+  useEffect(() => {
+    if (!showSettings || !showControls) return;
+    const root = containerRef.current;
+    if (!root) return;
+
+    requestAnimationFrame(() => {
+      const first = root.querySelector<HTMLElement>('[data-player-settings-panel="true"] .tv-focus');
+      first?.focus();
+    });
+  }, [showSettings, settingsPanel, showControls]);
 
   const togglePlay = () => {
     const v = videoRef.current;
