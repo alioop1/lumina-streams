@@ -137,12 +137,15 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const [embeddedAudioTracks, setEmbeddedAudioTracks] = useState<AudioTrackInfo[]>([]);
   const [activeAudioIdx, setActiveAudioIdx] = useState<number>(0);
   const [loadingAudio, setLoadingAudio] = useState(false);
+  const [canSwitchAudioTracks, setCanSwitchAudioTracks] = useState(false);
 
   const [availableSubs, setAvailableSubs] = useState<SubtitleTrack[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
   const [activeSub, setActiveSub] = useState<string | null>(null);
 
   const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
+  const defaultAudioLabel = lang === 'he' ? 'ברירת מחדל' : 'Default';
 
   // i18n labels
   const labels = {
@@ -153,11 +156,12 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     audioLang: lang === 'he' ? 'שפת אודיו' : 'Audio Language',
     normal: lang === 'he' ? 'רגיל' : 'Normal',
     off: lang === 'he' ? 'כבוי' : 'Off',
-    default: lang === 'he' ? 'ברירת מחדל' : 'Default',
+    default: defaultAudioLabel,
     loading: lang === 'he' ? 'טוען...' : 'Loading...',
     loadingSubs: lang === 'he' ? 'טוען כתוביות...' : 'Loading subtitles...',
-    noAudio: lang === 'he' ? 'אין רצועות אודיו נוספות' : 'No additional audio tracks',
+    noAudio: lang === 'he' ? 'האודיו הראשי זמין, אבל אין רצועות נוספות לזיהוי' : 'Primary audio is available, but no additional tracks were detected',
     noSubs: lang === 'he' ? 'אין כתוביות זמינות' : 'No subtitles available',
+    cannotSwitchAudio: lang === 'he' ? 'במכשיר/דפדפן הזה לא ניתן להחליף רצועת אודיו מתוך הנגן' : 'Audio track switching is not supported on this device/browser',
   };
 
   // Fetch subtitles
@@ -184,11 +188,24 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     const detectAudioTracks = () => {
       const vAny = v as any;
       const tracks = vAny.audioTracks;
-      if (!tracks || tracks.length === 0) {
-        setEmbeddedAudioTracks([]);
+
+      // Fallback for platforms (Android TV / some Chromium builds) with no audioTracks API
+      if (!tracks || typeof tracks.length !== 'number' || tracks.length === 0) {
+        setCanSwitchAudioTracks(false);
+        setEmbeddedAudioTracks([
+          {
+            index: 0,
+            label: defaultAudioLabel,
+            language: '',
+            enabled: true,
+          },
+        ]);
+        setActiveAudioIdx(0);
         setLoadingAudio(false);
         return;
       }
+
+      setCanSwitchAudioTracks(true);
       const list: AudioTrackInfo[] = [];
       for (let i = 0; i < tracks.length; i++) {
         const t = tracks[i];
@@ -213,7 +230,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       v.removeEventListener('loadedmetadata', detectAudioTracks);
       clearTimeout(timer);
     };
-  }, [url, isYouTube]);
+  }, [url, isYouTube, defaultAudioLabel]);
 
   const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
     try {
@@ -582,6 +599,13 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const selectAudioTrack = (trackIdx: number) => {
     const v = videoRef.current;
     if (!v) return;
+
+    if (!canSwitchAudioTracks) {
+      setSettingsPanel('main');
+      setShowSettings(false);
+      return;
+    }
+
     const vAny = v as any;
     const tracks = vAny.audioTracks;
     if (!tracks) return;
@@ -807,13 +831,25 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10 tv-focus">
                 <BackChevron className="w-4 h-4" /> {labels.audioLang}
               </button>
+
+              {!canSwitchAudioTracks && (
+                <div className="px-4 py-2 text-white/40 text-xs text-center">
+                  {labels.cannotSwitchAudio}
+                </div>
+              )}
+
               {embeddedAudioTracks.length === 0 ? (
                 <div className="px-4 py-3 text-white/40 text-center">
                   {loadingAudio ? labels.loading : labels.noAudio}
                 </div>
               ) : (
                 embeddedAudioTracks.map((track) => (
-                  <button key={track.index} onClick={() => selectAudioTrack(track.index)} className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus ${activeAudioIdx === track.index ? 'text-primary' : ''}`}>
+                  <button
+                    key={track.index}
+                    onClick={() => selectAudioTrack(track.index)}
+                    disabled={!canSwitchAudioTracks}
+                    className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus disabled:opacity-60 ${activeAudioIdx === track.index ? 'text-primary' : ''}`}
+                  >
                     <div>
                       <div>{track.label}</div>
                       {track.language && track.language !== track.label && <div className="text-xs text-white/40">{track.language}</div>}
