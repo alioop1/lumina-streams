@@ -13,6 +13,8 @@ interface VideoPlayerProps {
   season?: number;
   episode?: number;
   rdFileId?: string | null;
+  streamLanguages?: string[];
+  onSelectAudioLanguage?: (language: string) => void | Promise<void>;
 }
 
 type SettingsPanel = 'main' | 'speed' | 'audio' | 'subtitles';
