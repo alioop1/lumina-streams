@@ -345,7 +345,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
       </div>
 
       {/* ══════ MAIN CONTENT AREA ══════ */}
-      <div className="px-8 pb-24 space-y-8 -mt-2 relative z-10">
+      <div className="px-8 3xl:px-12 4k:px-16 pb-24 3xl:pb-32 space-y-8 3xl:space-y-12 -mt-2 relative z-10">
 
         {/* Action buttons - large, TV-friendly */}
         <div data-nav-row="details-actions" className="flex gap-4 items-center">
