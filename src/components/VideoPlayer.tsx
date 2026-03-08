@@ -176,7 +176,32 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     noSubs: lang === 'he' ? 'אין כתוביות זמינות' : 'No subtitles available',
     cannotSwitchAudio: lang === 'he' ? 'במכשיר/דפדפן הזה לא ניתן להחליף רצועת אודיו מתוך הנגן' : 'Audio track switching is not supported on this device/browser',
     chooseSourceAudio: lang === 'he' ? 'בחר שפה (יחליף מקור):' : 'Choose language (will switch source):',
+    transcodeActive: lang === 'he' ? 'מצב תאימות אודיו פעיל' : 'Audio compatibility mode active',
   };
+
+  useEffect(() => {
+    setPlaybackUrl(url);
+    setUsingTranscode(false);
+    setNoAudioDetected(false);
+  }, [url]);
+
+  // Prefer RD transcode stream when available to improve codec compatibility
+  useEffect(() => {
+    if (!transcodeData || isYouTube) return;
+
+    const candidates = Object.values(transcodeData as Record<string, any>)
+      .filter((item: any) => item?.full)
+      .map((item: any) => ({ full: item.full as string, acodec: (item.acodec as string | undefined) || '' }));
+
+    if (candidates.length === 0) return;
+
+    const preferred = candidates.find((c) => isWebAudioCodecCompatible(c.acodec)) || candidates[0];
+
+    if (preferred?.full && preferred.full !== playbackUrl) {
+      setPlaybackUrl(preferred.full);
+      setUsingTranscode(true);
+    }
+  }, [transcodeData, isYouTube, playbackUrl]);
 
   // Fetch subtitles
   useEffect(() => {
