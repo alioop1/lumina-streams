@@ -1,4 +1,4 @@
-import { Home, Search, Bookmark, Settings } from 'lucide-react';
+import { Home, Search, Bookmark, Download, Settings } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { TranslationKey } from '@/lib/translations';
@@ -7,6 +7,7 @@ const tabs: { icon: typeof Home; labelKey: TranslationKey; path: string }[] = [
   { icon: Home, labelKey: 'home', path: '/' },
   { icon: Search, labelKey: 'search', path: '/search' },
   { icon: Bookmark, labelKey: 'watchlist', path: '/watchlist' },
+  { icon: Download, labelKey: 'downloads', path: '/downloads' },
   { icon: Settings, labelKey: 'settings', path: '/settings' },
 ];
 
@@ -24,7 +25,7 @@ export const BottomNav = () => {
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors tv-focus ${
+              className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors tv-focus ${
                 active ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
