@@ -146,9 +146,9 @@
     box-shadow: 0 0 0 2px hsl(var(--primary) / 0.8);
   }
 
-  /* Content row cards: smooth zoom, NO border/ring */
+  /* Content row cards: smooth zoom, NO border/ring — GPU-accelerated */
   .focus-card {
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.2s cubic-bezier(0.25, 0, 0.2, 1);
     will-change: transform;
   }
 
