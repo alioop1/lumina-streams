@@ -598,9 +598,9 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
   if (isYouTube) {
     return (
-      <div data-video-player="true" className="fixed inset-0 z-50 bg-black flex flex-col" dir={dir}>
+      <div ref={containerRef} data-video-player="true" className="fixed inset-0 z-50 bg-black flex flex-col" dir={dir}>
         <div className="absolute top-4 start-4 end-4 z-10 flex items-center justify-between">
-          <button onClick={onBack} className="glass w-10 h-10 rounded-full flex items-center justify-center text-foreground tv-focus">
+          <button onClick={onBack} data-player-default="true" className="glass w-10 h-10 rounded-full flex items-center justify-center text-foreground tv-focus">
             <BackArrow className="w-5 h-5" />
           </button>
           <h2 className="text-foreground text-sm font-medium truncate max-w-[60%]">{title}</h2>
