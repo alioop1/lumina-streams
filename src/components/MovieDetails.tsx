@@ -280,7 +280,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   return (
     <div className="min-h-screen bg-background animate-fade-in" dir={dir}>
       {/* ══════ HERO: Full-width backdrop with info overlay ══════ */}
-      <div className="relative h-[70vh] min-h-[500px]">
+      <div className="relative h-[70vh] 3xl:h-[75vh] 4k:h-[80vh] min-h-[500px]">
         <img
           src={backdrop}
           alt={movie.title}
@@ -290,54 +290,54 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent" />
 
         {/* Back button */}
-        <div data-nav-row="details-back" className="absolute top-8 start-8 z-20">
+        <div data-nav-row="details-back" className="absolute top-8 3xl:top-12 start-8 3xl:start-12 z-20">
           <button
             onClick={onBack}
-            className="glass w-12 h-12 rounded-full flex items-center justify-center text-foreground tv-focus"
+            className="glass w-12 h-12 3xl:w-14 3xl:h-14 4k:w-16 4k:h-16 rounded-full flex items-center justify-center text-foreground tv-focus"
           >
-            <BackArrow className="w-6 h-6" />
+            <BackArrow className="w-6 h-6 3xl:w-7 3xl:h-7 4k:w-8 4k:h-8" />
           </button>
         </div>
 
         {/* Info overlay on left side of backdrop */}
-        <div className="absolute bottom-0 start-0 end-0 p-8 pb-10 z-10">
+        <div className="absolute bottom-0 start-0 end-0 p-8 3xl:p-12 4k:p-16 pb-10 3xl:pb-14 z-10">
           <div className="max-w-[55%]">
-            <h1 className="font-display text-5xl lg:text-6xl text-foreground text-glow leading-tight">
+            <h1 className="font-display text-5xl lg:text-6xl 3xl:text-7xl 4k:text-8xl tv:text-9xl text-foreground text-glow leading-tight">
               {displayTitle}
             </h1>
             {lang === 'he' && movie.titleHe && (
-              <p className="text-muted-foreground text-base mt-2" dir="ltr">{movie.title}</p>
+              <p className="text-muted-foreground text-base 3xl:text-lg 4k:text-xl mt-2 3xl:mt-3" dir="ltr">{movie.title}</p>
             )}
 
             {/* Meta row */}
-            <div className="flex items-center gap-4 mt-4 text-base text-muted-foreground flex-wrap">
+            <div className="flex items-center gap-4 3xl:gap-5 mt-4 3xl:mt-6 text-base 3xl:text-lg 4k:text-xl text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1.5">
-                <Star className="w-5 h-5 text-primary fill-primary" />
-                <span className="text-foreground font-bold text-lg">{detailMovie.rating}</span>
+                <Star className="w-5 h-5 3xl:w-6 3xl:h-6 text-primary fill-primary" />
+                <span className="text-foreground font-bold text-lg 3xl:text-xl 4k:text-2xl">{detailMovie.rating}</span>
               </span>
               <span className="text-foreground">{detailMovie.year}</span>
               <span>{detailMovie.duration}</span>
               {detailMovie.quality && (
-                <span className="bg-primary/20 text-primary px-2.5 py-1 rounded text-xs font-bold tracking-wide">
+                <span className="bg-primary/20 text-primary px-2.5 py-1 3xl:px-3 3xl:py-1.5 rounded text-xs 3xl:text-sm font-bold tracking-wide">
                   {detailMovie.quality}
                 </span>
               )}
             </div>
 
             {/* Genres */}
-            <div className="flex gap-2 flex-wrap mt-4">
+            <div className="flex gap-2 3xl:gap-3 flex-wrap mt-4 3xl:mt-5">
               {genres.map((g: any) => {
                 const name = typeof g === 'string' ? g : g.name;
                 return (
-                  <span key={name} className="glass px-3 py-1.5 rounded-full text-xs text-secondary-foreground font-medium">
+                  <span key={name} className="glass px-3 py-1.5 3xl:px-4 3xl:py-2 rounded-full text-xs 3xl:text-sm text-secondary-foreground font-medium">
                     {name}
                   </span>
                 );
               })}
             </div>
 
-            {/* Synopsis - shown inline in hero for TV readability */}
-            <p className="text-sm text-muted-foreground leading-relaxed mt-4 line-clamp-3 max-w-[600px]">
+            {/* Synopsis */}
+            <p className="text-sm 3xl:text-base 4k:text-lg text-muted-foreground leading-relaxed mt-4 3xl:mt-6 line-clamp-3 max-w-[600px] 3xl:max-w-[800px] 4k:max-w-[1000px]">
               {detailMovie.overview}
             </p>
           </div>
