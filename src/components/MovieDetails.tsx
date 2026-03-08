@@ -72,11 +72,34 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   }, [showTorrents, selectedEpisode]);
 
   const handleStreamSelect = async (stream: TorrentioStream, idx: number) => {
-    const link = streamToMagnet(stream);
+    let selected = { stream, idx, parsed: parseTorrentioTitle(stream.title || '') };
+
+    if (!selected.parsed.videoCompatible) {
+      const compatibleAlternative = displayStreams
+        .map((candidate, candidateIdx) => ({
+          stream: candidate,
+          idx: candidateIdx,
+          parsed: parseTorrentioTitle(candidate.title || ''),
+        }))
+        .filter((item) => item.parsed.videoCompatible)
+        .sort((a, b) => {
+          if (a.parsed.audioCompatible !== b.parsed.audioCompatible) {
+            return a.parsed.audioCompatible ? -1 : 1;
+          }
+          return b.parsed.seeds - a.parsed.seeds;
+        })[0];
+
+      if (compatibleAlternative) {
+        selected = compatibleAlternative;
+      }
+    }
+
+    const link = streamToMagnet(selected.stream);
     if (!link) return;
-    const parsed = parseTorrentioTitle(stream.title || '');
-    setSelectedStreamLanguages(parsed.languages);
-    setLoadingStreamIdx(idx);
+
+    setSelectedStreamLanguages(selected.parsed.languages);
+    setLoadingStreamIdx(selected.idx);
+
     try {
       if (link.startsWith('magnet:')) {
         const result = await addMagnet.mutateAsync(link);
