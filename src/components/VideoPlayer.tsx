@@ -107,6 +107,7 @@ export const VideoPlayer = ({
   const hlsRef = useRef<Hls | null>(null);
   const hideTimerRef = useRef<number | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
+  const attemptedSourcesRef = useRef<Set<string>>(new Set());
 
   const { data: transcodeData } = useRDTranscode(rdFileId || null);
 
@@ -154,30 +155,39 @@ export const VideoPlayer = ({
   };
 
   useEffect(() => {
+    attemptedSourcesRef.current = new Set([url]);
     setPlaybackUrl(url);
     setPlaybackMode('direct');
     setIsBuffering(true);
   }, [url]);
 
-  /* ═══ Fallback to RD transcode on format error ═══ */
-  const fallbackToTranscode = useCallback(() => {
-    if (playbackMode === 'transcode') return; // already tried
+  const getTranscodeCandidates = useCallback(() => {
     const td = transcodeData as Record<string, any> | undefined;
-    const mp4Url = td?.liveMP4?.full as string | undefined;
-    const hlsUrl = td?.apple?.full as string | undefined;
+    return [
+      td?.apple?.full as string | undefined,
+      td?.liveMP4?.full as string | undefined,
+      td?.h264WebM?.full as string | undefined,
+    ].filter(Boolean) as string[];
+  }, [transcodeData]);
 
-    if (mp4Url) {
-      console.log('Falling back to RD liveMP4 transcode');
-      setPlaybackMode('transcode');
-      setPlaybackUrl(mp4Url);
-      setIsBuffering(true);
-    } else if (hlsUrl) {
-      console.log('Falling back to RD HLS transcode');
-      setPlaybackMode('transcode');
-      setPlaybackUrl(hlsUrl);
-      setIsBuffering(true);
+  const switchSource = useCallback((nextUrl: string, reason: string) => {
+    if (!nextUrl || attemptedSourcesRef.current.has(nextUrl) || nextUrl === playbackUrl) return false;
+    attemptedSourcesRef.current.add(nextUrl);
+    setPlaybackMode('transcode');
+    setPlaybackUrl(nextUrl);
+    setIsBuffering(true);
+    console.info(`Switching playback source (${reason})`, nextUrl);
+    return true;
+  }, [playbackUrl]);
+
+  /* ═══ Fallback to RD transcode on format error ═══ */
+  const fallbackToTranscode = useCallback((reason = 'unsupported format') => {
+    const candidates = getTranscodeCandidates();
+    for (const candidate of candidates) {
+      if (switchSource(candidate, reason)) return true;
     }
-  }, [transcodeData, playbackMode]);
+    return false;
+  }, [getTranscodeCandidates, switchSource]);
 
   /* ═══ Playback engine ═══ */
   useEffect(() => {
