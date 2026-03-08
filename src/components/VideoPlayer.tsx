@@ -816,8 +816,6 @@ export const VideoPlayer = ({
                   </span>
                 </button>
               ) : null}
-                </button>
-              )}
               <button onClick={() => setSettingsPanel('external')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
                 <span className="flex items-center gap-2"><ExternalLink className="w-4 h-4" /> {labels.openExternal}</span>
                 <NavChevron className="w-4 h-4 text-white/60" />
