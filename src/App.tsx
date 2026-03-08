@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
@@ -18,12 +19,29 @@ const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const { dir } = useLanguage();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+
+  // Collapse/expand sidebar based on focus location
+  const handleFocusChange = useCallback(() => {
+    const active = document.activeElement as HTMLElement;
+    if (!active) return;
+    const inSidebar = !!active.closest('[data-sidebar]');
+    setSidebarCollapsed(!inSidebar);
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('focusin', handleFocusChange);
+    return () => document.removeEventListener('focusin', handleFocusChange);
+  }, [handleFocusChange]);
+
   useTVGlobalNavigation(true);
+
+  const mainMargin = sidebarCollapsed ? 'ms-16' : 'ms-56';
 
   return (
     <div className="min-h-screen flex w-full bg-background text-foreground" dir={dir}>
-      <AppSidebar />
-      <main className="flex-1 ms-56 overflow-y-auto">
+      <AppSidebar collapsed={sidebarCollapsed} />
+      <main className={`flex-1 ${mainMargin} overflow-y-auto transition-all duration-200`}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<SearchRoute />} />
