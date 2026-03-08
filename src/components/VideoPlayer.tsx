@@ -368,7 +368,7 @@ export const VideoPlayer = ({
   /* ═══ External player ═══ */
   const openExternal = (player: 'vlc' | 'mx' | 'system') => {
     const isAndroid = /android/i.test(navigator.userAgent);
-    let href = url;
+    let href = playbackUrl;
     if (player === 'vlc') {
       href = isAndroid
         ? `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=org.videolan.vlc;type=video/*;S.title=${encodeURIComponent(title)};end`
