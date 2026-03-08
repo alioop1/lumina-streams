@@ -599,6 +599,13 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const selectAudioTrack = (trackIdx: number) => {
     const v = videoRef.current;
     if (!v) return;
+
+    if (!canSwitchAudioTracks) {
+      setSettingsPanel('main');
+      setShowSettings(false);
+      return;
+    }
+
     const vAny = v as any;
     const tracks = vAny.audioTracks;
     if (!tracks) return;
