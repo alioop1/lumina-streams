@@ -140,8 +140,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
             onClick={handleAddToList}
             className="glass hover:bg-accent w-12 h-12 rounded-full flex items-center justify-center transition-all text-foreground tv-focus"
             tabIndex={0}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
           >
             <Plus className="w-5 h-5" />
           </motion.button>

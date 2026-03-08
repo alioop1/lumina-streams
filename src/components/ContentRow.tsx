@@ -121,7 +121,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
               key={`${movie.id}-${i}`}
               ref={el => { cardRefs.current[i] = el; }}
               tabIndex={0}
-              onKeyDown={e => handleCardKeyDown(e, i)}
+              onKeyDown={!isTVDevice ? (e => handleCardKeyDown(e, i)) : undefined}
               onClick={() => onMovieClick(movie)}
               className="tv-focus flex-shrink-0 rounded-xl content-row-item text-start focus-card"
             >
