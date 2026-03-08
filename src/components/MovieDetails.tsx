@@ -412,7 +412,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             )}
 
             {seasonData?.episodes && (
-              <div className="mt-4 space-y-3">
+              <div data-nav-row="details-episodes" className="mt-4 space-y-3">
                 {seasonData.episodes.map((ep: any) => (
                   <button
                     key={ep.id}
