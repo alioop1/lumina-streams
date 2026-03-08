@@ -116,9 +116,10 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
       <VideoPlayer
         url={streamUrl}
         title={displayTitle}
-        onBack={() => setStreamUrl(null)}
+        onBack={() => { setStreamUrl(null); setRdFileId(null); }}
         imdbId={imdbId}
         mediaType={mediaType as 'movie' | 'series'}
+        rdFileId={rdFileId}
       />
     );
   }
