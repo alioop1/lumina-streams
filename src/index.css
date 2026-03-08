@@ -151,4 +151,32 @@
   :focus-visible {
     outline: none;
   }
+
+  /* Movie card poster focus/hover styles */
+  .focus-card {
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                box-shadow 0.3s ease;
+  }
+
+  .focus-card:hover,
+  .focus-card:focus-visible {
+    transform: scale(1.08);
+    z-index: 20;
+  }
+
+  .focus-card:focus-visible {
+    outline: none;
+  }
+
+  .focus-card:focus-visible .movie-card-poster {
+    box-shadow: 0 0 0 3px hsl(var(--primary)),
+                0 0 20px 4px hsl(var(--primary) / 0.4),
+                0 8px 30px -4px hsl(0 0% 0% / 0.6);
+  }
+
+  .focus-card:hover .movie-card-poster {
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.6),
+                0 0 15px 2px hsl(var(--primary) / 0.25),
+                0 8px 25px -4px hsl(0 0% 0% / 0.5);
+  }
 }
