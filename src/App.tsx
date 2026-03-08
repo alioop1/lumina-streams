@@ -36,7 +36,7 @@ const AppLayout = () => {
 
   useTVGlobalNavigation(true);
 
-  const mainMargin = sidebarCollapsed ? 'ms-16' : 'ms-56';
+  const mainMargin = sidebarCollapsed ? 'ms-20' : 'ms-60';
 
   return (
     <div className="min-h-screen flex w-full bg-background text-foreground" dir={dir}>
