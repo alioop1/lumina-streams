@@ -515,7 +515,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                       <img
                         src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
                         alt={ep.name}
-                        className="w-32 h-[4.5rem] rounded-lg object-cover flex-shrink-0"
+                        className="w-32 3xl:w-44 4k:w-52 h-[4.5rem] 3xl:h-[6rem] 4k:h-[7rem] rounded-lg 3xl:rounded-xl object-cover flex-shrink-0"
                         loading="lazy"
                       />
                     ) : (
