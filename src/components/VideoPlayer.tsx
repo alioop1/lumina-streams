@@ -396,6 +396,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       }
 
       if (key === 'MediaPlayPause') {
+        if (!v) return;
         e.preventDefault();
         v.paused ? v.play() : v.pause();
         return;
@@ -403,7 +404,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
       if (key === 'MediaStop') {
         e.preventDefault();
-        v.pause();
+        if (v) v.pause();
         onBack();
         return;
       }
@@ -415,18 +416,21 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       }
 
       if (key === 'm') {
+        if (!v) return;
         e.preventDefault();
         v.muted = !v.muted;
         return;
       }
 
       if (key === 'MediaRewind') {
+        if (!v) return;
         e.preventDefault();
         v.currentTime = Math.max(0, v.currentTime - 30);
         return;
       }
 
       if (key === 'MediaFastForward') {
+        if (!v) return;
         e.preventDefault();
         v.currentTime = Math.min(v.duration, v.currentTime + 30);
         return;
