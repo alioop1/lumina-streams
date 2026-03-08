@@ -84,7 +84,7 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
         </AnimatePresence>
 
         <div className="flex items-center gap-3">
-          <motion.button
+          <button
             ref={el => { buttonRefs.current[0] = el; }}
             onKeyDown={e => handleKeyDown(e, 0)}
             onClick={handlePlay}
