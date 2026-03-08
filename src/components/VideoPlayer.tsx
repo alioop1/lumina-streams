@@ -735,7 +735,16 @@ export const VideoPlayer = ({
         </div>
       )}
 
-      {/* Resume prompt */}
+      {/* Feature: Seek/Volume OSD overlay */}
+      {seekOSD && (
+        <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none osd-overlay">
+          <div className="bg-black/70 backdrop-blur-md rounded-2xl px-8 py-4 3xl:px-10 3xl:py-5">
+            <span className="text-white text-2xl 3xl:text-3xl 4k:text-4xl font-bold">{seekOSD}</span>
+          </div>
+        </div>
+      )}
+
+
       {showResumePrompt && !isBuffering && (
         <div className="absolute top-20 start-1/2 -translate-x-1/2 z-30 bg-black/90 backdrop-blur-lg rounded-2xl border border-white/10 p-5 flex flex-col items-center gap-3 min-w-[280px] 3xl:min-w-[360px]" data-controls onClick={e => e.stopPropagation()}>
           <p className="text-white text-sm 3xl:text-base font-medium">
