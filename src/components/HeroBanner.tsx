@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Play, Plus, Info } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Play, Plus, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
@@ -12,17 +12,55 @@ interface HeroBannerProps {
 export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
   const heroMovies = movies.filter(m => m.backdrop).slice(0, 5);
   const [current, setCurrent] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const movie = heroMovies[current];
   const { t, lang, dir } = useLanguage();
   const { toast } = useToast();
+  const isRTL = dir === 'rtl';
+  const timerRef = useRef<ReturnType<typeof setInterval>>();
 
+  // Feature: Auto-rotate with smooth crossfade
   useEffect(() => {
-    if (heroMovies.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrent(prev => (prev + 1) % heroMovies.length);
+    if (heroMovies.length <= 1) return;
+    timerRef.current = setInterval(() => {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrent(prev => (prev + 1) % heroMovies.length);
+        setIsTransitioning(false);
+      }, 300);
     }, 8000);
-    return () => clearInterval(timer);
+    return () => clearInterval(timerRef.current);
   }, [heroMovies.length]);
+
+  // Feature: Preload next hero image
+  useEffect(() => {
+    if (heroMovies.length <= 1) return;
+    const nextIdx = (current + 1) % heroMovies.length;
+    const nextMovie = heroMovies[nextIdx];
+    if (nextMovie?.backdrop || nextMovie?.poster) {
+      const img = new Image();
+      img.src = nextMovie.backdrop || nextMovie.poster;
+    }
+  }, [current, heroMovies]);
+
+  const goTo = useCallback((idx: number) => {
+    if (idx === current) return;
+    clearInterval(timerRef.current);
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrent(idx);
+      setIsTransitioning(false);
+    }, 300);
+  }, [current]);
+
+  // Feature: Manual prev/next
+  const goPrev = useCallback(() => {
+    goTo((current - 1 + heroMovies.length) % heroMovies.length);
+  }, [current, heroMovies.length, goTo]);
+
+  const goNext = useCallback(() => {
+    goTo((current + 1) % heroMovies.length);
+  }, [current, heroMovies.length, goTo]);
 
   const handlePlay = useCallback(() => {
     if (movie) onInfoClick(movie);
@@ -43,16 +81,39 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
 
   return (
     <div className="relative w-full h-[70vh] 3xl:h-[75vh] 4k:h-[80vh] overflow-hidden" dir={dir} style={{ contain: 'layout style paint' }}>
-      <img
-        src={movie.backdrop || movie.poster}
-        alt={movie.title}
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ contentVisibility: 'auto' }}
-      />
+      {/* Background image with crossfade */}
+      <div className={`absolute inset-0 transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+        <img
+          src={movie.backdrop || movie.poster}
+          alt={movie.title}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ contentVisibility: 'auto' }}
+        />
+      </div>
       <div className="absolute inset-0 gradient-fade-bottom" />
       <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background" />
 
-      <div className="absolute bottom-0 start-0 end-0 p-8 3xl:p-12 4k:p-16 space-y-4 3xl:space-y-6">
+      {/* Feature: Prev/Next arrows */}
+      {heroMovies.length > 1 && (
+        <>
+          <button
+            onClick={isRTL ? goNext : goPrev}
+            className="absolute start-4 3xl:start-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 3xl:w-12 3xl:h-12 4k:w-14 4k:h-14 rounded-full bg-background/40 backdrop-blur flex items-center justify-center text-foreground opacity-0 hover:opacity-100 focus-visible:opacity-100 transition-opacity tv-focus"
+            aria-label="Previous"
+          >
+            {isRTL ? <ChevronRight className="w-5 h-5 3xl:w-6 3xl:h-6" /> : <ChevronLeft className="w-5 h-5 3xl:w-6 3xl:h-6" />}
+          </button>
+          <button
+            onClick={isRTL ? goPrev : goNext}
+            className="absolute end-4 3xl:end-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 3xl:w-12 3xl:h-12 4k:w-14 4k:h-14 rounded-full bg-background/40 backdrop-blur flex items-center justify-center text-foreground opacity-0 hover:opacity-100 focus-visible:opacity-100 transition-opacity tv-focus"
+            aria-label="Next"
+          >
+            {isRTL ? <ChevronLeft className="w-5 h-5 3xl:w-6 3xl:h-6" /> : <ChevronRight className="w-5 h-5 3xl:w-6 3xl:h-6" />}
+          </button>
+        </>
+      )}
+
+      <div className={`absolute bottom-0 start-0 end-0 p-8 3xl:p-12 4k:p-16 space-y-4 3xl:space-y-6 transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
         <h1 className="font-display text-6xl 3xl:text-7xl 4k:text-8xl tv:text-9xl text-foreground text-glow">
           {displayTitle}
         </h1>
@@ -83,6 +144,24 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
             <Plus className="w-5 h-5 3xl:w-6 3xl:h-6 4k:w-7 4k:h-7" />
           </button>
         </div>
+
+        {/* Feature: Dot indicators */}
+        {heroMovies.length > 1 && (
+          <div className="flex items-center gap-2 3xl:gap-3 pt-2">
+            {heroMovies.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => goTo(idx)}
+                className={`rounded-full transition-all duration-300 tv-focus outline-none ${
+                  idx === current
+                    ? 'w-8 3xl:w-10 h-2 3xl:h-2.5 bg-primary'
+                    : 'w-2 3xl:w-2.5 h-2 3xl:h-2.5 bg-foreground/30 hover:bg-foreground/50'
+                }`}
+                aria-label={`Slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

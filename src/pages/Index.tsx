@@ -1,4 +1,4 @@
-import { useState, useCallback, lazy, Suspense } from 'react';
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { HeroBanner } from '@/components/HeroBanner';
 import { ContentRow } from '@/components/ContentRow';
 import { Movie } from '@/lib/mockData';
@@ -21,6 +21,13 @@ const Index = () => {
   const handleMovieClick = useCallback((movie: Movie) => setSelectedMovie(movie), []);
   const handleBack = useCallback(() => setSelectedMovie(null), []);
 
+  // Feature: Scroll to top when returning from movie details
+  useEffect(() => {
+    if (!selectedMovie) {
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    }
+  }, [selectedMovie]);
+
   if (selectedMovie) {
     return (
       <Suspense fallback={
@@ -34,7 +41,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 3xl:pb-28 4k:pb-32">
+    <div className="min-h-screen bg-background pb-20 3xl:pb-28 4k:pb-32 page-enter">
       <HeroBanner movies={trending || []} onInfoClick={handleMovieClick} />
 
       <div className="mt-6 3xl:mt-10 4k:mt-12 space-y-2 3xl:space-y-4">
