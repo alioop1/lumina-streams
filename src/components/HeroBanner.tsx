@@ -85,8 +85,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
 
         <div className="flex items-center gap-3">
           <button
-            ref={el => { buttonRefs.current[0] = el; }}
-            onKeyDown={e => handleKeyDown(e, 0)}
             onClick={handlePlay}
             className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-3 rounded-lg transition-all glow-red tv-focus"
             tabIndex={0}
