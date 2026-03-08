@@ -191,6 +191,13 @@ export const VideoPlayer = ({
     return false;
   }, [getTranscodeCandidates, switchSource]);
 
+  useEffect(() => {
+    if (!needsTranscodeFallback) return;
+    if (fallbackToTranscode('transcode ready')) {
+      setNeedsTranscodeFallback(false);
+    }
+  }, [needsTranscodeFallback, fallbackToTranscode, transcodeData]);
+
   /* ═══ Playback engine ═══ */
   useEffect(() => {
     const video = videoRef.current;
