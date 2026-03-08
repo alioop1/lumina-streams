@@ -77,16 +77,61 @@ export const torrentio = {
   },
 };
 
+// Map flag emojis & common language tags to language labels
+const FLAG_LANG_MAP: Record<string, string> = {
+  '🇬🇧': 'English', '🇺🇸': 'English', '🇮🇹': 'Italiano', '🇪🇸': 'Español',
+  '🇫🇷': 'Français', '🇩🇪': 'Deutsch', '🇵🇹': 'Português', '🇧🇷': 'Português',
+  '🇷🇺': 'Русский', '🇯🇵': '日本語', '🇰🇷': '한국어', '🇨🇳': '中文',
+  '🇹🇷': 'Türkçe', '🇵🇱': 'Polski', '🇳🇱': 'Nederlands', '🇷🇴': 'Română',
+  '🇭🇺': 'Magyar', '🇨🇿': 'Čeština', '🇬🇷': 'Ελληνικά', '🇸🇪': 'Svenska',
+  '🇳🇴': 'Norsk', '🇩🇰': 'Dansk', '🇫🇮': 'Suomi', '🇮🇱': 'עברית',
+  '🇸🇦': 'العربية', '🇮🇳': 'Hindi', '🇹🇭': 'ไทย', '🇺🇦': 'Українська',
+};
+
+const KEYWORD_LANG_MAP: Record<string, string> = {
+  'dual audio': 'Dual Audio', 'multi': 'Multi',
+  'ita': 'Italiano', 'eng': 'English', 'spa': 'Español',
+  'fre': 'Français', 'ger': 'Deutsch', 'por': 'Português',
+  'rus': 'Русский', 'jpn': '日本語', 'kor': '한국어',
+  'chi': '中文', 'tur': 'Türkçe', 'pol': 'Polski',
+  'ara': 'العربية', 'heb': 'עברית', 'hin': 'Hindi',
+};
+
+const detectLanguages = (title: string): string[] => {
+  const langs = new Set<string>();
+
+  // Detect flag emojis (surrogate pairs)
+  const flagRegex = /[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]/g;
+  let match;
+  while ((match = flagRegex.exec(title)) !== null) {
+    const flag = match[0];
+    if (FLAG_LANG_MAP[flag]) langs.add(FLAG_LANG_MAP[flag]);
+  }
+
+  // Detect keywords (case-insensitive)
+  const lower = title.toLowerCase();
+  for (const [kw, lang] of Object.entries(KEYWORD_LANG_MAP)) {
+    // Match as whole word or surrounded by dots/spaces
+    const re = new RegExp(`(?:^|[\\s._-])${kw}(?:[\\s._-]|$)`, 'i');
+    if (re.test(lower)) langs.add(lang);
+  }
+
+  return Array.from(langs);
+};
+
 export const parseTorrentioTitle = (title: string) => {
   const lines = title.split('\n');
   const quality = lines[0] || '';
   const sizeMatch = quality.match(/💾\s*([\d.]+\s*(?:GB|MB))/i);
   const seedMatch = quality.match(/👤\s*(\d+)/);
+  const languages = detectLanguages(title);
+
   return {
     quality: lines[0]?.replace(/💾.*/, '').replace(/👤.*/, '').trim() || '',
     size: sizeMatch?.[1] || '',
     seeds: seedMatch ? parseInt(seedMatch[1]) : 0,
     source: lines[1] || '',
+    languages,
   };
 };
 
