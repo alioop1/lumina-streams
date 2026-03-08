@@ -180,7 +180,10 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           <button className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus">
             <Plus className="w-6 h-6" />
           </button>
-          <button className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus">
+          <button
+            onClick={handleShare}
+            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus"
+          >
             <Share2 className="w-5 h-5" />
           </button>
         </div>
