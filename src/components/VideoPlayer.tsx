@@ -688,7 +688,7 @@ export const VideoPlayer = ({
         <div
           data-controls
           data-settings-panel="true"
-          className="absolute bottom-24 end-4 w-64 max-h-80 overflow-y-auto bg-black/90 backdrop-blur-lg rounded-xl border border-white/10 text-white text-sm"
+          className="absolute bottom-24 3xl:bottom-32 4k:bottom-36 end-4 3xl:end-6 w-64 3xl:w-80 4k:w-96 max-h-80 3xl:max-h-[28rem] overflow-y-auto bg-black/90 backdrop-blur-lg rounded-xl 3xl:rounded-2xl border border-white/10 text-white text-sm 3xl:text-base"
           onClick={e => e.stopPropagation()}
         >
           {settingsPanel === 'main' && (
