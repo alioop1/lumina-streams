@@ -39,9 +39,9 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
     const scrollDir = isRTL
       ? (direction === 'left' ? amount : -amount)
       : (direction === 'left' ? -amount : amount);
-    scrollRef.current.scrollBy({ left: scrollDir, behavior: 'smooth' });
-    setTimeout(checkScroll, 400);
-  }, [isRTL, checkScroll]);
+    scrollRef.current.scrollBy({ left: scrollDir, behavior: isTVDevice ? 'auto' : 'smooth' });
+    window.setTimeout(checkScroll, isTVDevice ? 160 : 400);
+  }, [isRTL, isTVDevice, checkScroll]);
 
   const handleCardKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
     const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
