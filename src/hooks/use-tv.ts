@@ -105,11 +105,22 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
   useEffect(() => {
     if (!enabled) return;
 
+    const isWithinViewport = (el: HTMLElement, overscan = 320) => {
+      const rect = el.getBoundingClientRect();
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom >= -overscan &&
+        rect.top <= window.innerHeight + overscan &&
+        rect.right >= -overscan &&
+        rect.left <= window.innerWidth + overscan
+      );
+    };
+
     const getFocusable = () =>
       Array.from(document.querySelectorAll<HTMLElement>(focusableSelector)).filter((el) => {
         if (!isHTMLElementVisible(el)) return false;
-        const rect = el.getBoundingClientRect();
-        return rect.width > 0 && rect.height > 0;
+        return isWithinViewport(el);
       });
 
     let lastArrowAt = 0;
@@ -117,7 +128,17 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
     const focusElement = (target: HTMLElement | null) => {
       if (!target) return;
       target.focus();
-      target.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+
+      const rect = target.getBoundingClientRect();
+      const outsideViewport =
+        rect.top < 0 ||
+        rect.left < 0 ||
+        rect.bottom > window.innerHeight ||
+        rect.right > window.innerWidth;
+
+      if (outsideViewport) {
+        target.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+      }
     };
 
     const focusAt = (index: number) => {
