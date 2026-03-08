@@ -145,6 +145,8 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
   const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
+  const defaultAudioLabel = lang === 'he' ? 'ברירת מחדל' : 'Default';
+
   // i18n labels
   const labels = {
     subtitles: lang === 'he' ? 'כתוביות' : 'Subtitles',
@@ -154,7 +156,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     audioLang: lang === 'he' ? 'שפת אודיו' : 'Audio Language',
     normal: lang === 'he' ? 'רגיל' : 'Normal',
     off: lang === 'he' ? 'כבוי' : 'Off',
-    default: lang === 'he' ? 'ברירת מחדל' : 'Default',
+    default: defaultAudioLabel,
     loading: lang === 'he' ? 'טוען...' : 'Loading...',
     loadingSubs: lang === 'he' ? 'טוען כתוביות...' : 'Loading subtitles...',
     noAudio: lang === 'he' ? 'האודיו הראשי זמין, אבל אין רצועות נוספות לזיהוי' : 'Primary audio is available, but no additional tracks were detected',
