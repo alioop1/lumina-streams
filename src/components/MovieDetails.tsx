@@ -524,10 +524,10 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-foreground">
+                      <h4 className="text-sm 3xl:text-base 4k:text-lg font-semibold text-foreground">
                         {t('episode')} {ep.episode_number}: {ep.name}
                       </h4>
-                      <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{ep.overview}</p>
+                      <p className="text-xs 3xl:text-sm text-muted-foreground line-clamp-1 mt-0.5">{ep.overview}</p>
                       {ep.runtime && (
                         <p className="text-xs text-muted-foreground mt-0.5">{ep.runtime} {t('minutes')}</p>
                       )}
