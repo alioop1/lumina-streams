@@ -1,34 +1,35 @@
 import { useState, useEffect } from 'react';
 import { Play, Plus, Info } from 'lucide-react';
-import { Movie, MOCK_MOVIES } from '@/lib/mockData';
-import { getImage } from '@/lib/images';
+import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface HeroBannerProps {
+  movies: Movie[];
   onInfoClick: (movie: Movie) => void;
 }
 
-export const HeroBanner = ({ onInfoClick }: HeroBannerProps) => {
-  const heroMovies = MOCK_MOVIES.filter(m => m.backdrop);
+export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
+  const heroMovies = movies.filter(m => m.backdrop).slice(0, 5);
   const [current, setCurrent] = useState(0);
   const movie = heroMovies[current];
   const { t, lang } = useLanguage();
 
   useEffect(() => {
+    if (heroMovies.length === 0) return;
     const timer = setInterval(() => {
       setCurrent(prev => (prev + 1) % heroMovies.length);
     }, 8000);
     return () => clearInterval(timer);
   }, [heroMovies.length]);
 
-  if (!movie) return null;
+  if (!movie) return <div className="w-full h-[70vh] bg-background" />;
 
   const displayTitle = lang === 'he' ? (movie.titleHe || movie.title) : movie.title;
 
   return (
     <div className="relative w-full h-[70vh] md:h-[80vh]">
       <img
-        src={getImage(movie.backdrop!)}
+        src={movie.backdrop || movie.poster}
         alt={movie.title}
         className="absolute inset-0 w-full h-full object-cover"
       />

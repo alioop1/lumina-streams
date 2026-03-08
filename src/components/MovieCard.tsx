@@ -1,6 +1,5 @@
 import { Star } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
-import { getImage } from '@/lib/images';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MovieCardProps {
@@ -12,6 +11,7 @@ interface MovieCardProps {
 export const MovieCard = ({ movie, onClick, index }: MovieCardProps) => {
   const { lang } = useLanguage();
   const displayTitle = lang === 'he' ? (movie.titleHe || movie.title) : movie.title;
+  const posterSrc = movie.poster;
 
   return (
     <button
@@ -20,12 +20,18 @@ export const MovieCard = ({ movie, onClick, index }: MovieCardProps) => {
       style={{ animationDelay: `${index * 50}ms` }}
     >
       <div className="relative rounded-lg overflow-hidden aspect-[2/3] mb-2 transition-transform duration-300 group-hover/card:scale-105 group-focus/card:scale-105 group-focus/card:ring-2 group-focus/card:ring-primary">
-        <img
-          src={getImage(movie.poster)}
-          alt={movie.title}
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
+        {posterSrc ? (
+          <img
+            src={posterSrc}
+            alt={movie.title}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full bg-muted flex items-center justify-center">
+            <span className="text-muted-foreground text-xs">No Image</span>
+          </div>
+        )}
         {movie.quality && (
           <div className="absolute top-2 right-2 glass-strong rounded px-1.5 py-0.5">
             <span className="text-[10px] font-semibold text-foreground tracking-wide">
@@ -44,7 +50,7 @@ export const MovieCard = ({ movie, onClick, index }: MovieCardProps) => {
         {displayTitle}
       </h3>
       <p className="text-xs text-muted-foreground text-start">
-        {movie.year} · {movie.genres[0]}
+        {movie.year}{movie.genres?.[0] ? ` · ${movie.genres[0]}` : ''}
       </p>
     </button>
   );

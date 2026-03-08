@@ -6,6 +6,7 @@ export const translations = {
     home: 'בית',
     search: 'חיפוש',
     watchlist: 'רשימה',
+    downloads: 'הורדות',
     settings: 'הגדרות',
 
     // Hero
@@ -17,7 +18,7 @@ export const translations = {
     newOnSite: 'חדש באתר',
     topRated: 'הכי מדורגים',
     topSeries: 'סדרות מובילות',
-    actionThriller: 'אקשן ומתח',
+    actionThriller: 'סדרות מומלצות',
 
     // Search
     searchTitle: 'חיפוש',
@@ -62,6 +63,7 @@ export const translations = {
     home: 'Home',
     search: 'Search',
     watchlist: 'Watchlist',
+    downloads: 'Downloads',
     settings: 'Settings',
 
     // Hero
@@ -73,7 +75,7 @@ export const translations = {
     newOnSite: 'New on Site',
     topRated: 'Top Rated',
     topSeries: 'Top Series',
-    actionThriller: 'Action & Thriller',
+    actionThriller: 'Recommended Series',
 
     // Search
     searchTitle: 'Search',
