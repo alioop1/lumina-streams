@@ -154,8 +154,7 @@
   }
 
   .focus-card:focus-visible .movie-card-poster {
-    outline: 3px solid hsl(0 0% 100% / 0.85);
-    outline-offset: -1px;
+    box-shadow: 0 0 0 3px hsl(0 0% 100% / 0.85);
     border-radius: 0.75rem;
   }
 
