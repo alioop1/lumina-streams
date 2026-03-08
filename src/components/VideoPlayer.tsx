@@ -114,6 +114,7 @@ export const VideoPlayer = ({
   const hlsRef = useRef<Hls | null>(null);
   const hideTimerRef = useRef<number | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
+  const networkErrorCountRef = useRef(0);
 
   const { data: transcodeData } = useRDTranscode(rdFileId || null);
 
