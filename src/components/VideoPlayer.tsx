@@ -195,7 +195,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         setEmbeddedAudioTracks([
           {
             index: 0,
-            label: labels.default,
+            label: defaultAudioLabel,
             language: '',
             enabled: true,
           },
