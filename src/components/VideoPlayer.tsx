@@ -837,6 +837,14 @@ export const VideoPlayer = ({
               <button onClick={toggleFullscreen} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
                 {isFullscreen ? <Minimize className="w-5 h-5 3xl:w-6 3xl:h-6" /> : <Maximize className="w-5 h-5 3xl:w-6 3xl:h-6" />}
               </button>
+              {/* Feature: Picture-in-Picture */}
+              {'pictureInPictureEnabled' in document && (
+                <button onClick={togglePiP} className={`w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center transition-colors tv-focus ${isPiP ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`} title="Picture-in-Picture">
+                  <svg className="w-5 h-5 3xl:w-6 3xl:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" /><rect x="12" y="10" width="8" height="6" rx="1" fill="currentColor" opacity="0.3" /><line x1="2" y1="21" x2="22" y2="21" />
+                  </svg>
+                </button>
+              )}
               <button onClick={() => openExternal('vlc')} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus" title={labels.openExternal}>
                 <ExternalLink className="w-5 h-5 3xl:w-6 3xl:h-6" />
               </button>
