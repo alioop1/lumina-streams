@@ -222,6 +222,31 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     externalPlayerHint: lang === 'he' ? 'לניגון עם כל הקודקים (DTS, AC3, EAC3 וכו\')' : 'For playback with all codecs (DTS, AC3, EAC3, etc.)',
   };
 
+  const switchToNextPlaybackSource = useCallback(() => {
+    const nextIdx = fallbackQueueRef.current.findIndex(
+      (candidate) => candidate && candidate !== playbackUrl && !failedUrlsRef.current.has(candidate),
+    );
+
+    if (nextIdx >= 0) {
+      const [next] = fallbackQueueRef.current.splice(nextIdx, 1);
+      setPlaybackUrl(next);
+      setUsingTranscode(next !== url);
+      setIsBuffering(true);
+      setNoAudioDetected(false);
+      return true;
+    }
+
+    if (playbackUrl !== url && !failedUrlsRef.current.has(url)) {
+      setPlaybackUrl(url);
+      setUsingTranscode(false);
+      setIsBuffering(true);
+      setNoAudioDetected(false);
+      return true;
+    }
+
+    return false;
+  }, [playbackUrl, url]);
+
   const openInExternalPlayer = (playerType: 'vlc' | 'mx' | 'system') => {
     const videoUrl = url; // Always use original (not transcoded) URL for external player
     let intentUrl = '';
@@ -262,25 +287,43 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     setPlaybackUrl(url);
     setUsingTranscode(false);
     setNoAudioDetected(false);
+    setIsBuffering(true);
+    fallbackQueueRef.current = [];
+    failedUrlsRef.current = new Set();
   }, [url]);
 
-  // Prefer RD transcode stream when available to improve codec compatibility
+  // Prefer the most playable transcoded source (avoid unsupported manifests like m3u8 on non-Safari)
   useEffect(() => {
     if (!transcodeData || isYouTube) return;
 
-    const candidates = Object.values(transcodeData as Record<string, any>)
+    const video = videoRef.current;
+
+    const ranked = Object.values(transcodeData as Record<string, any>)
       .filter((item: any) => item?.full)
-      .map((item: any) => ({ full: item.full as string, acodec: (item.acodec as string | undefined) || '' }));
+      .map((item: any) => {
+        const full = item.full as string;
+        const acodec = (item.acodec as string | undefined) || '';
+        return {
+          full,
+          score: scoreTranscodedSource(full, acodec, video),
+        };
+      })
+      .sort((a, b) => b.score - a.score);
 
-    if (candidates.length === 0) return;
+    const orderedUrls = [...new Set(ranked.map((c) => c.full))].filter((candidate) => !failedUrlsRef.current.has(candidate));
 
-    const preferred = candidates.find((c) => isWebAudioCodecCompatible(c.acodec)) || candidates[0];
+    if (orderedUrls.length === 0) return;
 
-    if (preferred?.full && preferred.full !== playbackUrl) {
-      setPlaybackUrl(preferred.full);
-      setUsingTranscode(true);
+    const preferred = orderedUrls[0];
+    fallbackQueueRef.current = orderedUrls.slice(1);
+
+    if (preferred !== playbackUrl) {
+      setPlaybackUrl(preferred);
+      setIsBuffering(true);
     }
-  }, [transcodeData, isYouTube, playbackUrl]);
+
+    setUsingTranscode(preferred !== url);
+  }, [transcodeData, isYouTube, playbackUrl, url]);
 
   // Fetch subtitles
   useEffect(() => {
