@@ -142,59 +142,61 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const trailer = rawDetails?.videos?.results?.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube');
 
   const renderTorrentResults = () => (
-    <div ref={torrentResultsRef} className="space-y-3">
-      <h3 className="font-semibold text-foreground flex items-center gap-2">
-        <Search className="w-4 h-4 text-primary" />
-        {lang === 'he' ? 'תוצאות Torrentio' : 'Torrentio Results'}
+    <div ref={torrentResultsRef} className="space-y-4">
+      <h3 className="font-semibold text-lg text-foreground flex items-center gap-2">
+        <Search className="w-5 h-5 text-primary" />
+        {lang === 'he' ? 'בחר מקור' : 'Choose Source'}
         {movie.type === 'series' && selectedEpisode !== null && (
-          <span className="text-xs text-primary font-normal">
+          <span className="text-sm text-primary font-normal">
             — {t('season')} {selectedSeason} {t('episode')} {selectedEpisode}
           </span>
         )}
         {!imdbId && (
-          <span className="text-xs text-muted-foreground font-normal">
+          <span className="text-sm text-muted-foreground font-normal">
             ({lang === 'he' ? 'ממתין ל-IMDB ID...' : 'Waiting for IMDB ID...'})
           </span>
         )}
       </h3>
       {torrentsLoading && (
-        <div className="flex justify-center py-8">
-          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
       )}
       {!torrentsLoading && streams.length === 0 && imdbId && (
-        <div className="glass rounded-xl p-4 text-center text-muted-foreground text-sm">
-          {lang === 'he' ? 'לא נמצאו טורנטים' : 'No torrents found'}
+        <div className="glass rounded-xl p-6 text-center text-muted-foreground">
+          {lang === 'he' ? 'לא נמצאו מקורות' : 'No sources found'}
         </div>
       )}
-      {streams.map((stream: TorrentioStream, idx: number) => {
-        const parsed = parseTorrentioTitle(stream.title || '');
-        return (
-          <button
-            key={idx}
-            onClick={() => handleStreamSelect(stream, idx)}
-            disabled={loadingStreamIdx !== null}
-            className="w-full glass rounded-xl p-3 flex items-start gap-3 tv-focus text-start hover:bg-accent/50 transition-colors disabled:opacity-50"
-          >
-            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              {loadingStreamIdx === idx ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Download className="w-5 h-5 text-primary" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground" dir="ltr">
-                {stream.name}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2" dir="ltr">
-                {parsed.quality}
-              </p>
-              <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                {parsed.size && <span>💾 {parsed.size}</span>}
-                {parsed.seeds > 0 && <span>👤 {parsed.seeds}</span>}
-                {parsed.source && <span className="truncate">{parsed.source}</span>}
+      <div data-nav-row="torrent-results" className="grid grid-cols-1 gap-3">
+        {streams.map((stream: TorrentioStream, idx: number) => {
+          const parsed = parseTorrentioTitle(stream.title || '');
+          return (
+            <button
+              key={idx}
+              onClick={() => handleStreamSelect(stream, idx)}
+              disabled={loadingStreamIdx !== null}
+              className="w-full glass rounded-xl p-4 flex items-center gap-4 tv-focus text-start transition-colors disabled:opacity-50 min-h-[4.5rem]"
+            >
+              <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                {loadingStreamIdx === idx ? <Loader2 className="w-6 h-6 text-primary animate-spin" /> : <Download className="w-6 h-6 text-primary" />}
               </div>
-            </div>
-          </button>
-        );
-      })}
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-semibold text-foreground truncate" dir="ltr">
+                  {stream.name}
+                </p>
+                <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1" dir="ltr">
+                  {parsed.quality}
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-1 flex-shrink-0 text-sm text-muted-foreground">
+                {parsed.size && <span className="text-foreground font-medium">💾 {parsed.size}</span>}
+                {parsed.seeds > 0 && <span className="text-green-400">👤 {parsed.seeds}</span>}
+                {parsed.source && <span className="text-xs truncate max-w-[120px]">{parsed.source}</span>}
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 
