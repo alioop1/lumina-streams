@@ -300,5 +300,5 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       window.clearTimeout(ensureInitialFocus);
       window.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [enabled, focusableSelector]);
+  }, [enabled]);
 };
