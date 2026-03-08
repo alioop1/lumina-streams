@@ -558,10 +558,10 @@ export const VideoPlayer = ({
         e.preventDefault();
         if (!showControls) {
           if (!v) return;
-          if (key === 'ArrowLeft') v.currentTime = Math.max(0, v.currentTime - 10);
-          if (key === 'ArrowRight') v.currentTime = Math.min(v.duration, v.currentTime + 10);
-          if (key === 'ArrowUp') v.volume = Math.min(1, v.volume + 0.1);
-          if (key === 'ArrowDown') v.volume = Math.max(0, v.volume - 0.1);
+          if (key === 'ArrowLeft') { v.currentTime = Math.max(0, v.currentTime - 10); showOSD('◂◂ -10s'); }
+          if (key === 'ArrowRight') { v.currentTime = Math.min(v.duration, v.currentTime + 10); showOSD('+10s ▸▸'); }
+          if (key === 'ArrowUp') { v.volume = Math.min(1, v.volume + 0.1); showOSD(`🔊 ${Math.round(v.volume * 100)}%`); }
+          if (key === 'ArrowDown') { v.volume = Math.max(0, v.volume - 0.1); showOSD(`🔊 ${Math.round(v.volume * 100)}%`); }
           return;
         }
         const controls = getFocusable(root).filter(el => !el.closest('[data-settings-panel]'));
@@ -570,8 +570,8 @@ export const VideoPlayer = ({
         if (!cur) { focusDefault(); return; }
         const next = findNext(cur, key as any, controls);
         if (next) { next.focus(); lastFocusRef.current = next; return; }
-        if (v && key === 'ArrowLeft') v.currentTime = Math.max(0, v.currentTime - 10);
-        if (v && key === 'ArrowRight') v.currentTime = Math.min(v.duration, v.currentTime + 10);
+        if (v && key === 'ArrowLeft') { v.currentTime = Math.max(0, v.currentTime - 10); showOSD('◂◂ -10s'); }
+        if (v && key === 'ArrowRight') { v.currentTime = Math.min(v.duration, v.currentTime + 10); showOSD('+10s ▸▸'); }
       }
     };
     window.addEventListener('keydown', handleKeyDown, true);
