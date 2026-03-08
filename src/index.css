@@ -124,7 +124,7 @@
 
   .tv-focus {
     outline: none;
-    transition: box-shadow 0.15s ease, transform 0.15s ease;
+    transition: box-shadow 0.1s ease, transform 0.1s ease;
   }
 
   .tv-focus:focus-visible {
