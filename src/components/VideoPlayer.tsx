@@ -833,19 +833,29 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         </div>
       )}
 
-      {/* No audio warning banner */}
+      {/* No audio warning banner - with external player buttons */}
       {noAudioDetected && !isBuffering && (
-        <div className="absolute top-20 start-1/2 -translate-x-1/2 z-20 bg-yellow-500/90 text-black px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg max-w-md text-center">
-          <Volume2 className="w-5 h-5 flex-shrink-0" />
-          {lang === 'he'
-            ? 'לא זוהה אודיו — ייתכן שקודק האודיו (DTS/AC3) לא נתמך בדפדפן. נסה מקור אחר עם AAC.'
-            : 'No audio detected — the audio codec (DTS/AC3) may not be supported. Try a source with AAC audio.'}
-          <button
-            onClick={() => setNoAudioDetected(false)}
-            className="ms-2 text-black/60 hover:text-black tv-focus"
-          >
-            <X className="w-4 h-4" />
-          </button>
+        <div className="absolute top-20 start-1/2 -translate-x-1/2 z-20 bg-yellow-500/90 text-black px-6 py-4 rounded-xl text-sm font-semibold shadow-lg max-w-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2 mb-3">
+            <Volume2 className="w-5 h-5 flex-shrink-0" />
+            {lang === 'he'
+              ? 'לא זוהה אודיו — הקודק לא נתמך בדפדפן.'
+              : 'No audio detected — codec not supported in browser.'}
+            <button onClick={() => setNoAudioDetected(false)} className="ms-auto text-black/60 hover:text-black tv-focus">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => openInExternalPlayer('vlc')} className="flex items-center gap-1.5 bg-black/20 hover:bg-black/30 text-black px-3 py-2 rounded-lg transition-colors tv-focus text-xs font-bold">
+              <ExternalLink className="w-4 h-4" /> {labels.openVlc}
+            </button>
+            <button onClick={() => openInExternalPlayer('mx')} className="flex items-center gap-1.5 bg-black/20 hover:bg-black/30 text-black px-3 py-2 rounded-lg transition-colors tv-focus text-xs font-bold">
+              <ExternalLink className="w-4 h-4" /> {labels.openMx}
+            </button>
+            <button onClick={() => openInExternalPlayer('system')} className="flex items-center gap-1.5 bg-black/20 hover:bg-black/30 text-black px-3 py-2 rounded-lg transition-colors tv-focus text-xs font-bold">
+              <Monitor className="w-4 h-4" /> {labels.openSystem}
+            </button>
+          </div>
         </div>
       )}
 
