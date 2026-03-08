@@ -778,8 +778,9 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       onTouchStart={resetHideTimer}
     >
       <video
+        key={playbackUrl}
         ref={videoRef}
-        src={url}
+        src={playbackUrl}
         className="w-full h-full object-contain"
         autoPlay
         playsInline
