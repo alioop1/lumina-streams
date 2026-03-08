@@ -129,7 +129,9 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         title={displayTitle}
         onBack={() => { setStreamUrl(null); setRdFileId(null); }}
         imdbId={imdbId}
-        mediaType={mediaType as 'movie' | 'series'}
+        mediaType={movie.type === 'series' ? 'series' : 'movie'}
+        season={movie.type === 'series' ? selectedSeason : undefined}
+        episode={movie.type === 'series' && selectedEpisode !== null ? selectedEpisode : undefined}
         rdFileId={rdFileId}
       />
     );
