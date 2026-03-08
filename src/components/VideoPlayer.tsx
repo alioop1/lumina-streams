@@ -953,6 +953,9 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               {!canSwitchAudioTracks && (
                 <div className="px-4 py-2 text-white/40 text-xs text-center space-y-2">
                   <div>{labels.cannotSwitchAudio}</div>
+                  {(loadingTranscode || usingTranscode) && (
+                    <div className="text-primary">{labels.transcodeActive}</div>
+                  )}
                   {streamLanguages.length > 0 && onSelectAudioLanguage && (
                     <div className="pt-1">
                       <div className="text-white/60 mb-2">{labels.chooseSourceAudio}</div>
