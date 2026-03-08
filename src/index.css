@@ -122,4 +122,16 @@
   .safe-area-top {
     padding-top: env(safe-area-inset-top, 0px);
   }
+
+  /* Android TV D-pad focus styles */
+  .tv-focus {
+    @apply outline-none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, outline 0.2s ease;
+  }
+
+  .tv-focus:focus-visible {
+    @apply ring-2 ring-primary ring-offset-2 ring-offset-background;
+    transform: scale(1.05);
+    z-index: 10;
+  }
 }
