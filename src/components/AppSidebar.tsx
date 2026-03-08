@@ -12,7 +12,11 @@ const tabs: { icon: typeof Home; labelKey: TranslationKey; path: string }[] = [
   { icon: Settings, labelKey: 'settings', path: '/settings' },
 ];
 
-export const AppSidebar = () => {
+interface Props {
+  collapsed: boolean;
+}
+
+export const AppSidebar = ({ collapsed }: Props) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, dir } = useLanguage();
@@ -22,15 +26,18 @@ export const AppSidebar = () => {
     <nav
       data-sidebar
       className={cn(
-        'fixed top-0 h-full z-50 flex flex-col w-56',
+        'fixed top-0 h-full z-50 flex flex-col transition-all duration-200',
         'bg-sidebar border-sidebar-border',
+        collapsed ? 'w-16' : 'w-56',
         isRTL ? 'right-0 border-s' : 'left-0 border-e'
       )}
     >
       {/* Logo */}
-      <div className="h-16 flex items-center px-5 shrink-0 border-b border-sidebar-border">
+      <div className="h-16 flex items-center px-4 shrink-0 border-b border-sidebar-border justify-center">
         <Compass className="w-7 h-7 text-primary shrink-0" />
-        <span className="font-display text-lg text-foreground ms-2 tracking-wider">STREAM</span>
+        {!collapsed && (
+          <span className="font-display text-lg text-foreground ms-2 tracking-wider whitespace-nowrap">STREAM</span>
+        )}
       </div>
 
       {/* Nav items */}
@@ -42,8 +49,8 @@ export const AppSidebar = () => {
               key={path}
               onClick={() => navigate(path)}
               className={cn(
-                'tv-focus relative flex items-center gap-3 rounded-lg px-4 h-12',
-                'transition-colors duration-100',
+                'tv-focus relative flex items-center rounded-lg h-12 transition-colors duration-100',
+                collapsed ? 'justify-center px-0' : 'gap-3 px-4',
                 active
                   ? 'bg-primary/15 text-primary'
                   : 'text-sidebar-foreground'
@@ -56,7 +63,7 @@ export const AppSidebar = () => {
                 )} />
               )}
               <Icon className={cn('w-5 h-5 shrink-0', active && 'drop-shadow-[0_0_6px_hsl(var(--primary))]')} />
-              <span className="text-sm font-medium">{t(labelKey)}</span>
+              {!collapsed && <span className="text-sm font-medium whitespace-nowrap">{t(labelKey)}</span>}
             </button>
           );
         })}
