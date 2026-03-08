@@ -610,13 +610,13 @@ export const VideoPlayer = ({
         onClick={e => e.stopPropagation()}
       >
         {/* Top bar */}
-        <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/70 to-transparent">
-          <button onClick={onBack} className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
-            <BackArrow className="w-5 h-5" />
+        <div className="flex items-center justify-between p-4 3xl:p-6 4k:p-8 bg-gradient-to-b from-black/70 to-transparent">
+          <button onClick={onBack} className="w-10 h-10 3xl:w-12 3xl:h-12 4k:w-14 4k:h-14 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
+            <BackArrow className="w-5 h-5 3xl:w-6 3xl:h-6 4k:w-7 4k:h-7" />
           </button>
-          <h2 className="text-white text-sm font-medium truncate max-w-[60%]">{title}</h2>
-          <button onClick={onBack} className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
-            <X className="w-5 h-5" />
+          <h2 className="text-white text-sm 3xl:text-base 4k:text-lg font-medium truncate max-w-[60%]">{title}</h2>
+          <button onClick={onBack} className="w-10 h-10 3xl:w-12 3xl:h-12 4k:w-14 4k:h-14 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
+            <X className="w-5 h-5 3xl:w-6 3xl:h-6 4k:w-7 4k:h-7" />
           </button>
         </div>
 
