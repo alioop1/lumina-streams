@@ -267,11 +267,12 @@ export const VideoPlayer = ({
       const code = v.error?.code;
       const msg = v.error?.message || '';
       console.error('Video error:', msg, code);
-      // Format error (4) = browser can't decode this codec → try RD transcode
-      if (code === 4 && playbackMode === 'direct') {
-        fallbackToTranscode();
-        return;
+
+      // Code 4/3 = unsupported or decode error in current browser.
+      if (code === 4 || code === 3) {
+        if (fallbackToTranscode(`media error ${code}`)) return;
       }
+
       setIsBuffering(false);
     };
 
