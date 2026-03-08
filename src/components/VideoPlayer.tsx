@@ -129,6 +129,7 @@ export const VideoPlayer = ({
   const [availableSubs, setAvailableSubs] = useState<SubtitleTrack[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
   const [activeSub, setActiveSub] = useState<string | null>(null);
+  const [needsTranscodeFallback, setNeedsTranscodeFallback] = useState(false);
 
   const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
