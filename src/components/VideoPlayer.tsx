@@ -292,7 +292,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     failedUrlsRef.current = new Set();
   }, [url]);
 
-  // Prefer the most playable transcoded source (avoid unsupported manifests like m3u8 on non-Safari)
+  // Build an ordered compatibility fallback queue (but keep original source first for stability)
   useEffect(() => {
     if (!transcodeData || isYouTube) return;
 
@@ -312,18 +312,9 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
     const orderedUrls = [...new Set(ranked.map((c) => c.full))].filter((candidate) => !failedUrlsRef.current.has(candidate));
 
-    if (orderedUrls.length === 0) return;
-
-    const preferred = orderedUrls[0];
-    fallbackQueueRef.current = orderedUrls.slice(1);
-
-    if (preferred !== playbackUrl) {
-      setPlaybackUrl(preferred);
-      setIsBuffering(true);
-    }
-
-    setUsingTranscode(preferred !== url);
-  }, [transcodeData, isYouTube, playbackUrl, url]);
+    // Keep current playback source; only prepare fallbacks for automatic recovery
+    fallbackQueueRef.current = orderedUrls.filter((candidate) => candidate !== playbackUrl);
+  }, [transcodeData, isYouTube, playbackUrl]);
 
   // Fetch subtitles
   useEffect(() => {
