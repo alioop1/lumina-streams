@@ -130,8 +130,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
             onClick={() => onInfoClick(movie)}
             className="flex items-center gap-2 glass hover:bg-accent px-6 py-3 rounded-lg transition-all text-foreground tv-focus"
             tabIndex={0}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
           >
             <Info className="w-5 h-5" />
             <span>{t('details')}</span>
