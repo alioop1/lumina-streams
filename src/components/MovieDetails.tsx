@@ -66,6 +66,8 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const handleStreamSelect = async (stream: TorrentioStream, idx: number) => {
     const link = streamToMagnet(stream);
     if (!link) return;
+    const parsed = parseTorrentioTitle(stream.title || '');
+    setSelectedStreamLanguages(parsed.languages);
     setLoadingStreamIdx(idx);
     try {
       if (link.startsWith('magnet:')) {
