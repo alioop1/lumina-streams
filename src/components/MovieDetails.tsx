@@ -499,7 +499,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             )}
 
             {seasonData?.episodes && (
-              <div data-nav-row="details-episodes" className="mt-5 3xl:mt-8 grid grid-cols-1 lg:grid-cols-2 gap-3 3xl:gap-4"
+              <div data-nav-row="details-episodes" className="mt-5 3xl:mt-8 grid grid-cols-1 lg:grid-cols-2 gap-3 3xl:gap-4">
                 {seasonData.episodes.map((ep: any) => (
                   <button
                     key={ep.id}
