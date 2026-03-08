@@ -95,7 +95,7 @@ const findNext = (
 
 export const VideoPlayer = ({
   url, title, onBack, imdbId, mediaType, season, episode,
-  rdFileId: _rdFileId, streamLanguages = [], onSelectAudioLanguage,
+  rdFileId, streamLanguages = [], onSelectAudioLanguage,
 }: VideoPlayerProps) => {
   const { lang, dir } = useLanguage();
   const isRTL = dir === 'rtl';
@@ -104,10 +104,15 @@ export const VideoPlayer = ({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const hideTimerRef = useRef<number | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
 
+  const { data: transcodeData } = useRDTranscode(rdFileId || null);
+
   // ── State ──
+  const [playbackUrl, setPlaybackUrl] = useState(url);
+  const [playbackMode, setPlaybackMode] = useState<'direct' | 'transcode'>('direct');
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsPanel, setSettingsPanel] = useState<SettingsPanel>('main');
@@ -126,37 +131,90 @@ export const VideoPlayer = ({
 
   const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
-  // ── i18n ──
-  const t = (he: string, en: string) => (lang === 'he' ? he : en);
-  const labels = {
-    subtitles: t('כתוביות', 'Subtitles'),
-    audio: t('אודיו', 'Audio'),
-    playbackSpeed: t('מהירות ניגון', 'Playback Speed'),
-    audioLang: t('שפת אודיו', 'Audio Language'),
-    normal: t('רגיל', 'Normal'),
-    off: t('כבוי', 'Off'),
-    default: t('ברירת מחדל', 'Default'),
-    loading: t('טוען...', 'Loading...'),
-    loadingSubs: t('טוען כתוביות...', 'Loading subtitles...'),
-    noSubs: t('אין כתוביות זמינות', 'No subtitles available'),
-    openExternal: t('פתח בנגן חיצוני', 'Open in External Player'),
-    openVlc: t('פתח ב-VLC', 'Open in VLC'),
-    openMx: t('פתח ב-MX Player', 'Open in MX Player'),
-    openSystem: t('פתח בנגן המערכת', 'Open in System Player'),
-    externalHint: t('לניגון עם כל הקודקים', 'For playback with all codecs'),
-    chooseSource: t('בחר שפה (יחליף מקור):', 'Choose language (will switch source):'),
-    downloadSubs: t('הורד כתוביות', 'Download Subtitles'),
-  };
+  // Reset on URL change
+  useEffect(() => {
+    setPlaybackUrl(url);
+    setPlaybackMode('direct');
+    setIsBuffering(true);
+  }, [url]);
 
-  /* ═══ Direct video playback — like Stremio ═══ */
+  /* ═══ Fallback to RD transcode on format error ═══ */
+  const fallbackToTranscode = useCallback(() => {
+    if (playbackMode === 'transcode') return; // already tried
+    const td = transcodeData as Record<string, any> | undefined;
+    const mp4Url = td?.liveMP4?.full as string | undefined;
+    const hlsUrl = td?.apple?.full as string | undefined;
+
+    if (mp4Url) {
+      console.log('Falling back to RD liveMP4 transcode');
+      setPlaybackMode('transcode');
+      setPlaybackUrl(mp4Url);
+      setIsBuffering(true);
+    } else if (hlsUrl) {
+      console.log('Falling back to RD HLS transcode');
+      setPlaybackMode('transcode');
+      setPlaybackUrl(hlsUrl);
+      setIsBuffering(true);
+    }
+  }, [transcodeData, playbackMode]);
+
+  /* ═══ Playback engine ═══ */
   useEffect(() => {
     const video = videoRef.current;
     if (!video || isYouTube) return;
 
-    video.src = url;
-    video.load();
-    video.play().catch(() => {});
-  }, [url, isYouTube]);
+    // Destroy previous HLS instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    const isHls = playbackUrl.includes('.m3u8');
+
+    if (isHls && Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        fragLoadingTimeOut: 30000,
+        manifestLoadingTimeOut: 15000,
+        levelLoadingTimeOut: 15000,
+      });
+      hlsRef.current = hls;
+      hls.loadSource(playbackUrl);
+      hls.attachMedia(video);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        setIsBuffering(false);
+        video.play().catch(() => {});
+      });
+
+      hls.on(Hls.Events.FRAG_BUFFERED, () => setIsBuffering(false));
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (!data.fatal) return;
+        console.error('HLS fatal error:', data.type, data.details);
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          hls.recoverMediaError();
+        } else {
+          setIsBuffering(false);
+        }
+      });
+
+      return () => { hls.destroy(); hlsRef.current = null; };
+    } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = playbackUrl;
+      video.play().catch(() => {});
+      return;
+    } else {
+      // Direct MP4/MKV playback
+      video.src = playbackUrl;
+      video.load();
+      video.play().catch(() => {});
+      return;
+    }
+  }, [playbackUrl, isYouTube]);
 
   /* ═══ Video events ═══ */
   useEffect(() => {
