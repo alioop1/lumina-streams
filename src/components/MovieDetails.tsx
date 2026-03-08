@@ -460,7 +460,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                       loading="lazy"
                     />
                   ) : (
-                    <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-2 flex items-center justify-center text-muted-foreground text-lg ring-2 ring-border">
+                    <div className="w-20 h-20 3xl:w-28 3xl:h-28 4k:w-32 4k:h-32 rounded-full bg-muted mx-auto mb-2 3xl:mb-3 flex items-center justify-center text-muted-foreground text-lg 3xl:text-2xl ring-2 ring-border">
                       {actor.name?.[0]}
                     </div>
                   )}
