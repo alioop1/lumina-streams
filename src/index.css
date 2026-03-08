@@ -140,23 +140,21 @@
     box-shadow: 0 0 0 2px hsl(var(--primary) / 0.8);
   }
 
-  /* Content row cards: clean rounded white border on focus like Stremio */
+  /* Content row cards: white rounded border on poster only */
   .focus-card {
-    transition: transform 0.14s ease-out, box-shadow 0.14s ease-out;
+    transition: transform 0.14s ease-out;
     will-change: transform;
-    border-radius: 0.75rem;
-    overflow: hidden;
   }
 
   .focus-card:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px hsl(0 0% 100% / 0.85);
+    box-shadow: none;
     transform: scale(1.05);
     z-index: 20;
-    border-radius: 0.75rem;
   }
 
   .focus-card:focus-visible .movie-card-poster {
+    box-shadow: 0 0 0 3px hsl(0 0% 100% / 0.85);
     border-radius: 0.75rem;
   }
 
