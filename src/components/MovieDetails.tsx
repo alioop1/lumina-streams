@@ -45,7 +45,9 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const torrentType = movie.type === 'series' ? 'series' : 'movie';
   const { data: torrentioData, isLoading: torrentsLoading } = useTorrentioSearch(
     showTorrents ? torrentType : null,
-    showTorrents ? imdbId : null
+    showTorrents ? imdbId : null,
+    torrentType === 'series' && selectedEpisode !== null ? selectedSeason : undefined,
+    torrentType === 'series' && selectedEpisode !== null ? selectedEpisode : undefined
   );
   const streams = torrentioData?.streams || [];
 
