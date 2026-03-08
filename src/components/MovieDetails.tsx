@@ -222,10 +222,11 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                 <button
                   key={idx}
                   onClick={() => handleStreamSelect(stream, idx)}
-                  className="w-full glass rounded-xl p-3 flex items-start gap-3 tv-focus text-start hover:bg-accent/50 transition-colors"
+                  disabled={loadingStreamIdx !== null}
+                  className="w-full glass rounded-xl p-3 flex items-start gap-3 tv-focus text-start hover:bg-accent/50 transition-colors disabled:opacity-50"
                 >
                   <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Download className="w-5 h-5 text-primary" />
+                    {loadingStreamIdx === idx ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Download className="w-5 h-5 text-primary" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground" dir="ltr">
