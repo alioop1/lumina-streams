@@ -17,12 +17,12 @@ const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const { dir } = useLanguage();
-  const isRTL = dir === 'rtl';
 
   return (
     <div className="min-h-screen flex w-full" dir={dir}>
       <AppSidebar />
-      <main className={isRTL ? 'flex-1 mr-16' : 'flex-1 ml-16'}>
+      {/* Use logical margin (ms = margin-start) so it auto-adapts to RTL/LTR */}
+      <main className="flex-1 ms-16">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<SearchRoute />} />

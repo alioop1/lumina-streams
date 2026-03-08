@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Play, Plus, Info } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -13,6 +13,7 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
   const [current, setCurrent] = useState(0);
   const movie = heroMovies[current];
   const { t, lang, dir } = useLanguage();
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     if (heroMovies.length === 0) return;
@@ -21,6 +22,36 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
     }, 8000);
     return () => clearInterval(timer);
   }, [heroMovies.length]);
+
+  // D-pad navigation for hero buttons
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
+    const isRTL = dir === 'rtl';
+    const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
+    const prevKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
+
+    switch (e.key) {
+      case nextKey:
+        e.preventDefault();
+        e.stopPropagation();
+        if (buttonRefs.current[index + 1]) {
+          buttonRefs.current[index + 1]?.focus();
+        }
+        break;
+      case prevKey:
+        e.preventDefault();
+        e.stopPropagation();
+        if (index > 0) {
+          buttonRefs.current[index - 1]?.focus();
+        }
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        // Move focus to first content row
+        const firstRowItem = document.querySelector<HTMLElement>('.content-row-item');
+        firstRowItem?.focus();
+        break;
+    }
+  }, [dir]);
 
   if (!movie) return <div className="w-full h-[70vh] bg-background" />;
 
@@ -44,11 +75,18 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
           {movie.overview}
         </p>
         <div className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
-          <button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-3 rounded-lg transition-all glow-red tv-focus" tabIndex={0}>
+          <button
+            ref={el => { buttonRefs.current[0] = el; }}
+            onKeyDown={e => handleKeyDown(e, 0)}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-3 rounded-lg transition-all glow-red tv-focus"
+            tabIndex={0}
+          >
             <Play className="w-5 h-5 fill-current" />
             <span>{t('play')}</span>
           </button>
           <button
+            ref={el => { buttonRefs.current[1] = el; }}
+            onKeyDown={e => handleKeyDown(e, 1)}
             onClick={() => onInfoClick(movie)}
             className="flex items-center gap-2 glass hover:bg-accent px-6 py-3 rounded-lg transition-all text-foreground tv-focus"
             tabIndex={0}
@@ -56,7 +94,12 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
             <Info className="w-5 h-5" />
             <span>{t('details')}</span>
           </button>
-          <button className="glass hover:bg-accent w-12 h-12 rounded-full flex items-center justify-center transition-all text-foreground tv-focus" tabIndex={0}>
+          <button
+            ref={el => { buttonRefs.current[2] = el; }}
+            onKeyDown={e => handleKeyDown(e, 2)}
+            className="glass hover:bg-accent w-12 h-12 rounded-full flex items-center justify-center transition-all text-foreground tv-focus"
+            tabIndex={0}
+          >
             <Plus className="w-5 h-5" />
           </button>
         </div>
