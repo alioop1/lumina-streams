@@ -8,6 +8,8 @@ const Downloads = () => {
   const { data: user } = useRDUser();
   const { data: torrents, isLoading: torrentsLoading } = useRDTorrents();
   const { data: downloads, isLoading: downloadsLoading } = useRDDownloads();
+  const torrentsList = Array.isArray(torrents) ? torrents : [];
+  const downloadsList = Array.isArray(downloads) ? downloads : [];
   const addMagnet = useRDAddMagnet();
   const deleteTorrent = useRDDeleteTorrent();
 
@@ -118,13 +120,13 @@ const Downloads = () => {
               <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
           )}
-          {!torrentsLoading && torrents?.length === 0 && (
+          {!torrentsLoading && torrentsList.length === 0 && (
             <div className="text-center text-muted-foreground py-12">
               <HardDrive className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>{lang === 'he' ? 'אין טורנטים' : 'No torrents'}</p>
             </div>
           )}
-          {torrents?.map((torrent: any) => (
+          {torrentsList.map((torrent: any) => (
             <div key={torrent.id} className="glass rounded-xl p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-medium text-foreground flex-1 truncate" dir="ltr">
@@ -170,13 +172,13 @@ const Downloads = () => {
               <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
           )}
-          {!downloadsLoading && downloads?.length === 0 && (
+          {!downloadsLoading && downloadsList.length === 0 && (
             <div className="text-center text-muted-foreground py-12">
               <Download className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>{lang === 'he' ? 'אין הורדות' : 'No downloads'}</p>
             </div>
           )}
-          {downloads?.map((dl: any) => (
+          {downloadsList.map((dl: any) => (
             <a
               key={dl.id}
               href={dl.download}
