@@ -481,7 +481,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                 <button
                   key={s.season_number}
                   onClick={() => { setSelectedSeason(s.season_number); setSelectedEpisode(null); setShowTorrents(false); }}
-                  className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all tv-focus ${
+                  className={`flex-shrink-0 px-5 py-2.5 3xl:px-7 3xl:py-3.5 4k:px-8 4k:py-4 rounded-xl 3xl:rounded-2xl text-sm 3xl:text-base 4k:text-lg font-semibold transition-all tv-focus ${
                     selectedSeason === s.season_number
                       ? 'bg-primary text-primary-foreground'
                       : 'glass text-muted-foreground'
