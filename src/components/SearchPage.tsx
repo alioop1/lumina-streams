@@ -49,6 +49,8 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
   };
 
   const handleGenreKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
+    if (isTVDevice) return;
+
     const isRTL = dir === 'rtl';
     const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
     const prevKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
@@ -74,7 +76,7 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
         if (genre) selectGenre(genre.id);
         break;
     }
-  }, [dir, genres]);
+  }, [dir, genres, isTVDevice]);
 
   const handleResultKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
     const cols = window.innerWidth >= 1024 ? 6 : window.innerWidth >= 768 ? 4 : 3;
