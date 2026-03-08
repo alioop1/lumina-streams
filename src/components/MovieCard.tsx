@@ -5,21 +5,18 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MovieCardProps {
   movie: Movie;
-  onClick?: () => void;
   index: number;
 }
 
-export const MovieCard = memo(({ movie, onClick, index }: MovieCardProps) => {
+export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
   const { lang } = useLanguage();
   const displayTitle = lang === 'he' ? (movie.titleHe || movie.title) : movie.title;
   const posterSrc = movie.poster;
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      tabIndex={0}
-      className="focus-card flex-shrink-0 w-[140px] md:w-[180px] snap-start group/card cursor-pointer text-start bg-transparent border-none p-0 outline-none"
+    <div
+      className="flex-shrink-0 w-[140px] md:w-[180px] snap-start group/card cursor-pointer text-start bg-transparent border-none p-0 outline-none"
+      data-card-index={index}
     >
       <div className="relative rounded-lg overflow-hidden aspect-[2/3] mb-2 movie-card-poster bg-card transition-all duration-200">
         {posterSrc ? (
@@ -62,7 +59,7 @@ export const MovieCard = memo(({ movie, onClick, index }: MovieCardProps) => {
       <p className="text-xs text-muted-foreground">
         {movie.year}{movie.genres?.[0] ? ` · ${movie.genres[0]}` : ''}
       </p>
-    </button>
+    </div>
   );
 });
 

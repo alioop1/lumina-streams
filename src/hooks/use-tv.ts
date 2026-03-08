@@ -112,10 +112,12 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
         return rect.width > 0 && rect.height > 0;
       });
 
+    let lastArrowAt = 0;
+
     const focusElement = (target: HTMLElement | null) => {
       if (!target) return;
       target.focus();
-      target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      target.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
     };
 
     const focusAt = (index: number) => {
@@ -133,6 +135,15 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
         return;
+      }
+
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+        const now = performance.now();
+        if (e.repeat || now - lastArrowAt < 80) {
+          e.preventDefault();
+          return;
+        }
+        lastArrowAt = now;
       }
 
       const focusable = getFocusable();
@@ -190,11 +201,11 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       }
     }, 120);
 
-    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       window.clearTimeout(ensureInitialFocus);
-      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [enabled, focusableSelector]);
 };
