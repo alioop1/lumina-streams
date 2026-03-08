@@ -473,7 +473,8 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={() => setSettingsPanel('audio')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors">
                 <span>שפת אודיו</span>
                 <span className="text-white/60 flex items-center gap-1">
-                  {audioTracks.find(t => t.enabled)?.label || 'ברירת מחדל'}
+                  {rdAudioOptions.find(o => o.url === activeAudio)?.label || 'ברירת מחדל'}
+                  {loadingAudio && <Loader2 className="w-3 h-3 animate-spin" />}
                   <ChevronLeft className="w-4 h-4" />
                 </span>
               </button>
