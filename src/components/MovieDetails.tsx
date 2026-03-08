@@ -24,6 +24,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
   const { data: details } = useMovieDetails(tmdbId, mediaType);
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null);
   const { data: seasonData } = useSeason(
     movie.type === 'series' ? tmdbId : null,
     selectedSeason
@@ -44,7 +45,9 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const torrentType = movie.type === 'series' ? 'series' : 'movie';
   const { data: torrentioData, isLoading: torrentsLoading } = useTorrentioSearch(
     showTorrents ? torrentType : null,
-    showTorrents ? imdbId : null
+    showTorrents ? imdbId : null,
+    torrentType === 'series' && selectedEpisode !== null ? selectedSeason : undefined,
+    torrentType === 'series' && selectedEpisode !== null ? selectedEpisode : undefined
   );
   const streams = torrentioData?.streams || [];
 
@@ -357,7 +360,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               {seasons.map((s: any) => (
                 <button
                   key={s.season_number}
-                  onClick={() => setSelectedSeason(s.season_number)}
+                  onClick={() => { setSelectedSeason(s.season_number); setSelectedEpisode(null); setShowTorrents(false); }}
                   className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all tv-focus ${
                     selectedSeason === s.season_number
                       ? 'bg-primary text-primary-foreground'
@@ -371,7 +374,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             {seasonData?.episodes && (
               <div className="mt-4 space-y-3">
                 {seasonData.episodes.map((ep: any) => (
-                  <button key={ep.id} className="w-full glass rounded-xl p-3 flex items-center gap-3 tv-focus text-start">
+                  <button key={ep.id} onClick={() => { setSelectedEpisode(ep.episode_number); setShowTorrents(true); }} className="w-full glass rounded-xl p-3 flex items-center gap-3 tv-focus text-start">
                     {ep.still_path ? (
                       <img
                         src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
