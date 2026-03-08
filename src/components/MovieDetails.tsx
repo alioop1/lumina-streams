@@ -206,7 +206,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           </button>
         </div>
 
-        {showTorrents && (
+        {showTorrents && movie.type !== 'series' && (
           <div className="space-y-3">
             <h3 className="font-semibold text-foreground flex items-center gap-2">
               <Search className="w-4 h-4 text-primary" />
@@ -256,7 +256,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               );
             })}
           </div>
-        )}
+        )
 
         {showLinkInput && (
           <div className="glass rounded-xl p-4 space-y-3">
