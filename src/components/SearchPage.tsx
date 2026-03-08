@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
-import { Search as SearchIcon, X, Mic, Film, Tv } from 'lucide-react';
+import { useState, useMemo, useRef } from 'react';
+import { Search as SearchIcon, X, Film, Tv } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
 import { MovieCard } from './MovieCard';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -37,49 +37,37 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
     setSelectedGenreId(prev => prev === id ? null : id);
   };
 
-  const handleVoiceSearch = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      const recognition = new SpeechRecognition();
-      recognition.lang = lang === 'he' ? 'he-IL' : 'en-US';
-      recognition.onresult = (event: any) => setQuery(event.results[0][0].transcript);
-      recognition.start();
-    }
-  };
-
   const selectedGenreName = genres.find((g: any) => String(g.id) === selectedGenreId)?.name;
 
   return (
-    <div className="min-h-screen bg-background pt-12 pb-24 px-4" dir={dir}>
+    <div className="min-h-screen bg-background pt-12 pb-24 px-6" dir={dir}>
       <h1 className="font-display text-3xl text-foreground mb-6">{t('searchTitle')}</h1>
 
-      <div className="relative mb-4">
+      {/* Search input row */}
+      <div data-nav-row="search-input" className="relative mb-4">
         <SearchIcon className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         <input
           ref={searchInputRef}
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder={t('searchPlaceholder')}
-          className="tv-focus w-full bg-secondary text-foreground placeholder:text-muted-foreground ps-10 pe-12 py-3.5 rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all text-sm"
+          className="tv-focus w-full bg-secondary text-foreground placeholder:text-muted-foreground ps-10 pe-12 py-3.5 rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm"
         />
-        {query ? (
-          <button onClick={() => setQuery('')} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground tv-focus outline-none" aria-label="Clear search">
+        {query && (
+          <button onClick={() => setQuery('')} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground tv-focus outline-none" aria-label="Clear">
             <X className="w-5 h-5" />
-          </button>
-        ) : (
-          <button onClick={handleVoiceSearch} className="absolute end-3 top-1/2 -translate-y-1/2 text-primary tv-focus outline-none" aria-label="Voice search">
-            <Mic className="w-5 h-5" />
           </button>
         )}
       </div>
 
+      {/* Media type tabs */}
       {!isSearchMode && (
-        <div className="flex gap-2 mb-4">
+        <div data-nav-row="search-tabs" className="flex gap-2 mb-4">
           <button
             onClick={() => { setMediaTab('movie'); setSelectedGenreId(null); }}
             className={cn(
-              'tv-focus flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all outline-none',
-              mediaTab === 'movie' ? 'bg-primary text-primary-foreground' : 'glass text-muted-foreground hover:text-foreground'
+              'tv-focus flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium outline-none',
+              mediaTab === 'movie' ? 'bg-primary text-primary-foreground' : 'glass text-muted-foreground'
             )}
           >
             <Film className="w-4 h-4" />
@@ -88,8 +76,8 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
           <button
             onClick={() => { setMediaTab('tv'); setSelectedGenreId(null); }}
             className={cn(
-              'tv-focus flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all outline-none',
-              mediaTab === 'tv' ? 'bg-primary text-primary-foreground' : 'glass text-muted-foreground hover:text-foreground'
+              'tv-focus flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium outline-none',
+              mediaTab === 'tv' ? 'bg-primary text-primary-foreground' : 'glass text-muted-foreground'
             )}
           >
             <Tv className="w-4 h-4" />
@@ -98,18 +86,18 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
         </div>
       )}
 
+      {/* Genre chips */}
       {!isSearchMode && genres.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto mb-6 pb-2">
+        <div data-nav-row="search-genres" className="flex gap-2 overflow-x-auto mb-6 pb-2">
           {genres.map((g: any) => (
             <button
               key={g.id}
               onClick={() => selectGenre(g.id)}
-              tabIndex={0}
               className={cn(
-                'tv-focus flex-shrink-0 px-4 py-2 rounded-full text-xs font-medium transition-all outline-none',
+                'tv-focus flex-shrink-0 px-4 py-2 rounded-full text-xs font-medium outline-none',
                 selectedGenreId === String(g.id)
                   ? 'bg-primary text-primary-foreground'
-                  : 'glass text-muted-foreground hover:text-foreground'
+                  : 'glass text-muted-foreground'
               )}
             >
               {g.name}
@@ -128,7 +116,7 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
       )}
 
       {isLoading && (
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-6 gap-4">
           {[...Array(12)].map((_, i) => (
             <div key={i}>
               <div className="rounded-lg aspect-[2/3] mb-2 bg-muted animate-pulse" />
@@ -139,17 +127,21 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
         </div>
       )}
 
+      {/* Results grid — each visual row of 6 gets its own data-nav-row */}
       {!isLoading && results.length > 0 && (
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {results.map((movie: Movie, i: number) => (
-            <button
-              key={movie.id}
-              tabIndex={0}
-              onClick={() => onMovieClick(movie)}
-              className="tv-focus focus-card rounded-lg text-start outline-none"
-            >
-              <MovieCard movie={movie} index={i} />
-            </button>
+        <div className="space-y-4">
+          {chunkArray(results, 6).map((chunk, rowIdx) => (
+            <div key={rowIdx} data-nav-row={`search-results-${rowIdx}`} className="grid grid-cols-6 gap-4">
+              {chunk.map((movie: Movie, i: number) => (
+                <button
+                  key={movie.id}
+                  onClick={() => onMovieClick(movie)}
+                  className="tv-focus focus-card rounded-lg text-start outline-none"
+                >
+                  <MovieCard movie={movie} index={rowIdx * 6 + i} />
+                </button>
+              ))}
+            </div>
           ))}
         </div>
       )}
@@ -163,3 +155,11 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
     </div>
   );
 };
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size));
+  }
+  return result;
+}

@@ -39,28 +39,33 @@ const Index = () => {
 
       <div className="mt-6 space-y-2">
         <ContentRow
+          rowId="trending"
           title={t('trendingNow')}
           movies={trending || []}
           onMovieClick={handleMovieClick}
           isLoading={trendingLoading}
         />
         <ContentRow
+          rowId="popular"
           title={t('newOnSite')}
           movies={popular || []}
           onMovieClick={handleMovieClick}
           isLoading={popularLoading}
         />
         <ContentRow
+          rowId="top-rated"
           title={t('topRated')}
           movies={topRated || []}
           onMovieClick={handleMovieClick}
         />
         <ContentRow
+          rowId="popular-tv"
           title={t('topSeries')}
           movies={popularTV || []}
           onMovieClick={handleMovieClick}
         />
         <ContentRow
+          rowId="top-rated-tv"
           title={t('actionThriller')}
           movies={topRatedTV || []}
           onMovieClick={handleMovieClick}
