@@ -295,7 +295,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               <Link className="w-4 h-4" />
               {lang === 'he' ? 'הדבק קישור או מגנט לצפייה' : 'Paste a link or magnet to watch'}
             </div>
-            <div className="flex gap-2">
+            <div data-nav-row="details-link-input" className="flex gap-2">
               <input
                 value={linkInput}
                 onChange={e => setLinkInput(e.target.value)}
