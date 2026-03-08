@@ -35,6 +35,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkInput, setLinkInput] = useState('');
   const [showTorrents, setShowTorrents] = useState(false);
+  const [selectedStreamLanguages, setSelectedStreamLanguages] = useState<string[]>([]);
   const unrestrict = useRDUnrestrict();
   const addMagnet = useRDAddMagnet();
   const torrentResultsRef = useRef<HTMLDivElement>(null);
