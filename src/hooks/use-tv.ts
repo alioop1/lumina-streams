@@ -54,6 +54,7 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
+      if (document.querySelector('[data-video-player="true"]')) return;
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home'].includes(e.key)) return;
 
       const target = e.target as HTMLElement | null;

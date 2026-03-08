@@ -394,6 +394,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     <div
       ref={containerRef}
       dir={dir}
+      data-video-player="true"
       className="fixed inset-0 z-50 bg-black flex items-center justify-center cursor-pointer select-none"
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('[data-controls]')) return;
