@@ -100,7 +100,7 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
             <Info className="w-5 h-5" />
             <span>{t('details')}</span>
           </motion.button>
-          <motion.button
+          <button
             ref={el => { buttonRefs.current[2] = el; }}
             onKeyDown={e => handleKeyDown(e, 2)}
             onClick={handleAddToList}
