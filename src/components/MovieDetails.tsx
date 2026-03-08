@@ -360,7 +360,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               {seasons.map((s: any) => (
                 <button
                   key={s.season_number}
-                  onClick={() => setSelectedSeason(s.season_number)}
+                  onClick={() => { setSelectedSeason(s.season_number); setSelectedEpisode(null); setShowTorrents(false); }}
                   className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all tv-focus ${
                     selectedSeason === s.season_number
                       ? 'bg-primary text-primary-foreground'
