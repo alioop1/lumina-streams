@@ -331,7 +331,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         try { ctx.close(); } catch {}
       }
     };
-  }, [url, isYouTube]);
+  }, [playbackUrl, isYouTube]);
 
   const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
     try {
