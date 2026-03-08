@@ -210,8 +210,6 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       video.removeEventListener('canplay', onCanPlay);
       video.removeEventListener('playing', onCanPlay);
       video.removeEventListener('volumechange', onVolumeChange);
-      video.removeEventListener('loadedmetadata', detectTracks);
-      clearTimeout(trackTimer);
     };
   }, []);
 
