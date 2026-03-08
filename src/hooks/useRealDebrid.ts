@@ -47,7 +47,12 @@ export const useRDAddMagnet = () => {
   return useMutation({
     mutationFn: async (magnet: string) => {
       const result = await realDebrid.addMagnet(magnet);
-      await realDebrid.selectFiles(result.id, 'all');
+      try {
+        await realDebrid.selectFiles(result.id, 'all');
+      } catch (e) {
+        // Already cached/downloaded torrents may reject selectFiles - that's OK
+        console.warn('selectFiles skipped (likely already cached):', e);
+      }
       return result;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['rd', 'torrents'] }),
