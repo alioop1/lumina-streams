@@ -91,7 +91,7 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
           >
             <Play className="w-5 h-5 fill-current" />
             <span>{t('play')}</span>
-          </motion.button>
+          </button>
           <button
             onClick={() => onInfoClick(movie)}
             className="flex items-center gap-2 glass hover:bg-accent px-6 py-3 rounded-lg transition-all text-foreground tv-focus"
