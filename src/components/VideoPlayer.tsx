@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeft, X, Settings, Volume2, Subtitles, ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause, SkipForward, SkipBack, Loader2, Languages, Download } from 'lucide-react';
 import { fetchSubtitles, type SubtitleTrack } from '@/lib/opensubtitles';
+import { realDebrid } from '@/lib/realDebrid';
 
 interface VideoPlayerProps {
   url: string;
@@ -10,11 +11,17 @@ interface VideoPlayerProps {
   mediaType?: 'movie' | 'series';
   season?: number;
   episode?: number;
+  rdFileId?: string | null; // Real-Debrid file ID for transcode/audio
 }
 
 type SettingsPanel = 'main' | 'speed' | 'audio' | 'subtitles';
 
-export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, episode }: VideoPlayerProps) => {
+interface RDAudioOption {
+  label: string;
+  url: string;
+}
+
+export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, episode, rdFileId }: VideoPlayerProps) => {
   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,7 +38,11 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [audioTracks, setAudioTracks] = useState<{ id: number; label: string; language: string; enabled: boolean }[]>([]);
+
+  // Audio from RD transcode
+  const [rdAudioOptions, setRdAudioOptions] = useState<RDAudioOption[]>([]);
+  const [activeAudio, setActiveAudio] = useState<string | null>(null);
+  const [loadingAudio, setLoadingAudio] = useState(false);
 
   // Subtitles state
   const [availableSubs, setAvailableSubs] = useState<SubtitleTrack[]>([]);
