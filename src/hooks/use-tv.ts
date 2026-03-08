@@ -45,9 +45,10 @@ export const detectTVDevice = () => {
   const hasTVSignature = TV_UA_REGEX.test(ua);
   const isAndroidTVLike = ua.includes('Android') && ANDROID_TV_HINT_REGEX.test(ua);
   const forceTVMode = window.localStorage.getItem('force-tv-mode') === 'true';
+  const queryForceTV = new URLSearchParams(window.location.search).get('tv') === '1';
   const capacitorRuntime = Boolean((window as any).Capacitor);
 
-  return forceTVMode || hasTVSignature || isAndroidTVLike || capacitorRuntime;
+  return forceTVMode || queryForceTV || hasTVSignature || isAndroidTVLike || capacitorRuntime;
 };
 
 export const useIsTVDevice = () => {
@@ -55,6 +56,21 @@ export const useIsTVDevice = () => {
 
   useEffect(() => {
     setIsTV(detectTVDevice());
+  }, []);
+
+  useEffect(() => {
+    const detectFromRemoteInput = (e: KeyboardEvent) => {
+      const key = normalizeRemoteKey(e);
+      if (!key) return;
+
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Home'].includes(key)) {
+        window.localStorage.setItem('force-tv-mode', 'true');
+        setIsTV(true);
+      }
+    };
+
+    window.addEventListener('keydown', detectFromRemoteInput);
+    return () => window.removeEventListener('keydown', detectFromRemoteInput);
   }, []);
 
   return isTV;
