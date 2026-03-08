@@ -721,7 +721,10 @@ export const VideoPlayer = ({
             <span className="text-white text-xs 3xl:text-sm 4k:text-base min-w-[40px] 3xl:min-w-[50px]">{formatTime(currentTime)}</span>
             <div className="relative flex-1 h-6 3xl:h-8 flex items-center group">
               <div className="absolute inset-x-0 h-1 3xl:h-1.5 4k:h-2 bg-white/20 rounded-full group-hover:h-1.5 3xl:group-hover:h-2 transition-all">
-                <div className="h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
+                {/* Buffered indicator */}
+                <div className="absolute inset-y-0 start-0 bg-white/20 rounded-full transition-all" style={{ width: `${buffered}%` }} />
+                {/* Progress */}
+                <div className="absolute inset-y-0 start-0 h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
               </div>
               <input type="range" min={0} max={duration || 0} value={currentTime} onChange={handleSeek} className="absolute inset-x-0 w-full h-full opacity-0 cursor-pointer" step={0.1} />
             </div>
