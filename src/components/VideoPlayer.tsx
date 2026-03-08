@@ -174,7 +174,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       .finally(() => setLoadingSubs(false));
   }, [imdbId, mediaType, season, episode]);
 
-  // Fetch audio tracks
+  // Fetch audio tracks automatically
   useEffect(() => {
     if (!rdFileId || isYouTube) return;
     setLoadingAudio(true);
@@ -188,6 +188,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
           }
         }
         setRdAudioOptions(options);
+        // Auto-select default audio (original stream) - no switch needed as video already plays with default audio
       })
       .catch(e => console.warn('Transcode fetch failed:', e))
       .finally(() => setLoadingAudio(false));
@@ -643,36 +644,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         </div>
       )}
 
-      {/* Floating toolbar - top end */}
-      <div
-        data-controls
-        className="absolute top-16 end-4 z-20 flex flex-col gap-2"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={() => { setSettingsPanel('subtitles'); setShowSettings(true); setShowControls(true); }}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-md transition-colors tv-focus ${activeSub ? 'bg-primary/80 text-white' : 'bg-black/60 text-white hover:bg-black/80'}`}
-        >
-          <Subtitles className="w-4 h-4" />
-          <span className="text-xs font-medium">{labels.subtitles}</span>
-          {loadingSubs && <Loader2 className="w-3 h-3 animate-spin" />}
-        </button>
-        <button
-          onClick={() => { setSettingsPanel('audio'); setShowSettings(true); setShowControls(true); }}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/60 text-white hover:bg-black/80 backdrop-blur-md transition-colors tv-focus"
-        >
-          <Languages className="w-4 h-4" />
-          <span className="text-xs font-medium">{labels.audio}</span>
-        </button>
-        <button
-          onClick={handleDownloadSubtitle}
-          disabled={availableSubs.length === 0}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/60 text-white hover:bg-black/80 backdrop-blur-md transition-colors disabled:opacity-30 tv-focus"
-        >
-          <Download className="w-4 h-4" />
-          <span className="text-xs font-medium">{labels.downloadSubs}</span>
-        </button>
-      </div>
+      {/* Side toolbar removed - controls are in bottom bar */}
 
       <div
         data-controls
