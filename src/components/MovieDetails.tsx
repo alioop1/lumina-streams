@@ -438,7 +438,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
         {/* Movie torrent results */}
         {showTorrents && movie.type !== 'series' && (
-          <div className="max-w-3xl">
+          <div className="max-w-3xl 3xl:max-w-4xl 4k:max-w-5xl">
             {renderTorrentResults()}
           </div>
         )}
