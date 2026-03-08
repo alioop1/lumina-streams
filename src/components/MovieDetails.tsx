@@ -246,8 +246,30 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                 <p className="text-sm 3xl:text-base text-muted-foreground mt-0.5 line-clamp-1" dir="ltr">
                   {parsed.quality}
                 </p>
-                {(parsed.languages.length > 0 || parsed.audioCodec) && (
+                {(parsed.languages.length > 0 || parsed.audioCodec || parsed.videoCodec || parsed.resolution || parsed.sourceType || parsed.hdr) && (
                   <div className="flex gap-1.5 3xl:gap-2 mt-1 flex-wrap">
+                    {parsed.resolution && (
+                      <span className="text-xs 3xl:text-sm bg-blue-500/15 text-blue-400 px-2 3xl:px-3 py-0.5 3xl:py-1 rounded-full font-medium">
+                        {parsed.resolution}
+                      </span>
+                    )}
+                    {parsed.hdr && (
+                      <span className="text-xs 3xl:text-sm bg-purple-500/15 text-purple-400 px-2 3xl:px-3 py-0.5 3xl:py-1 rounded-full font-medium">
+                        {parsed.hdr}
+                      </span>
+                    )}
+                    {parsed.videoCodec && (
+                      <span className={`text-xs 3xl:text-sm px-2 3xl:px-3 py-0.5 3xl:py-1 rounded-full font-medium ${
+                        parsed.videoCompatible ? 'bg-green-500/15 text-green-400' : 'bg-orange-500/15 text-orange-400'
+                      }`}>
+                        🎬 {parsed.videoCodec}
+                      </span>
+                    )}
+                    {parsed.sourceType && (
+                      <span className="text-xs 3xl:text-sm bg-accent text-accent-foreground px-2 3xl:px-3 py-0.5 3xl:py-1 rounded-full font-medium">
+                        {parsed.sourceType}
+                      </span>
+                    )}
                     {parsed.languages.map((lang) => (
                       <span key={lang} className="text-xs 3xl:text-sm bg-primary/15 text-primary px-2 3xl:px-3 py-0.5 3xl:py-1 rounded-full font-medium">
                         {lang}
@@ -255,9 +277,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                     ))}
                     {parsed.audioCodec && (
                       <span className={`text-xs 3xl:text-sm px-2 3xl:px-3 py-0.5 3xl:py-1 rounded-full font-medium ${
-                        parsed.audioCompatible
-                          ? 'bg-green-500/15 text-green-400'
-                          : 'bg-yellow-500/15 text-yellow-400'
+                        parsed.audioCompatible ? 'bg-green-500/15 text-green-400' : 'bg-yellow-500/15 text-yellow-400'
                       }`}>
                         🔊 {parsed.audioCodec}{!parsed.audioCompatible ? ' ⚠️' : ''}
                       </span>
