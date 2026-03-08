@@ -154,6 +154,8 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         season={movie.type === 'series' ? selectedSeason : undefined}
         episode={movie.type === 'series' && selectedEpisode !== null ? selectedEpisode : undefined}
         rdFileId={rdFileId}
+        streamLanguages={selectedStreamLanguages}
+        onSelectAudioLanguage={handleChooseAudioLanguage}
       />
     );
   }
