@@ -614,11 +614,47 @@ export const VideoPlayer = ({
 
   /* ═══ Playback helpers ═══ */
   const togglePlay = () => { const v = videoRef.current; if (v) v.paused ? v.play() : v.pause(); };
-  const seek = (s: number) => { const v = videoRef.current; if (v) v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + s)); };
+  
+  // Feature: Seek with OSD overlay
+  const showOSD = (text: string) => {
+    setSeekOSD(text);
+    if (seekOSDTimer.current) clearTimeout(seekOSDTimer.current);
+    seekOSDTimer.current = window.setTimeout(() => setSeekOSD(null), 800);
+  };
+  
+  const seek = (s: number) => {
+    const v = videoRef.current;
+    if (v) {
+      v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + s));
+      showOSD(s > 0 ? `+${s}s ▸▸` : `◂◂ ${s}s`);
+    }
+  };
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => { const v = videoRef.current; if (v) v.currentTime = parseFloat(e.target.value); };
-  const handleVolume = (e: React.ChangeEvent<HTMLInputElement>) => { const v = videoRef.current; if (!v) return; const val = parseFloat(e.target.value); v.volume = val; v.muted = val === 0; };
-  const toggleMute = () => { const v = videoRef.current; if (v) v.muted = !v.muted; };
+  const handleVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = videoRef.current;
+    if (!v) return;
+    const val = parseFloat(e.target.value);
+    v.volume = val;
+    v.muted = val === 0;
+    showOSD(`🔊 ${Math.round(val * 100)}%`);
+  };
+  const toggleMute = () => { const v = videoRef.current; if (v) { v.muted = !v.muted; showOSD(v.muted ? '🔇 Muted' : `🔊 ${Math.round(v.volume * 100)}%`); } };
   const setSpeed = (speed: number) => { const v = videoRef.current; if (v) v.playbackRate = speed; setPlaybackSpeed(speed); setSettingsPanel('main'); };
+
+  // Feature: Picture-in-Picture
+  const togglePiP = async () => {
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+        setIsPiP(false);
+      } else if (v.requestPictureInPicture) {
+        await v.requestPictureInPicture();
+        setIsPiP(true);
+      }
+    } catch (e) { console.warn('PiP error:', e); }
+  };
 
   const switchAudioTrack = (trackId: number) => {
     const v = videoRef.current;
