@@ -102,7 +102,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
         {title}
       </h2>
       <div className="relative group">
-        {canScrollLeft && (
+        {!isTVDevice && canScrollLeft && (
           <button
             onClick={() => scroll('left')}
             className="absolute start-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-r from-background/80 to-transparent hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity tv-focus"
@@ -132,7 +132,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
             </button>
           ))}
         </div>
-        {canScrollRight && (
+        {!isTVDevice && canScrollRight && (
           <button
             onClick={() => scroll('right')}
             className="absolute end-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-l from-background/80 to-transparent hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity tv-focus"
