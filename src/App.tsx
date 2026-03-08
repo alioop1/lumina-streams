@@ -3,7 +3,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
@@ -19,19 +18,12 @@ const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const { dir } = useLanguage();
-
-  // Always-on D-pad navigation
   useTVGlobalNavigation(true);
 
-  useEffect(() => {
-    document.documentElement.classList.add('tv-device');
-    document.body.classList.add('tv-device');
-  }, []);
-
   return (
-    <div className="min-h-screen flex w-full" dir={dir}>
+    <div className="min-h-screen flex w-full bg-background text-foreground" dir={dir}>
       <AppSidebar />
-      <main className="flex-1 ms-56">
+      <main className="flex-1 ms-56 overflow-y-auto">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<SearchRoute />} />
