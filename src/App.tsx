@@ -3,9 +3,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { useIsTVDevice, useTVGlobalNavigation } from "@/hooks/use-tv";
+import { cn } from "@/lib/utils";
 import Index from "./pages/Index";
 import SearchRoute from "./pages/Search";
 import Watchlist from "./pages/Watchlist";
@@ -17,12 +20,24 @@ const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const { dir } = useLanguage();
+  const isTVDevice = useIsTVDevice();
+
+  useTVGlobalNavigation(isTVDevice);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('tv-device', isTVDevice);
+    document.body.classList.toggle('tv-device', isTVDevice);
+
+    return () => {
+      document.documentElement.classList.remove('tv-device');
+      document.body.classList.remove('tv-device');
+    };
+  }, [isTVDevice]);
 
   return (
-    <div className="min-h-screen flex w-full" dir={dir}>
+    <div className="min-h-screen flex w-full" dir={dir} data-tv-device={isTVDevice ? 'true' : 'false'}>
       <AppSidebar />
-      {/* Use logical margin (ms = margin-start) so it auto-adapts to RTL/LTR */}
-      <main className="flex-1 ms-16">
+      <main className={cn('flex-1', isTVDevice ? 'ms-56' : 'ms-16')}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<SearchRoute />} />

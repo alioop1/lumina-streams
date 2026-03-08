@@ -135,16 +135,33 @@
   /* Android TV D-pad focus styles - large, visible ring for 10-foot UI */
   .tv-focus {
     @apply outline-none;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, outline 0.15s ease;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, outline 0.18s ease, background-color 0.18s ease;
   }
 
   .tv-focus:focus-visible {
     @apply ring-2 ring-primary ring-offset-2 ring-offset-background;
     transform: scale(1.05);
     z-index: 10;
-    /* Extra glow for visibility on TV screens at distance */
     box-shadow: 0 0 0 2px hsl(var(--primary) / 0.3),
                 0 0 20px -4px hsl(var(--primary) / 0.4);
+  }
+
+  .tv-device .tv-focus {
+    min-height: 2.75rem;
+  }
+
+  .tv-device .tv-focus:focus-visible {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.45),
+                0 0 26px -2px hsl(var(--primary) / 0.45);
+  }
+
+  .tv-device .content-row-item {
+    margin-block: 0.4rem;
+  }
+
+  .tv-device .font-display {
+    letter-spacing: 0.06em;
   }
 
   /* Ensure focus is always visible - critical for Android TV */
@@ -154,7 +171,7 @@
 
   /* Movie card poster focus/hover styles */
   .focus-card {
-    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
                 box-shadow 0.3s ease;
   }
 

@@ -373,7 +373,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
 
   if (isYouTube) {
     return (
-      <div className="fixed inset-0 z-50 bg-black flex flex-col" dir={dir}>
+      <div data-video-player="true" className="fixed inset-0 z-50 bg-black flex flex-col" dir={dir}>
         <div className="absolute top-4 start-4 end-4 z-10 flex items-center justify-between">
           <button onClick={onBack} className="glass w-10 h-10 rounded-full flex items-center justify-center text-foreground tv-focus">
             <BackArrow className="w-5 h-5" />
@@ -394,6 +394,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     <div
       ref={containerRef}
       dir={dir}
+      data-video-player="true"
       className="fixed inset-0 z-50 bg-black flex items-center justify-center cursor-pointer select-none"
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('[data-controls]')) return;

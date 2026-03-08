@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { Search as SearchIcon, X, Mic, Film, Tv } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
 import { MovieCard } from './MovieCard';
@@ -36,15 +36,16 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
 
   const isSearchMode = query.length >= 2;
   const isLoading = isSearchMode ? searchLoading : discoverLoading;
-  const results = isSearchMode ? (searchResults || []) : (discoverResults || []);
+  const results = useMemo(
+    () => (isSearchMode ? (searchResults || []) : (discoverResults || [])),
+    [isSearchMode, searchResults, discoverResults]
+  );
 
-  // Genre selection
   const selectGenre = (genreId: number) => {
     const id = String(genreId);
     setSelectedGenreId(prev => prev === id ? null : id);
   };
 
-  // D-pad navigation for genre chips
   const handleGenreKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
     const isRTL = dir === 'rtl';
     const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
@@ -73,7 +74,6 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
     }
   }, [dir, genres]);
 
-  // D-pad navigation for results grid
   const handleResultKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
     const cols = window.innerWidth >= 1024 ? 6 : window.innerWidth >= 768 ? 4 : 3;
     const isRTL = dir === 'rtl';
@@ -106,7 +106,6 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
     }
   }, [dir, results, onMovieClick]);
 
-  // Voice search placeholder
   const handleVoiceSearch = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
@@ -126,7 +125,6 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
     <div className="min-h-screen bg-background pt-12 pb-24 px-4" dir={dir}>
       <h1 className="font-display text-3xl text-foreground mb-6">{t('searchTitle')}</h1>
 
-      {/* Search input */}
       <div className="relative mb-4">
         <SearchIcon className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         <input
@@ -134,32 +132,35 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder={t('searchPlaceholder')}
-          className="w-full bg-secondary text-foreground placeholder:text-muted-foreground ps-10 pe-12 py-3.5 rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all text-sm tv-focus"
+          className="tv-focus w-full bg-secondary text-foreground placeholder:text-muted-foreground ps-10 pe-12 py-3.5 rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all text-sm"
           onKeyDown={e => {
             if (e.key === 'ArrowDown') {
               e.preventDefault();
-              genreRefs.current[0]?.focus();
+              if (!isSearchMode && genreRefs.current[0]) {
+                genreRefs.current[0].focus();
+              } else {
+                resultRefs.current[0]?.focus();
+              }
             }
           }}
         />
         {query ? (
-          <button onClick={() => setQuery('')} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground tv-focus">
+          <button onClick={() => setQuery('')} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground tv-focus" aria-label="Clear search">
             <X className="w-5 h-5" />
           </button>
         ) : (
-          <button onClick={handleVoiceSearch} className="absolute end-3 top-1/2 -translate-y-1/2 text-primary tv-focus">
+          <button onClick={handleVoiceSearch} className="absolute end-3 top-1/2 -translate-y-1/2 text-primary tv-focus" aria-label="Voice search">
             <Mic className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      {/* Media type tabs */}
       {!isSearchMode && (
         <div className="flex gap-2 mb-4">
           <button
             onClick={() => { setMediaTab('movie'); setSelectedGenreId(null); }}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all tv-focus',
+              'tv-focus flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
               mediaTab === 'movie' ? 'bg-primary text-primary-foreground' : 'glass text-muted-foreground hover:text-foreground'
             )}
           >
@@ -169,7 +170,7 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
           <button
             onClick={() => { setMediaTab('tv'); setSelectedGenreId(null); }}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all tv-focus',
+              'tv-focus flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
               mediaTab === 'tv' ? 'bg-primary text-primary-foreground' : 'glass text-muted-foreground hover:text-foreground'
             )}
           >
@@ -179,7 +180,6 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
         </div>
       )}
 
-      {/* Genre chips */}
       {!isSearchMode && genres.length > 0 && (
         <div className="flex gap-2 overflow-x-auto mb-6 pb-2">
           {genres.map((g: any, index: number) => (
@@ -190,7 +190,7 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
               onKeyDown={e => handleGenreKeyDown(e, index)}
               tabIndex={0}
               className={cn(
-                'flex-shrink-0 px-4 py-2 rounded-full text-xs font-medium transition-all tv-focus',
+                'tv-focus flex-shrink-0 px-4 py-2 rounded-full text-xs font-medium transition-all',
                 selectedGenreId === String(g.id)
                   ? 'bg-primary text-primary-foreground'
                   : 'glass text-muted-foreground hover:text-foreground'
@@ -202,7 +202,6 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
         </div>
       )}
 
-      {/* Section title */}
       {!isSearchMode && (
         <h2 className="font-display text-xl text-foreground mb-4">
           {selectedGenreName
@@ -212,7 +211,6 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
         </h2>
       )}
 
-      {/* Loading */}
       {isLoading && (
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {[...Array(12)].map((_, i) => (
@@ -225,28 +223,26 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
         </div>
       )}
 
-      {/* Results grid */}
       {!isLoading && results.length > 0 && (
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {results.map((movie: Movie, i: number) => (
-            <div
+            <button
               key={movie.id}
-              ref={el => { resultRefs.current[i] = el as any; }}
+              ref={el => { resultRefs.current[i] = el; }}
               tabIndex={0}
+              onClick={() => onMovieClick(movie)}
               onKeyDown={e => handleResultKeyDown(e, i)}
-              className="tv-focus rounded-lg"
+              className="tv-focus rounded-lg text-start"
             >
               <MovieCard
                 movie={movie}
-                onClick={() => onMovieClick(movie)}
                 index={i}
               />
-            </div>
+            </button>
           ))}
         </div>
       )}
 
-      {/* No results */}
       {!isLoading && isSearchMode && results.length === 0 && (
         <div className="text-center text-muted-foreground mt-12">
           <p className="text-lg">{t('noResults')}</p>

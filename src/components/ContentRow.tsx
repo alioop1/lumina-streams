@@ -101,7 +101,8 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
         {canScrollLeft && (
           <button
             onClick={() => scroll('left')}
-            className="absolute start-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-e from-background/80 to-transparent hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute start-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-r from-background/80 to-transparent hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity tv-focus"
+            aria-label="Scroll left"
           >
             {isRTL ? <ChevronRight className="w-6 h-6 text-foreground" /> : <ChevronLeft className="w-6 h-6 text-foreground" />}
           </button>
@@ -130,7 +131,8 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading }: Cont
         {canScrollRight && (
           <button
             onClick={() => scroll('right')}
-            className="absolute end-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-s from-background/80 to-transparent hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute end-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-l from-background/80 to-transparent hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity tv-focus"
+            aria-label="Scroll right"
           >
             {isRTL ? <ChevronLeft className="w-6 h-6 text-foreground" /> : <ChevronRight className="w-6 h-6 text-foreground" />}
           </button>
