@@ -277,6 +277,40 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
         return;
       }
 
+      // ─── Grid navigation (e.g. episodes 2-col grid) ───
+      if (currentRow.grid) {
+        const cols = currentRow.gridCols;
+        const gridRow = Math.floor(activeColIdx / cols);
+        const gridCol = activeColIdx % cols;
+
+        if (key === 'ArrowRight') {
+          if (gridCol < cols - 1 && activeColIdx + 1 < currentRow.items.length) {
+            focusEl(currentRow.items[activeColIdx + 1]);
+          }
+        } else if (key === 'ArrowLeft') {
+          if (gridCol > 0) {
+            focusEl(currentRow.items[activeColIdx - 1]);
+          } else if (towardSidebar === 'ArrowLeft') {
+            goToSidebar();
+          }
+        } else if (key === 'ArrowDown') {
+          const nextIdx = activeColIdx + cols;
+          if (nextIdx < currentRow.items.length) {
+            focusEl(currentRow.items[nextIdx]);
+          } else {
+            goToNextRow();
+          }
+        } else if (key === 'ArrowUp') {
+          const prevIdx = activeColIdx - cols;
+          if (prevIdx >= 0) {
+            focusEl(currentRow.items[prevIdx]);
+          } else {
+            goToPrevRow();
+          }
+        }
+        return;
+      }
+
       if (key === 'ArrowRight') {
         if (activeColIdx < currentRow.items.length - 1) {
           focusEl(currentRow.items[activeColIdx + 1]);
