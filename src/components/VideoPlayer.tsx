@@ -17,9 +17,11 @@ interface VideoPlayerProps {
 
 type SettingsPanel = 'main' | 'speed' | 'audio' | 'subtitles';
 
-interface RDAudioOption {
+interface AudioTrackInfo {
+  index: number;
   label: string;
-  url: string;
+  language: string;
+  enabled: boolean;
 }
 
 const PLAYER_KEYCODE_MAP: Record<number, string> = {
