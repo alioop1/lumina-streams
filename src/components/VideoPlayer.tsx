@@ -605,6 +605,19 @@ export const VideoPlayer = ({
   const toggleMute = () => { const v = videoRef.current; if (v) v.muted = !v.muted; };
   const setSpeed = (speed: number) => { const v = videoRef.current; if (v) v.playbackRate = speed; setPlaybackSpeed(speed); setSettingsPanel('main'); };
 
+  const switchAudioTrack = (trackId: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    const vAny = v as any;
+    if (!vAny.audioTracks) return;
+    for (let i = 0; i < vAny.audioTracks.length; i++) {
+      vAny.audioTracks[i].enabled = (i === trackId);
+    }
+    setSelectedAudioTrack(trackId);
+    setAudioTracks(prev => prev.map((t, i) => ({ ...t, enabled: i === trackId })));
+    setSettingsPanel('main');
+  };
+
   const toggleFullscreen = async () => {
     const el = containerRef.current;
     if (!el) return;
