@@ -233,6 +233,68 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     };
   }, [url, isYouTube, defaultAudioLabel]);
 
+  // Detect no-audio via Web Audio API analyzer
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || isYouTube) return;
+
+    let ctx: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let checkTimer: number | null = null;
+    let cancelled = false;
+
+    const checkAudio = () => {
+      try {
+        ctx = new AudioContext();
+        const source = ctx.createMediaElementSource(v);
+        analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        analyser.connect(ctx.destination);
+
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        let silentChecks = 0;
+        const maxChecks = 8;
+
+        const check = () => {
+          if (cancelled) return;
+          analyser!.getByteFrequencyData(data);
+          const maxVal = Math.max(...data);
+          if (maxVal < 5 && !v.paused && v.currentTime > 1) {
+            silentChecks++;
+            if (silentChecks >= 3) {
+              setNoAudioDetected(true);
+              return;
+            }
+          } else {
+            silentChecks = 0;
+            setNoAudioDetected(false);
+          }
+          if (silentChecks < maxChecks) {
+            checkTimer = window.setTimeout(check, 1500);
+          }
+        };
+
+        // Start checking after video plays a bit
+        checkTimer = window.setTimeout(check, 3000);
+      } catch (e) {
+        // Web Audio API not available - skip detection
+        console.warn('Audio detection unavailable:', e);
+      }
+    };
+
+    v.addEventListener('playing', checkAudio, { once: true });
+
+    return () => {
+      cancelled = true;
+      if (checkTimer) clearTimeout(checkTimer);
+      v.removeEventListener('playing', checkAudio);
+      if (ctx && ctx.state !== 'closed') {
+        try { ctx.close(); } catch {}
+      }
+    };
+  }, [url, isYouTube]);
+
   const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
     try {
       const res = await fetch(subUrl);
