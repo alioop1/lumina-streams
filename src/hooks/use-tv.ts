@@ -146,17 +146,17 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
         return;
       }
 
-      // Flip horizontal for RTL
-      const effectiveKey = isRTL
-        ? (key === 'ArrowLeft' ? 'ArrowRight' : key === 'ArrowRight' ? 'ArrowLeft' : key)
-        : key;
+      const towardContent = isRTL ? 'ArrowLeft' : 'ArrowRight';
+      const towardSidebar = isRTL ? 'ArrowRight' : 'ArrowLeft';
 
       // ── Sidebar navigation ──
       if (isInSidebar(active)) {
         const idx = sidebarItems.indexOf(active);
-        if (effectiveKey === 'ArrowUp' && idx > 0) focusEl(sidebarItems[idx - 1]);
-        else if (effectiveKey === 'ArrowDown' && idx < sidebarItems.length - 1) focusEl(sidebarItems[idx + 1]);
-        else if (effectiveKey === 'ArrowRight' && rows.length > 0) {
+        if (key === 'ArrowUp' && idx > 0) {
+          focusEl(sidebarItems[idx - 1]);
+        } else if (key === 'ArrowDown' && idx < sidebarItems.length - 1) {
+          focusEl(sidebarItems[idx + 1]);
+        } else if (key === towardContent && rows.length > 0) {
           // Move to content: find nearest row by Y
           const activeY = active.getBoundingClientRect().top + active.getBoundingClientRect().height / 2;
           let best = rows[0];
@@ -165,7 +165,8 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
             const d = Math.abs(row.y - activeY);
             if (d < bestDist) { bestDist = d; best = row; }
           }
-          focusEl(isRTL ? best.items[best.items.length - 1] : best.items[0]);
+          const startIndex = isRTL ? best.items.length - 1 : 0;
+          focusEl(best.items[startIndex]);
         }
         return;
       }
@@ -184,22 +185,31 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
 
       const currentRow = rows[activeRowIdx];
 
-      switch (effectiveKey) {
+      const moveToClosestSidebarItem = () => {
+        if (sidebarItems.length === 0) return;
+        const y = active.getBoundingClientRect().top + active.getBoundingClientRect().height / 2;
+        let best = sidebarItems[0];
+        let bestD = Infinity;
+        for (const si of sidebarItems) {
+          const d = Math.abs(si.getBoundingClientRect().top + si.getBoundingClientRect().height / 2 - y);
+          if (d < bestD) { bestD = d; best = si; }
+        }
+        focusEl(best);
+      };
+
+      switch (key) {
         case 'ArrowRight':
-          if (activeColIdx < currentRow.items.length - 1) focusEl(currentRow.items[activeColIdx + 1]);
+          if (activeColIdx < currentRow.items.length - 1) {
+            focusEl(currentRow.items[activeColIdx + 1]);
+          } else if (key === towardSidebar) {
+            moveToClosestSidebarItem();
+          }
           break;
         case 'ArrowLeft':
-          if (activeColIdx > 0) focusEl(currentRow.items[activeColIdx - 1]);
-          else if (sidebarItems.length > 0) {
-            // Go to sidebar — find closest by Y
-            const y = active.getBoundingClientRect().top + active.getBoundingClientRect().height / 2;
-            let best = sidebarItems[0];
-            let bestD = Infinity;
-            for (const si of sidebarItems) {
-              const d = Math.abs(si.getBoundingClientRect().top + si.getBoundingClientRect().height / 2 - y);
-              if (d < bestD) { bestD = d; best = si; }
-            }
-            focusEl(best);
+          if (activeColIdx > 0) {
+            focusEl(currentRow.items[activeColIdx - 1]);
+          } else if (key === towardSidebar) {
+            moveToClosestSidebarItem();
           }
           break;
         case 'ArrowDown':
