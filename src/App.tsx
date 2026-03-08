@@ -36,7 +36,10 @@ const AppLayout = () => {
 
   useTVGlobalNavigation(true);
 
-  const mainMargin = sidebarCollapsed ? 'ms-20' : 'ms-60';
+  // Responsive sidebar margin: scales with TV breakpoints
+  const mainMargin = sidebarCollapsed
+    ? 'ms-20 3xl:ms-24 4k:ms-28'
+    : 'ms-60 3xl:ms-64 4k:ms-72';
 
   return (
     <div className="min-h-screen flex w-full bg-background text-foreground" dir={dir}>

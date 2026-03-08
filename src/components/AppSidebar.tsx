@@ -28,21 +28,21 @@ export const AppSidebar = ({ collapsed }: Props) => {
       className={cn(
         'fixed top-0 h-full z-50 flex flex-col transition-[width] duration-200',
         'bg-sidebar border-sidebar-border',
-        collapsed ? 'w-16' : 'w-56',
+        collapsed ? 'w-16 3xl:w-20 4k:w-24' : 'w-56 3xl:w-64 4k:w-72',
         isRTL ? 'right-0 border-s' : 'left-0 border-e'
       )}
       style={{ contain: 'layout style paint', willChange: 'width' }}
     >
       {/* Logo */}
-      <div className="h-16 flex items-center px-4 shrink-0 border-b border-sidebar-border justify-center">
-        <Compass className="w-7 h-7 text-primary shrink-0" />
+      <div className="h-16 3xl:h-20 4k:h-24 flex items-center px-4 3xl:px-5 shrink-0 border-b border-sidebar-border justify-center">
+        <Compass className="w-7 h-7 3xl:w-9 3xl:h-9 4k:w-10 4k:h-10 text-primary shrink-0" />
         {!collapsed && (
-          <span className="font-display text-lg text-foreground ms-2 tracking-wider whitespace-nowrap">STREAM</span>
+          <span className="font-display text-lg 3xl:text-xl 4k:text-2xl text-foreground ms-2 tracking-wider whitespace-nowrap">STREAM</span>
         )}
       </div>
 
       {/* Nav items */}
-      <div className="flex-1 flex flex-col pt-4 gap-1 px-2">
+      <div className="flex-1 flex flex-col pt-4 3xl:pt-6 gap-1 3xl:gap-2 px-2 3xl:px-3">
         {tabs.map(({ icon: Icon, labelKey, path }) => {
           const active = location.pathname === path;
           return (
@@ -50,8 +50,8 @@ export const AppSidebar = ({ collapsed }: Props) => {
               key={path}
               onClick={() => navigate(path)}
               className={cn(
-                'tv-focus relative flex items-center rounded-lg h-12 transition-colors duration-100',
-                collapsed ? 'justify-center px-0' : 'gap-3 px-4',
+                'tv-focus relative flex items-center rounded-lg 3xl:rounded-xl h-12 3xl:h-14 4k:h-16 transition-colors duration-100',
+                collapsed ? 'justify-center px-0' : 'gap-3 3xl:gap-4 px-4 3xl:px-5',
                 active
                   ? 'bg-primary/15 text-primary'
                   : 'text-sidebar-foreground'
@@ -59,12 +59,12 @@ export const AppSidebar = ({ collapsed }: Props) => {
             >
               {active && (
                 <div className={cn(
-                  'absolute top-2 bottom-2 w-[3px] rounded-full bg-primary',
+                  'absolute top-2 bottom-2 w-[3px] 3xl:w-1 rounded-full bg-primary',
                   isRTL ? 'right-0' : 'left-0'
                 )} />
               )}
-              <Icon className={cn('w-5 h-5 shrink-0', active && 'drop-shadow-[0_0_6px_hsl(var(--primary))]')} />
-              {!collapsed && <span className="text-sm font-medium whitespace-nowrap">{t(labelKey)}</span>}
+              <Icon className={cn('w-5 h-5 3xl:w-6 3xl:h-6 4k:w-7 4k:h-7 shrink-0', active && 'drop-shadow-[0_0_6px_hsl(var(--primary))]')} />
+              {!collapsed && <span className="text-sm 3xl:text-base 4k:text-lg font-medium whitespace-nowrap">{t(labelKey)}</span>}
             </button>
           );
         })}

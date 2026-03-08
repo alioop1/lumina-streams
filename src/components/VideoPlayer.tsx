@@ -599,7 +599,7 @@ export const VideoPlayer = ({
 
       {isBuffering && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <Loader2 className="w-12 h-12 text-primary animate-spin" />
+          <Loader2 className="w-12 h-12 3xl:w-16 3xl:h-16 4k:w-20 4k:h-20 text-primary animate-spin" />
         </div>
       )}
 
@@ -610,73 +610,73 @@ export const VideoPlayer = ({
         onClick={e => e.stopPropagation()}
       >
         {/* Top bar */}
-        <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/70 to-transparent">
-          <button onClick={onBack} className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
-            <BackArrow className="w-5 h-5" />
+        <div className="flex items-center justify-between p-4 3xl:p-6 4k:p-8 bg-gradient-to-b from-black/70 to-transparent">
+          <button onClick={onBack} className="w-10 h-10 3xl:w-12 3xl:h-12 4k:w-14 4k:h-14 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
+            <BackArrow className="w-5 h-5 3xl:w-6 3xl:h-6 4k:w-7 4k:h-7" />
           </button>
-          <h2 className="text-white text-sm font-medium truncate max-w-[60%]">{title}</h2>
-          <button onClick={onBack} className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
-            <X className="w-5 h-5" />
+          <h2 className="text-white text-sm 3xl:text-base 4k:text-lg font-medium truncate max-w-[60%]">{title}</h2>
+          <button onClick={onBack} className="w-10 h-10 3xl:w-12 3xl:h-12 4k:w-14 4k:h-14 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
+            <X className="w-5 h-5 3xl:w-6 3xl:h-6 4k:w-7 4k:h-7" />
           </button>
         </div>
 
         {/* Center */}
-        <div className="flex items-center justify-center gap-8">
-          <button onClick={() => seek(-10)} className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
-            <SkipBack className="w-6 h-6" />
+        <div className="flex items-center justify-center gap-8 3xl:gap-12 4k:gap-16">
+          <button onClick={() => seek(-10)} className="w-12 h-12 3xl:w-14 3xl:h-14 4k:w-16 4k:h-16 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
+            <SkipBack className="w-6 h-6 3xl:w-7 3xl:h-7 4k:w-8 4k:h-8" />
           </button>
-          <button onClick={togglePlay} data-player-default="true" className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-white hover:bg-white/30 transition-colors tv-focus">
-            {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ms-1" />}
+          <button onClick={togglePlay} data-player-default="true" className="w-16 h-16 3xl:w-20 3xl:h-20 4k:w-24 4k:h-24 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-white hover:bg-white/30 transition-colors tv-focus">
+            {isPlaying ? <Pause className="w-8 h-8 3xl:w-10 3xl:h-10 4k:w-12 4k:h-12" /> : <Play className="w-8 h-8 3xl:w-10 3xl:h-10 4k:w-12 4k:h-12 ms-1" />}
           </button>
-          <button onClick={() => seek(10)} className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
-            <SkipForward className="w-6 h-6" />
+          <button onClick={() => seek(10)} className="w-12 h-12 3xl:w-14 3xl:h-14 4k:w-16 4k:h-16 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
+            <SkipForward className="w-6 h-6 3xl:w-7 3xl:h-7 4k:w-8 4k:h-8" />
           </button>
         </div>
 
         {/* Bottom bar */}
-        <div className="p-4 bg-gradient-to-t from-black/70 to-transparent space-y-2">
+        <div className="p-4 3xl:p-6 4k:p-8 bg-gradient-to-t from-black/70 to-transparent space-y-2 3xl:space-y-3">
           {/* Progress */}
-          <div className="flex items-center gap-3">
-            <span className="text-white text-xs min-w-[40px]">{formatTime(currentTime)}</span>
-            <div className="relative flex-1 h-6 flex items-center group">
-              <div className="absolute inset-x-0 h-1 bg-white/20 rounded-full group-hover:h-1.5 transition-all">
+          <div className="flex items-center gap-3 3xl:gap-4">
+            <span className="text-white text-xs 3xl:text-sm 4k:text-base min-w-[40px] 3xl:min-w-[50px]">{formatTime(currentTime)}</span>
+            <div className="relative flex-1 h-6 3xl:h-8 flex items-center group">
+              <div className="absolute inset-x-0 h-1 3xl:h-1.5 4k:h-2 bg-white/20 rounded-full group-hover:h-1.5 3xl:group-hover:h-2 transition-all">
                 <div className="h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
               </div>
               <input type="range" min={0} max={duration || 0} value={currentTime} onChange={handleSeek} className="absolute inset-x-0 w-full h-full opacity-0 cursor-pointer" step={0.1} />
             </div>
-            <span className="text-white text-xs min-w-[40px] text-end">{formatTime(duration)}</span>
+            <span className="text-white text-xs 3xl:text-sm 4k:text-base min-w-[40px] 3xl:min-w-[50px] text-end">{formatTime(duration)}</span>
           </div>
 
           {/* Buttons row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button onClick={toggleMute} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
-                <Volume2 className="w-5 h-5" />
+              <button onClick={toggleMute} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
+                <Volume2 className="w-5 h-5 3xl:w-6 3xl:h-6" />
               </button>
-              <div className="w-20 relative h-6 flex items-center">
-                <div className="absolute inset-x-0 h-1 bg-white/20 rounded-full">
+              <div className="w-20 3xl:w-28 relative h-6 3xl:h-8 flex items-center">
+                <div className="absolute inset-x-0 h-1 3xl:h-1.5 bg-white/20 rounded-full">
                   <div className="h-full bg-white rounded-full" style={{ width: `${(isMuted ? 0 : volume) * 100}%` }} />
                 </div>
                 <input type="range" min={0} max={1} step={0.05} value={isMuted ? 0 : volume} onChange={handleVolume} className="absolute inset-x-0 w-full h-full opacity-0 cursor-pointer" />
               </div>
-              {playbackSpeed !== 1 && <span className="text-white text-xs bg-white/10 px-2 py-0.5 rounded">{playbackSpeed}x</span>}
+              {playbackSpeed !== 1 && <span className="text-white text-xs 3xl:text-sm bg-white/10 px-2 py-0.5 3xl:px-3 3xl:py-1 rounded">{playbackSpeed}x</span>}
             </div>
 
-            <div className="flex items-center gap-1">
-              <button onClick={() => { setShowSettings(!showSettings); setSettingsPanel('main'); }} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
-                <Settings className="w-5 h-5" />
+            <div className="flex items-center gap-1 3xl:gap-2">
+              <button onClick={() => { setShowSettings(!showSettings); setSettingsPanel('main'); }} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
+                <Settings className="w-5 h-5 3xl:w-6 3xl:h-6" />
               </button>
-              <button onClick={() => { setSettingsPanel('subtitles'); setShowSettings(true); }} className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors tv-focus ${activeSub ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`}>
-                <Subtitles className="w-5 h-5" />
+              <button onClick={() => { setSettingsPanel('subtitles'); setShowSettings(true); }} className={`w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center transition-colors tv-focus ${activeSub ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`}>
+                <Subtitles className="w-5 h-5 3xl:w-6 3xl:h-6" />
               </button>
-              <button onClick={handleDownloadSub} disabled={!availableSubs.length} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors disabled:opacity-40 tv-focus">
-                <Download className="w-5 h-5" />
+              <button onClick={handleDownloadSub} disabled={!availableSubs.length} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors disabled:opacity-40 tv-focus">
+                <Download className="w-5 h-5 3xl:w-6 3xl:h-6" />
               </button>
-              <button onClick={toggleFullscreen} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
-                {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+              <button onClick={toggleFullscreen} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
+                {isFullscreen ? <Minimize className="w-5 h-5 3xl:w-6 3xl:h-6" /> : <Maximize className="w-5 h-5 3xl:w-6 3xl:h-6" />}
               </button>
-              <button onClick={() => openExternal('vlc')} className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus" title={labels.openExternal}>
-                <ExternalLink className="w-5 h-5" />
+              <button onClick={() => openExternal('vlc')} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus" title={labels.openExternal}>
+                <ExternalLink className="w-5 h-5 3xl:w-6 3xl:h-6" />
               </button>
             </div>
           </div>
@@ -688,7 +688,7 @@ export const VideoPlayer = ({
         <div
           data-controls
           data-settings-panel="true"
-          className="absolute bottom-24 end-4 w-64 max-h-80 overflow-y-auto bg-black/90 backdrop-blur-lg rounded-xl border border-white/10 text-white text-sm"
+          className="absolute bottom-24 3xl:bottom-32 4k:bottom-36 end-4 3xl:end-6 w-64 3xl:w-80 4k:w-96 max-h-80 3xl:max-h-[28rem] overflow-y-auto bg-black/90 backdrop-blur-lg rounded-xl 3xl:rounded-2xl border border-white/10 text-white text-sm 3xl:text-base"
           onClick={e => e.stopPropagation()}
         >
           {settingsPanel === 'main' && (

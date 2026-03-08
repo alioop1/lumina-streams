@@ -226,7 +226,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           {lang === 'he' ? 'לא נמצאו מקורות' : 'No sources found'}
         </div>
       )}
-      <div data-nav-row="torrent-results" className="grid grid-cols-1 gap-3">
+      <div data-nav-row="torrent-results" className="grid grid-cols-1 gap-3 3xl:gap-4">
         {displayStreams.map((stream: TorrentioStream, idx: number) => {
           const parsed = parseTorrentioTitle(stream.title || '');
           return (
@@ -234,27 +234,27 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               key={idx}
               onClick={() => handleStreamSelect(stream, idx)}
               disabled={loadingStreamIdx !== null}
-              className="w-full glass rounded-xl p-4 flex items-center gap-4 tv-focus text-start transition-colors disabled:opacity-50 min-h-[4.5rem]"
+              className="w-full glass rounded-xl 3xl:rounded-2xl p-4 3xl:p-5 4k:p-6 flex items-center gap-4 3xl:gap-5 tv-focus text-start transition-colors disabled:opacity-50 min-h-[4.5rem] 3xl:min-h-[5.5rem] 4k:min-h-[6rem]"
             >
-              <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                {loadingStreamIdx === idx ? <Loader2 className="w-6 h-6 text-primary animate-spin" /> : <Download className="w-6 h-6 text-primary" />}
+              <div className="w-14 h-14 3xl:w-16 3xl:h-16 4k:w-20 4k:h-20 rounded-xl 3xl:rounded-2xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                {loadingStreamIdx === idx ? <Loader2 className="w-6 h-6 3xl:w-8 3xl:h-8 text-primary animate-spin" /> : <Download className="w-6 h-6 3xl:w-8 3xl:h-8 text-primary" />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-base font-semibold text-foreground truncate" dir="ltr">
+                <p className="text-base 3xl:text-lg 4k:text-xl font-semibold text-foreground truncate" dir="ltr">
                   {stream.name}
                 </p>
-                <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1" dir="ltr">
+                <p className="text-sm 3xl:text-base text-muted-foreground mt-0.5 line-clamp-1" dir="ltr">
                   {parsed.quality}
                 </p>
                 {(parsed.languages.length > 0 || parsed.audioCodec) && (
-                  <div className="flex gap-1.5 mt-1 flex-wrap">
+                  <div className="flex gap-1.5 3xl:gap-2 mt-1 flex-wrap">
                     {parsed.languages.map((lang) => (
-                      <span key={lang} className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full font-medium">
+                      <span key={lang} className="text-xs 3xl:text-sm bg-primary/15 text-primary px-2 3xl:px-3 py-0.5 3xl:py-1 rounded-full font-medium">
                         {lang}
                       </span>
                     ))}
                     {parsed.audioCodec && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      <span className={`text-xs 3xl:text-sm px-2 3xl:px-3 py-0.5 3xl:py-1 rounded-full font-medium ${
                         parsed.audioCompatible
                           ? 'bg-green-500/15 text-green-400'
                           : 'bg-yellow-500/15 text-yellow-400'
@@ -265,10 +265,10 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                   </div>
                 )}
               </div>
-              <div className="flex flex-col items-end gap-1 flex-shrink-0 text-sm text-muted-foreground">
+              <div className="flex flex-col items-end gap-1 flex-shrink-0 text-sm 3xl:text-base text-muted-foreground">
                 {parsed.size && <span className="text-foreground font-medium">💾 {parsed.size}</span>}
                 {parsed.seeds > 0 && <span className="text-green-400">👤 {parsed.seeds}</span>}
-                {parsed.source && <span className="text-xs truncate max-w-[120px]">{parsed.source}</span>}
+                {parsed.source && <span className="text-xs 3xl:text-sm truncate max-w-[120px] 3xl:max-w-[180px]">{parsed.source}</span>}
               </div>
             </button>
           );
@@ -280,7 +280,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   return (
     <div className="min-h-screen bg-background animate-fade-in" dir={dir}>
       {/* ══════ HERO: Full-width backdrop with info overlay ══════ */}
-      <div className="relative h-[70vh] min-h-[500px]">
+      <div className="relative h-[70vh] 3xl:h-[75vh] 4k:h-[80vh] min-h-[500px]">
         <img
           src={backdrop}
           alt={movie.title}
@@ -290,54 +290,54 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent" />
 
         {/* Back button */}
-        <div data-nav-row="details-back" className="absolute top-8 start-8 z-20">
+        <div data-nav-row="details-back" className="absolute top-8 3xl:top-12 start-8 3xl:start-12 z-20">
           <button
             onClick={onBack}
-            className="glass w-12 h-12 rounded-full flex items-center justify-center text-foreground tv-focus"
+            className="glass w-12 h-12 3xl:w-14 3xl:h-14 4k:w-16 4k:h-16 rounded-full flex items-center justify-center text-foreground tv-focus"
           >
-            <BackArrow className="w-6 h-6" />
+            <BackArrow className="w-6 h-6 3xl:w-7 3xl:h-7 4k:w-8 4k:h-8" />
           </button>
         </div>
 
         {/* Info overlay on left side of backdrop */}
-        <div className="absolute bottom-0 start-0 end-0 p-8 pb-10 z-10">
+        <div className="absolute bottom-0 start-0 end-0 p-8 3xl:p-12 4k:p-16 pb-10 3xl:pb-14 z-10">
           <div className="max-w-[55%]">
-            <h1 className="font-display text-5xl lg:text-6xl text-foreground text-glow leading-tight">
+            <h1 className="font-display text-5xl lg:text-6xl 3xl:text-7xl 4k:text-8xl tv:text-9xl text-foreground text-glow leading-tight">
               {displayTitle}
             </h1>
             {lang === 'he' && movie.titleHe && (
-              <p className="text-muted-foreground text-base mt-2" dir="ltr">{movie.title}</p>
+              <p className="text-muted-foreground text-base 3xl:text-lg 4k:text-xl mt-2 3xl:mt-3" dir="ltr">{movie.title}</p>
             )}
 
             {/* Meta row */}
-            <div className="flex items-center gap-4 mt-4 text-base text-muted-foreground flex-wrap">
+            <div className="flex items-center gap-4 3xl:gap-5 mt-4 3xl:mt-6 text-base 3xl:text-lg 4k:text-xl text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1.5">
-                <Star className="w-5 h-5 text-primary fill-primary" />
-                <span className="text-foreground font-bold text-lg">{detailMovie.rating}</span>
+                <Star className="w-5 h-5 3xl:w-6 3xl:h-6 text-primary fill-primary" />
+                <span className="text-foreground font-bold text-lg 3xl:text-xl 4k:text-2xl">{detailMovie.rating}</span>
               </span>
               <span className="text-foreground">{detailMovie.year}</span>
               <span>{detailMovie.duration}</span>
               {detailMovie.quality && (
-                <span className="bg-primary/20 text-primary px-2.5 py-1 rounded text-xs font-bold tracking-wide">
+                <span className="bg-primary/20 text-primary px-2.5 py-1 3xl:px-3 3xl:py-1.5 rounded text-xs 3xl:text-sm font-bold tracking-wide">
                   {detailMovie.quality}
                 </span>
               )}
             </div>
 
             {/* Genres */}
-            <div className="flex gap-2 flex-wrap mt-4">
+            <div className="flex gap-2 3xl:gap-3 flex-wrap mt-4 3xl:mt-5">
               {genres.map((g: any) => {
                 const name = typeof g === 'string' ? g : g.name;
                 return (
-                  <span key={name} className="glass px-3 py-1.5 rounded-full text-xs text-secondary-foreground font-medium">
+                  <span key={name} className="glass px-3 py-1.5 3xl:px-4 3xl:py-2 rounded-full text-xs 3xl:text-sm text-secondary-foreground font-medium">
                     {name}
                   </span>
                 );
               })}
             </div>
 
-            {/* Synopsis - shown inline in hero for TV readability */}
-            <p className="text-sm text-muted-foreground leading-relaxed mt-4 line-clamp-3 max-w-[600px]">
+            {/* Synopsis */}
+            <p className="text-sm 3xl:text-base 4k:text-lg text-muted-foreground leading-relaxed mt-4 3xl:mt-6 line-clamp-3 max-w-[600px] 3xl:max-w-[800px] 4k:max-w-[1000px]">
               {detailMovie.overview}
             </p>
           </div>
@@ -345,10 +345,10 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
       </div>
 
       {/* ══════ MAIN CONTENT AREA ══════ */}
-      <div className="px-8 pb-24 space-y-8 -mt-2 relative z-10">
+      <div className="px-8 3xl:px-12 4k:px-16 pb-24 3xl:pb-32 space-y-8 3xl:space-y-12 -mt-2 relative z-10">
 
         {/* Action buttons - large, TV-friendly */}
-        <div data-nav-row="details-actions" className="flex gap-4 items-center">
+        <div data-nav-row="details-actions" className="flex gap-4 3xl:gap-5 4k:gap-6 items-center">
           <button
             onClick={() => {
               if (movie.type === 'series') {
@@ -361,9 +361,9 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               }
               setShowTorrents(!showTorrents);
             }}
-            className="flex items-center justify-center gap-3 bg-primary text-primary-foreground px-8 py-4 rounded-xl font-bold text-base glow-red transition-all tv-focus min-w-[220px]"
+            className="flex items-center justify-center gap-3 3xl:gap-4 bg-primary text-primary-foreground px-8 py-4 3xl:px-10 3xl:py-5 4k:px-12 4k:py-6 rounded-xl 3xl:rounded-2xl font-bold text-base 3xl:text-lg 4k:text-xl glow-red transition-all tv-focus min-w-[220px] 3xl:min-w-[280px]"
           >
-            <Search className="w-6 h-6" />
+            <Search className="w-6 h-6 3xl:w-7 3xl:h-7" />
             {movie.type === 'series'
               ? (lang === 'he' ? 'בחר פרק' : 'Choose Episode')
               : (lang === 'he' ? 'חפש מקורות' : 'Find Sources')}
@@ -372,18 +372,18 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           {trailer && (
             <button
               onClick={() => setStreamUrl(`https://www.youtube.com/embed/${trailer.key}?autoplay=1`)}
-              className="flex items-center gap-3 glass px-6 py-4 rounded-xl text-foreground font-medium text-base transition-colors tv-focus"
+              className="flex items-center gap-3 3xl:gap-4 glass px-6 py-4 3xl:px-8 3xl:py-5 rounded-xl 3xl:rounded-2xl text-foreground font-medium text-base 3xl:text-lg transition-colors tv-focus"
             >
-              <Play className="w-5 h-5 text-primary fill-primary" />
+              <Play className="w-5 h-5 3xl:w-6 3xl:h-6 text-primary fill-primary" />
               {lang === 'he' ? 'טריילר' : 'Trailer'}
             </button>
           )}
 
           <button
             onClick={() => setShowLinkInput(true)}
-            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground transition-colors tv-focus"
+            className="glass w-14 h-14 3xl:w-16 3xl:h-16 4k:w-18 4k:h-18 rounded-xl 3xl:rounded-2xl flex items-center justify-center text-foreground transition-colors tv-focus"
           >
-            <Link className="w-5 h-5" />
+            <Link className="w-5 h-5 3xl:w-6 3xl:h-6" />
           </button>
           <button
             onClick={() => {
@@ -391,15 +391,15 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               navigator.clipboard.writeText(text);
               alert(lang === 'he' ? 'נוסף לרשימה!' : 'Added to watchlist!');
             }}
-            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground transition-colors tv-focus"
+            className="glass w-14 h-14 3xl:w-16 3xl:h-16 4k:w-18 4k:h-18 rounded-xl 3xl:rounded-2xl flex items-center justify-center text-foreground transition-colors tv-focus"
           >
-            <Plus className="w-6 h-6" />
+            <Plus className="w-6 h-6 3xl:w-7 3xl:h-7" />
           </button>
           <button
             onClick={handleShare}
-            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground transition-colors tv-focus"
+            className="glass w-14 h-14 3xl:w-16 3xl:h-16 4k:w-18 4k:h-18 rounded-xl 3xl:rounded-2xl flex items-center justify-center text-foreground transition-colors tv-focus"
           >
-            <Share2 className="w-5 h-5" />
+            <Share2 className="w-5 h-5 3xl:w-6 3xl:h-6" />
           </button>
         </div>
 
@@ -438,7 +438,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
         {/* Movie torrent results */}
         {showTorrents && movie.type !== 'series' && (
-          <div className="max-w-3xl">
+          <div className="max-w-3xl 3xl:max-w-4xl 4k:max-w-5xl">
             {renderTorrentResults()}
           </div>
         )}
@@ -446,26 +446,26 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         {/* Cast - horizontal scroll with bigger items */}
         {cast.length > 0 && (
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4">
+            <h3 className="text-lg 3xl:text-xl 4k:text-2xl font-semibold text-foreground mb-4 3xl:mb-6">
               {lang === 'he' ? 'שחקנים' : 'Cast'}
             </h3>
-            <div className="flex gap-5 overflow-x-auto pb-2">
+            <div className="flex gap-5 3xl:gap-7 overflow-x-auto pb-2">
               {cast.map((actor: any) => (
-                <div key={actor.id} className="flex-shrink-0 w-24 text-center">
+                <div key={actor.id} className="flex-shrink-0 w-24 3xl:w-32 4k:w-36 text-center">
                   {actor.profile_path ? (
                     <img
                       src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`}
                       alt={actor.name}
-                      className="w-20 h-20 rounded-full object-cover mx-auto mb-2 ring-2 ring-border"
+                      className="w-20 h-20 3xl:w-28 3xl:h-28 4k:w-32 4k:h-32 rounded-full object-cover mx-auto mb-2 3xl:mb-3 ring-2 ring-border"
                       loading="lazy"
                     />
                   ) : (
-                    <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-2 flex items-center justify-center text-muted-foreground text-lg ring-2 ring-border">
+                    <div className="w-20 h-20 3xl:w-28 3xl:h-28 4k:w-32 4k:h-32 rounded-full bg-muted mx-auto mb-2 3xl:mb-3 flex items-center justify-center text-muted-foreground text-lg 3xl:text-2xl ring-2 ring-border">
                       {actor.name?.[0]}
                     </div>
                   )}
-                  <p className="text-sm text-foreground truncate font-medium">{actor.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{actor.character}</p>
+                  <p className="text-sm 3xl:text-base text-foreground truncate font-medium">{actor.name}</p>
+                  <p className="text-xs 3xl:text-sm text-muted-foreground truncate">{actor.character}</p>
                 </div>
               ))}
             </div>
@@ -475,13 +475,13 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         {/* ══════ Series: Seasons & Episodes ══════ */}
         {movie.type === 'series' && seasons.length > 0 && (
           <div ref={episodeSectionRef}>
-            <h3 className="text-lg font-semibold text-foreground mb-4">{t('seasons')}</h3>
-            <div data-nav-row="details-seasons" className="flex gap-3 overflow-x-auto pb-3">
+            <h3 className="text-lg 3xl:text-xl 4k:text-2xl font-semibold text-foreground mb-4 3xl:mb-6">{t('seasons')}</h3>
+            <div data-nav-row="details-seasons" className="flex gap-3 3xl:gap-4 overflow-x-auto pb-3">
               {seasons.map((s: any) => (
                 <button
                   key={s.season_number}
                   onClick={() => { setSelectedSeason(s.season_number); setSelectedEpisode(null); setShowTorrents(false); }}
-                  className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all tv-focus ${
+                  className={`flex-shrink-0 px-5 py-2.5 3xl:px-7 3xl:py-3.5 4k:px-8 4k:py-4 rounded-xl 3xl:rounded-2xl text-sm 3xl:text-base 4k:text-lg font-semibold transition-all tv-focus ${
                     selectedSeason === s.season_number
                       ? 'bg-primary text-primary-foreground'
                       : 'glass text-muted-foreground'
@@ -499,13 +499,13 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             )}
 
             {seasonData?.episodes && (
-              <div data-nav-row="details-episodes" className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div data-nav-row="details-episodes" className="mt-5 3xl:mt-8 grid grid-cols-1 lg:grid-cols-2 gap-3 3xl:gap-4">
                 {seasonData.episodes.map((ep: any) => (
                   <button
                     key={ep.id}
                     data-episode-button="true"
                     onClick={() => { setSelectedEpisode(ep.episode_number); setShowTorrents(true); }}
-                    className={`w-full rounded-xl p-4 flex items-center gap-4 tv-focus text-start transition-all ${
+                    className={`w-full rounded-xl 3xl:rounded-2xl p-4 3xl:p-5 4k:p-6 flex items-center gap-4 3xl:gap-5 tv-focus text-start transition-all ${
                       selectedEpisode === ep.episode_number
                         ? 'bg-primary/10 ring-2 ring-primary'
                         : 'glass'
@@ -515,19 +515,19 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                       <img
                         src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
                         alt={ep.name}
-                        className="w-32 h-[4.5rem] rounded-lg object-cover flex-shrink-0"
+                        className="w-32 3xl:w-44 4k:w-52 h-[4.5rem] 3xl:h-[6rem] 4k:h-[7rem] rounded-lg 3xl:rounded-xl object-cover flex-shrink-0"
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-32 h-[4.5rem] rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                      <div className="w-32 3xl:w-44 4k:w-52 h-[4.5rem] 3xl:h-[6rem] 4k:h-[7rem] rounded-lg 3xl:rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
                         <Play className="w-6 h-6 text-muted-foreground" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-foreground">
+                      <h4 className="text-sm 3xl:text-base 4k:text-lg font-semibold text-foreground">
                         {t('episode')} {ep.episode_number}: {ep.name}
                       </h4>
-                      <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{ep.overview}</p>
+                      <p className="text-xs 3xl:text-sm text-muted-foreground line-clamp-1 mt-0.5">{ep.overview}</p>
                       {ep.runtime && (
                         <p className="text-xs text-muted-foreground mt-0.5">{ep.runtime} {t('minutes')}</p>
                       )}
@@ -542,7 +542,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
             {/* Series torrent results */}
             {showTorrents && selectedEpisode !== null && (
-              <div className="mt-6 max-w-3xl">
+              <div className="mt-6 3xl:mt-8 max-w-3xl 3xl:max-w-4xl 4k:max-w-5xl">
                 {renderTorrentResults()}
               </div>
             )}
@@ -555,16 +555,16 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             <h3 className="text-lg font-semibold text-foreground mb-4">
               {lang === 'he' ? 'המלצות דומות' : 'Recommendations'}
             </h3>
-            <div className="flex gap-4 overflow-x-auto pb-2">
+            <div className="flex gap-4 3xl:gap-6 overflow-x-auto pb-2">
               {recommendations.filter((r: any) => r.poster_path).slice(0, 10).map((rec: any) => (
-                <div key={rec.id} className="flex-shrink-0 w-32">
+                <div key={rec.id} className="flex-shrink-0 w-32 3xl:w-44 4k:w-52">
                   <img
                     src={`https://image.tmdb.org/t/p/w342${rec.poster_path}`}
                     alt={rec.title || rec.name}
-                    className="w-full rounded-xl aspect-[2/3] object-cover mb-1.5"
+                    className="w-full rounded-xl 3xl:rounded-2xl aspect-[2/3] object-cover mb-1.5 3xl:mb-2"
                     loading="lazy"
                   />
-                  <p className="text-sm text-foreground truncate font-medium">{rec.title || rec.name}</p>
+                  <p className="text-sm 3xl:text-base text-foreground truncate font-medium">{rec.title || rec.name}</p>
                 </div>
               ))}
             </div>
