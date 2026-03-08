@@ -621,15 +621,15 @@ export const VideoPlayer = ({
         </div>
 
         {/* Center */}
-        <div className="flex items-center justify-center gap-8">
-          <button onClick={() => seek(-10)} className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
-            <SkipBack className="w-6 h-6" />
+        <div className="flex items-center justify-center gap-8 3xl:gap-12 4k:gap-16">
+          <button onClick={() => seek(-10)} className="w-12 h-12 3xl:w-14 3xl:h-14 4k:w-16 4k:h-16 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
+            <SkipBack className="w-6 h-6 3xl:w-7 3xl:h-7 4k:w-8 4k:h-8" />
           </button>
-          <button onClick={togglePlay} data-player-default="true" className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-white hover:bg-white/30 transition-colors tv-focus">
-            {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ms-1" />}
+          <button onClick={togglePlay} data-player-default="true" className="w-16 h-16 3xl:w-20 3xl:h-20 4k:w-24 4k:h-24 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-white hover:bg-white/30 transition-colors tv-focus">
+            {isPlaying ? <Pause className="w-8 h-8 3xl:w-10 3xl:h-10 4k:w-12 4k:h-12" /> : <Play className="w-8 h-8 3xl:w-10 3xl:h-10 4k:w-12 4k:h-12 ms-1" />}
           </button>
-          <button onClick={() => seek(10)} className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
-            <SkipForward className="w-6 h-6" />
+          <button onClick={() => seek(10)} className="w-12 h-12 3xl:w-14 3xl:h-14 4k:w-16 4k:h-16 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors tv-focus">
+            <SkipForward className="w-6 h-6 3xl:w-7 3xl:h-7 4k:w-8 4k:h-8" />
           </button>
         </div>
 
