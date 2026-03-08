@@ -6,7 +6,7 @@ const Watchlist = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background pt-12 pb-24 px-4" dir={dir}>
+    <div className="min-h-screen bg-background pt-12 pb-24 px-6" dir={dir}>
       <h1 className="font-display text-3xl text-foreground mb-6">{t('myList')}</h1>
       <div className="flex flex-col items-center justify-center h-[50vh] text-center">
         <div className="w-20 h-20 rounded-full glass flex items-center justify-center mb-4">
@@ -14,12 +14,14 @@ const Watchlist = () => {
         </div>
         <p className="text-muted-foreground">{t('emptyList')}</p>
         <p className="text-sm text-muted-foreground mt-1">{t('addLater')}</p>
-        <button
-          onClick={() => navigate('/search')}
-          className="mt-5 bg-primary text-primary-foreground rounded-lg px-4 py-2.5 text-sm font-semibold tv-focus"
-        >
-          {lang === 'he' ? 'חפש משהו לצפייה' : 'Find Something to Watch'}
-        </button>
+        <div data-nav-row="watchlist-action" className="mt-5">
+          <button
+            onClick={() => navigate('/search')}
+            className="tv-focus bg-primary text-primary-foreground rounded-lg px-6 py-3 text-sm font-semibold outline-none"
+          >
+            {lang === 'he' ? 'חפש משהו לצפייה' : 'Find Something to Watch'}
+          </button>
+        </div>
       </div>
     </div>
   );
