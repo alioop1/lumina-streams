@@ -253,15 +253,17 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     setSettingsPanel('main');
   };
 
-  const selectAudioTrack = (idx: number) => {
+  const selectAudioTrack = (option: RDAudioOption) => {
     const v = videoRef.current;
     if (!v) return;
-    const at = (v as any).audioTracks;
-    if (at) {
-      for (let i = 0; i < at.length; i++) at[i].enabled = i === idx;
-      setAudioTracks(prev => prev.map((t, i) => ({ ...t, enabled: i === idx })));
-    }
+    const wasPlaying = !v.paused;
+    const time = v.currentTime;
+    v.src = option.url;
+    v.currentTime = time;
+    if (wasPlaying) v.play();
+    setActiveAudio(option.url);
     setSettingsPanel('main');
+    setShowSettings(false);
   };
 
   const toggleFullscreen = async () => {
