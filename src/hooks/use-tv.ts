@@ -1,267 +1,305 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-// ── TV device detection ──
+const TV_UA_REGEX = /Android TV|GoogleTV|SmartTV|SMART-TV|HbbTV|AFT|BRAVIA|TV/i;
+const ANDROID_TV_HINT_REGEX = /AFT|BRAVIA|MIBOX|SHIELD|ADT-|SmartTV|GoogleTV/i;
 
-const TV_UA = /Android TV|GoogleTV|SmartTV|SMART-TV|HbbTV|AFT|BRAVIA|TV/i;
-const ATV_HINT = /AFT|BRAVIA|MIBOX|SHIELD|ADT-|SmartTV|GoogleTV/i;
+const KEYCODE_MAP: Record<number, string> = {
+  13: 'Enter',
+  19: 'ArrowUp',
+  20: 'ArrowDown',
+  21: 'ArrowLeft',
+  22: 'ArrowRight',
+  23: 'Enter',
+  32: ' ',
+  37: 'ArrowLeft',
+  38: 'ArrowUp',
+  39: 'ArrowRight',
+  40: 'ArrowDown',
+  66: 'Enter',
+  3: 'Home',
+  36: 'Home',
+};
+
+const normalizeRemoteKey = (e: KeyboardEvent): string => {
+  const lowered = (e.key || '').toLowerCase();
+
+  if (lowered === 'arrowup' || lowered === 'up' || lowered === 'dpad_up' || lowered === 'dpadup') return 'ArrowUp';
+  if (lowered === 'arrowdown' || lowered === 'down' || lowered === 'dpad_down' || lowered === 'dpaddown') return 'ArrowDown';
+  if (lowered === 'arrowleft' || lowered === 'left' || lowered === 'dpad_left' || lowered === 'dpadleft') return 'ArrowLeft';
+  if (lowered === 'arrowright' || lowered === 'right' || lowered === 'dpad_right' || lowered === 'dpadright') return 'ArrowRight';
+  if (lowered === 'enter' || lowered === 'select' || lowered === 'ok' || lowered === 'center' || lowered === 'dpad_center') return 'Enter';
+  if (lowered === 'home') return 'Home';
+  if (lowered === ' ') return ' ';
+
+  if (e.code === 'Space') return ' ';
+  if (e.code && e.code.startsWith('Arrow')) return e.code;
+
+  const keyCode = e.keyCode || (e as any).which || 0;
+  return KEYCODE_MAP[keyCode] || '';
+};
 
 export const detectTVDevice = () => {
   if (typeof window === 'undefined') return false;
-  const ua = navigator.userAgent || '';
-  return (
-    localStorage.getItem('force-tv-mode') === 'true' ||
-    new URLSearchParams(location.search).get('tv') === '1' ||
-    TV_UA.test(ua) ||
-    (ua.includes('Android') && ATV_HINT.test(ua)) ||
-    Boolean((window as any).Capacitor)
-  );
+
+  const ua = window.navigator.userAgent || '';
+  const hasTVSignature = TV_UA_REGEX.test(ua);
+  const isAndroidTVLike = ua.includes('Android') && ANDROID_TV_HINT_REGEX.test(ua);
+  const forceTVMode = window.localStorage.getItem('force-tv-mode') === 'true';
+  const queryForceTV = new URLSearchParams(window.location.search).get('tv') === '1';
+  const capacitorRuntime = Boolean((window as any).Capacitor);
+
+  return forceTVMode || queryForceTV || hasTVSignature || isAndroidTVLike || capacitorRuntime;
 };
 
 export const useIsTVDevice = () => {
-  const [isTV, setIsTV] = useState(detectTVDevice);
+  const [isTV, setIsTV] = useState(() => detectTVDevice());
 
   useEffect(() => {
-    const onKey = () => {
-      if (!isTV) {
-        localStorage.setItem('force-tv-mode', 'true');
-        setIsTV(true);
-      }
+    const detectFromRemoteInput = (e: KeyboardEvent) => {
+      const normalized = normalizeRemoteKey(e);
+      const keyCode = e.keyCode || (e as any).which || 0;
+      const looksLikeRemoteKey =
+        !!normalized ||
+        keyCode in KEYCODE_MAP ||
+        e.key === 'Unidentified' ||
+        e.code?.startsWith('Arrow') ||
+        e.code === 'NumpadEnter';
+
+      if (!looksLikeRemoteKey) return;
+
+      window.localStorage.setItem('force-tv-mode', 'true');
+      setIsTV(true);
     };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [isTV]);
+
+    window.addEventListener('keydown', detectFromRemoteInput, true);
+
+    return () => {
+      window.removeEventListener('keydown', detectFromRemoteInput, true);
+    };
+  }, []);
 
   return isTV;
 };
 
-// ── Key normalisation ──
+const isHTMLElementVisible = (el: HTMLElement) => {
+  const style = window.getComputedStyle(el);
+  const hasNoOpacity = Number(style.opacity) <= 0.01;
+  const hiddenByAria = el.getAttribute('aria-hidden') === 'true' || !!el.closest('[aria-hidden="true"]');
 
-const KEYCODE_MAP: Record<number, string> = {
-  13: 'Enter', 19: 'ArrowUp', 20: 'ArrowDown', 21: 'ArrowLeft',
-  22: 'ArrowRight', 23: 'Enter', 32: ' ', 37: 'ArrowLeft',
-  38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown', 66: 'Enter',
-};
-
-const normalizeKey = (e: KeyboardEvent): string => {
-  const k = (e.key || '').toLowerCase();
-  if (k === 'arrowup' || k === 'up' || k === 'dpadup') return 'ArrowUp';
-  if (k === 'arrowdown' || k === 'down' || k === 'dpaddown') return 'ArrowDown';
-  if (k === 'arrowleft' || k === 'left' || k === 'dpadleft') return 'ArrowLeft';
-  if (k === 'arrowright' || k === 'right' || k === 'dpadright') return 'ArrowRight';
-  if (k === 'enter' || k === 'select' || k === 'ok' || k === 'center') return 'Enter';
-  if (k === ' ') return ' ';
-  if (k === 'escape' || k === 'backspace' || k === 'goback') return 'Back';
-  if (e.code?.startsWith('Arrow')) return e.code;
-  return KEYCODE_MAP[e.keyCode || 0] || '';
-};
-
-// ── Row-based spatial navigation ──
-
-const FOCUSABLE = '.tv-focus';
-const ROW_THRESHOLD = 30; // px – elements within this Y-gap are considered same row
-
-interface FocusableInfo {
-  el: HTMLElement;
-  cx: number;
-  cy: number;
-}
-
-const getVisible = (): FocusableInfo[] => {
-  const els = Array.from(document.querySelectorAll<HTMLElement>(FOCUSABLE));
-  const result: FocusableInfo[] = [];
-  for (const el of els) {
-    if (el.offsetParent === null) continue;
-    if (el.hasAttribute('disabled')) continue;
-    if (el.getAttribute('aria-hidden') === 'true') continue;
-    const r = el.getBoundingClientRect();
-    if (r.width === 0 || r.height === 0) continue;
-    // Only include elements roughly in/near viewport
-    if (r.bottom < -100 || r.top > window.innerHeight + 100) continue;
-    if (r.right < -100 || r.left > window.innerWidth + 100) continue;
-    result.push({ el, cx: r.left + r.width / 2, cy: r.top + r.height / 2 });
-  }
-  return result;
-};
-
-const clusterRows = (items: FocusableInfo[]): FocusableInfo[][] => {
-  if (!items.length) return [];
-  const sorted = [...items].sort((a, b) => a.cy - b.cy || a.cx - b.cx);
-  const rows: FocusableInfo[][] = [[sorted[0]]];
-  for (let i = 1; i < sorted.length; i++) {
-    const last = rows[rows.length - 1];
-    const avgY = last.reduce((s, it) => s + it.cy, 0) / last.length;
-    if (Math.abs(sorted[i].cy - avgY) <= ROW_THRESHOLD) {
-      last.push(sorted[i]);
-    } else {
-      rows.push([sorted[i]]);
-    }
-  }
-  // Sort each row by X
-  for (const row of rows) {
-    row.sort((a, b) => a.cx - b.cx);
-  }
-  return rows;
-};
-
-const findInRows = (rows: FocusableInfo[][], el: HTMLElement): [number, number] => {
-  for (let r = 0; r < rows.length; r++) {
-    for (let c = 0; c < rows[r].length; c++) {
-      if (rows[r][c].el === el) return [r, c];
-    }
-  }
-  return [-1, -1];
+  return (
+    style.display !== 'none' &&
+    style.visibility !== 'hidden' &&
+    style.pointerEvents !== 'none' &&
+    !hasNoOpacity &&
+    !hiddenByAria &&
+    !el.hasAttribute('disabled') &&
+    el.getClientRects().length > 0
+  );
 };
 
 export const useTVGlobalNavigation = (enabled: boolean) => {
+  const focusableSelector = useMemo(() => '.tv-focus', []);
+
   useEffect(() => {
     if (!enabled) return;
 
-    let lastNav = 0;
-    const THROTTLE = 100; // ms between arrow navigations
+    const getSidebarRoot = () => document.querySelector('[data-sidebar]');
+    const getMainRoot = () => document.querySelector('main');
 
-    const focusEl = (el: HTMLElement | null | undefined) => {
-      if (!el) return;
-      el.focus({ preventScroll: false });
-      el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+    const isWithinViewport = (el: HTMLElement, overscan = 180) => {
+      const rect = el.getBoundingClientRect();
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom >= -overscan &&
+        rect.top <= window.innerHeight + overscan &&
+        rect.right >= -overscan &&
+        rect.left <= window.innerWidth + overscan
+      );
     };
 
-    const handleKey = (e: KeyboardEvent) => {
-      // Don't interfere with video player
-      if (document.querySelector('[data-video-player="true"]')) return;
-      if (e.defaultPrevented) return;
+    const getFocusableWithin = (root: ParentNode | null) =>
+      root
+        ? Array.from(root.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+            (el) => isHTMLElementVisible(el) && isWithinViewport(el)
+          )
+        : [];
 
-      const key = normalizeKey(e);
+    const getSidebarFocusable = () => getFocusableWithin(getSidebarRoot());
+    const getMainFocusable = () => getFocusableWithin(getMainRoot());
+
+    const getCenterPoint = (el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        rect,
+      };
+    };
+
+    const focusElement = (target: HTMLElement | null) => {
+      if (!target) return;
+      target.focus();
+      target.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+    };
+
+    const focusNearestByY = (from: HTMLElement, targets: HTMLElement[]) => {
+      if (!targets.length) return;
+      const fromY = getCenterPoint(from).y;
+      const nearest = [...targets].sort(
+        (a, b) => Math.abs(getCenterPoint(a).y - fromY) - Math.abs(getCenterPoint(b).y - fromY)
+      )[0];
+      focusElement(nearest || null);
+    };
+
+    const getNextDirectionalInMain = (
+      current: HTMLElement,
+      list: HTMLElement[],
+      direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
+    ) => {
+      const c = getCenterPoint(current);
+      const axisLimitX = Math.max(c.rect.width * 1.9, 260);
+      const axisLimitY = Math.max(c.rect.height * 2.0, 170);
+
+      const candidates = list
+        .filter((el) => el !== current)
+        .map((el) => ({ el, point: getCenterPoint(el) }))
+        .filter(({ point }) => {
+          const dx = point.x - c.x;
+          const dy = point.y - c.y;
+
+          if (direction === 'ArrowRight') return dx > 4 && Math.abs(dy) <= axisLimitY;
+          if (direction === 'ArrowLeft') return dx < -4 && Math.abs(dy) <= axisLimitY;
+          if (direction === 'ArrowDown') return dy > 4 && Math.abs(dx) <= axisLimitX;
+          return dy < -4 && Math.abs(dx) <= axisLimitX;
+        })
+        .map(({ el, point }) => {
+          const dx = Math.abs(point.x - c.x);
+          const dy = Math.abs(point.y - c.y);
+          const primary = direction === 'ArrowLeft' || direction === 'ArrowRight' ? dx : dy;
+          const secondary = direction === 'ArrowLeft' || direction === 'ArrowRight' ? dy : dx;
+          return { el, score: primary + secondary * 0.42 };
+        })
+        .sort((a, b) => a.score - b.score);
+
+      return candidates[0]?.el ?? null;
+    };
+
+    let lastArrowAt = 0;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      if (document.querySelector('[data-video-player="true"]')) return;
+
+      const key = normalizeRemoteKey(e);
       if (!key) return;
 
-      // Don't intercept input fields for arrow keys
-      const tag = (e.target as HTMLElement)?.tagName;
-      if ((tag === 'INPUT' || tag === 'TEXTAREA') && key !== 'Back') return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
 
-      const isRTL = document.documentElement.dir === 'rtl' || document.body.dir === 'rtl';
+      const sidebarFocusable = getSidebarFocusable();
+      const mainFocusable = getMainFocusable();
+      const allFocusable = [...sidebarFocusable, ...mainFocusable.filter((el) => !sidebarFocusable.includes(el))];
+      if (!allFocusable.length) return;
 
-      // Enter / Space → click focused element
+      const active = document.activeElement as HTMLElement | null;
+      const activeEl = active && allFocusable.includes(active) ? active : null;
+      const isRTL = (document.documentElement.getAttribute('dir') || document.body.getAttribute('dir') || 'ltr') === 'rtl';
+      const towardContent = isRTL ? 'ArrowLeft' : 'ArrowRight';
+      const towardSidebar = isRTL ? 'ArrowRight' : 'ArrowLeft';
+
+      if (key === 'Home') {
+        e.preventDefault();
+        focusElement(mainFocusable[0] || sidebarFocusable[0] || allFocusable[0] || null);
+        return;
+      }
+
       if (key === 'Enter' || key === ' ') {
-        const active = document.activeElement as HTMLElement;
-        if (active && active !== document.body) {
-          e.preventDefault();
-          e.stopPropagation();
-          active.click();
+        e.preventDefault();
+        if (activeEl) {
+          activeEl.click();
+        } else {
+          focusElement(mainFocusable[0] || sidebarFocusable[0] || allFocusable[0] || null);
         }
         return;
       }
 
-      // Back → do nothing here (let pages handle it)
-      if (key === 'Back') return;
-
-      // Arrow keys
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) return;
 
-      // Throttle
       const now = performance.now();
-      if (e.repeat || now - lastNav < THROTTLE) {
+      if (e.repeat || now - lastArrowAt < 110) {
         e.preventDefault();
-        e.stopPropagation();
         return;
       }
-      lastNav = now;
+      lastArrowAt = now;
 
-      e.preventDefault();
-      e.stopPropagation();
-
-      const items = getVisible();
-      if (!items.length) return;
-
-      const rows = clusterRows(items);
-      const active = document.activeElement as HTMLElement;
-
-      // If nothing focused, focus first element
-      if (!active || active === document.body) {
-        focusEl(rows[0]?.[0]?.el);
+      if (!activeEl) {
+        e.preventDefault();
+        focusElement(mainFocusable[0] || sidebarFocusable[0] || allFocusable[0] || null);
         return;
       }
 
-      const [row, col] = findInRows(rows, active);
+      const activeInSidebar = sidebarFocusable.includes(activeEl);
 
-      // If active element not found in grid, focus first element
-      if (row === -1) {
-        focusEl(rows[0]?.[0]?.el);
+      if (activeInSidebar) {
+        if (key === 'ArrowUp' || key === 'ArrowDown') {
+          const idx = sidebarFocusable.indexOf(activeEl);
+          const nextIdx = key === 'ArrowDown'
+            ? Math.min(idx + 1, sidebarFocusable.length - 1)
+            : Math.max(idx - 1, 0);
+          e.preventDefault();
+          focusElement(sidebarFocusable[nextIdx] || null);
+          return;
+        }
+
+        if (key === towardContent && mainFocusable.length) {
+          e.preventDefault();
+          focusNearestByY(activeEl, mainFocusable);
+        }
         return;
       }
 
-      // Determine effective direction (flip horizontal for RTL)
-      let dir = key;
-      if (isRTL) {
-        if (key === 'ArrowLeft') dir = 'ArrowRight';
-        else if (key === 'ArrowRight') dir = 'ArrowLeft';
+      const nextInMain = getNextDirectionalInMain(activeEl, mainFocusable, key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight');
+      if (nextInMain) {
+        e.preventDefault();
+        focusElement(nextInMain);
+        return;
       }
 
-      switch (dir) {
-        case 'ArrowRight': {
-          const nextCol = col + 1;
-          if (nextCol < rows[row].length) {
-            focusEl(rows[row][nextCol].el);
+      if (key === towardSidebar && sidebarFocusable.length) {
+        e.preventDefault();
+        focusNearestByY(activeEl, sidebarFocusable);
+        return;
+      }
+
+      if (key === 'ArrowUp' || key === 'ArrowDown') {
+        const idx = mainFocusable.indexOf(activeEl);
+        if (idx !== -1) {
+          const nextIdx = key === 'ArrowDown'
+            ? Math.min(idx + 1, mainFocusable.length - 1)
+            : Math.max(idx - 1, 0);
+          if (nextIdx !== idx) {
+            e.preventDefault();
+            focusElement(mainFocusable[nextIdx] || null);
           }
-          // At end of row → do nothing (don't wrap)
-          break;
-        }
-        case 'ArrowLeft': {
-          const prevCol = col - 1;
-          if (prevCol >= 0) {
-            focusEl(rows[row][prevCol].el);
-          }
-          // At start of row → do nothing
-          break;
-        }
-        case 'ArrowDown': {
-          const nextRow = row + 1;
-          if (nextRow < rows.length) {
-            // Find closest X in next row
-            const curX = rows[row][col].cx;
-            let best = rows[nextRow][0];
-            let bestDist = Math.abs(best.cx - curX);
-            for (let i = 1; i < rows[nextRow].length; i++) {
-              const d = Math.abs(rows[nextRow][i].cx - curX);
-              if (d < bestDist) { best = rows[nextRow][i]; bestDist = d; }
-            }
-            focusEl(best.el);
-          }
-          break;
-        }
-        case 'ArrowUp': {
-          const prevRow = row - 1;
-          if (prevRow >= 0) {
-            const curX = rows[row][col].cx;
-            let best = rows[prevRow][0];
-            let bestDist = Math.abs(best.cx - curX);
-            for (let i = 1; i < rows[prevRow].length; i++) {
-              const d = Math.abs(rows[prevRow][i].cx - curX);
-              if (d < bestDist) { best = rows[prevRow][i]; bestDist = d; }
-            }
-            focusEl(best.el);
-          }
-          break;
         }
       }
     };
 
-    // Single listener, capture phase
-    window.addEventListener('keydown', handleKey, true);
-
-    // Auto-focus first element on mount
-    const t = setTimeout(() => {
-      const a = document.activeElement;
-      if (!a || a === document.body) {
-        const items = getVisible();
-        if (items.length) {
-          const rows = clusterRows(items);
-          focusEl(rows[0]?.[0]?.el);
-        }
+    const ensureInitialFocus = window.setTimeout(() => {
+      const active = document.activeElement as HTMLElement | null;
+      if (!active || active === document.body) {
+        focusElement(getMainFocusable()[0] || getSidebarFocusable()[0] || null);
       }
-    }, 100);
+    }, 60);
+
+    window.addEventListener('keydown', handleKeyDown, true);
 
     return () => {
-      window.removeEventListener('keydown', handleKey, true);
-      clearTimeout(t);
+      window.clearTimeout(ensureInitialFocus);
+      window.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [enabled]);
+  }, [enabled, focusableSelector]);
 };
