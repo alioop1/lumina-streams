@@ -102,6 +102,19 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     setShowSettings(false);
   };
 
+  const handleDownloadSubtitle = () => {
+    const targetSub = availableSubs.find((s) => s.id === activeSub) || availableSubs[0];
+    if (!targetSub) return;
+
+    const a = document.createElement('a');
+    a.href = targetSub.url;
+    a.download = `${title}.${targetSub.lang}.vtt`;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const resetHideTimer = useCallback(() => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     setShowControls(true);
