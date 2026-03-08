@@ -135,6 +135,13 @@ export const VideoPlayer = ({
   const [needsTranscodeFallback, setNeedsTranscodeFallback] = useState(false);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
   const [resumeTime, setResumeTime] = useState(0);
+  // Feature: Seek/Volume OSD
+  const [seekOSD, setSeekOSD] = useState<string | null>(null);
+  const seekOSDTimer = useRef<number | null>(null);
+  // Feature: PiP state
+  const [isPiP, setIsPiP] = useState(false);
+  // Feature: Cursor auto-hide
+  const cursorTimer = useRef<number | null>(null);
 
   const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
@@ -463,12 +470,20 @@ export const VideoPlayer = ({
     window.location.href = href;
   };
 
-  /* ═══ Controls hide timer ═══ */
+  /* ═══ Controls hide timer + cursor auto-hide ═══ */
   const resetHideTimer = useCallback(() => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     setShowControls(true);
+    // Show cursor
+    containerRef.current?.classList.remove('cursor-hidden');
+    if (cursorTimer.current) clearTimeout(cursorTimer.current);
+    
     hideTimerRef.current = window.setTimeout(() => {
-      if (isPlaying && !showSettings) setShowControls(false);
+      if (isPlaying && !showSettings) {
+        setShowControls(false);
+        // Feature: Auto-hide cursor after controls hide
+        containerRef.current?.classList.add('cursor-hidden');
+      }
     }, 3000);
   }, [isPlaying, showSettings]);
 
@@ -543,10 +558,10 @@ export const VideoPlayer = ({
         e.preventDefault();
         if (!showControls) {
           if (!v) return;
-          if (key === 'ArrowLeft') v.currentTime = Math.max(0, v.currentTime - 10);
-          if (key === 'ArrowRight') v.currentTime = Math.min(v.duration, v.currentTime + 10);
-          if (key === 'ArrowUp') v.volume = Math.min(1, v.volume + 0.1);
-          if (key === 'ArrowDown') v.volume = Math.max(0, v.volume - 0.1);
+          if (key === 'ArrowLeft') { v.currentTime = Math.max(0, v.currentTime - 10); showOSD('◂◂ -10s'); }
+          if (key === 'ArrowRight') { v.currentTime = Math.min(v.duration, v.currentTime + 10); showOSD('+10s ▸▸'); }
+          if (key === 'ArrowUp') { v.volume = Math.min(1, v.volume + 0.1); showOSD(`🔊 ${Math.round(v.volume * 100)}%`); }
+          if (key === 'ArrowDown') { v.volume = Math.max(0, v.volume - 0.1); showOSD(`🔊 ${Math.round(v.volume * 100)}%`); }
           return;
         }
         const controls = getFocusable(root).filter(el => !el.closest('[data-settings-panel]'));
@@ -555,8 +570,8 @@ export const VideoPlayer = ({
         if (!cur) { focusDefault(); return; }
         const next = findNext(cur, key as any, controls);
         if (next) { next.focus(); lastFocusRef.current = next; return; }
-        if (v && key === 'ArrowLeft') v.currentTime = Math.max(0, v.currentTime - 10);
-        if (v && key === 'ArrowRight') v.currentTime = Math.min(v.duration, v.currentTime + 10);
+        if (v && key === 'ArrowLeft') { v.currentTime = Math.max(0, v.currentTime - 10); showOSD('◂◂ -10s'); }
+        if (v && key === 'ArrowRight') { v.currentTime = Math.min(v.duration, v.currentTime + 10); showOSD('+10s ▸▸'); }
       }
     };
     window.addEventListener('keydown', handleKeyDown, true);
@@ -599,11 +614,47 @@ export const VideoPlayer = ({
 
   /* ═══ Playback helpers ═══ */
   const togglePlay = () => { const v = videoRef.current; if (v) v.paused ? v.play() : v.pause(); };
-  const seek = (s: number) => { const v = videoRef.current; if (v) v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + s)); };
+  
+  // Feature: Seek with OSD overlay
+  const showOSD = (text: string) => {
+    setSeekOSD(text);
+    if (seekOSDTimer.current) clearTimeout(seekOSDTimer.current);
+    seekOSDTimer.current = window.setTimeout(() => setSeekOSD(null), 800);
+  };
+  
+  const seek = (s: number) => {
+    const v = videoRef.current;
+    if (v) {
+      v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + s));
+      showOSD(s > 0 ? `+${s}s ▸▸` : `◂◂ ${s}s`);
+    }
+  };
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => { const v = videoRef.current; if (v) v.currentTime = parseFloat(e.target.value); };
-  const handleVolume = (e: React.ChangeEvent<HTMLInputElement>) => { const v = videoRef.current; if (!v) return; const val = parseFloat(e.target.value); v.volume = val; v.muted = val === 0; };
-  const toggleMute = () => { const v = videoRef.current; if (v) v.muted = !v.muted; };
+  const handleVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = videoRef.current;
+    if (!v) return;
+    const val = parseFloat(e.target.value);
+    v.volume = val;
+    v.muted = val === 0;
+    showOSD(`🔊 ${Math.round(val * 100)}%`);
+  };
+  const toggleMute = () => { const v = videoRef.current; if (v) { v.muted = !v.muted; showOSD(v.muted ? '🔇 Muted' : `🔊 ${Math.round(v.volume * 100)}%`); } };
   const setSpeed = (speed: number) => { const v = videoRef.current; if (v) v.playbackRate = speed; setPlaybackSpeed(speed); setSettingsPanel('main'); };
+
+  // Feature: Picture-in-Picture
+  const togglePiP = async () => {
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+        setIsPiP(false);
+      } else if (v.requestPictureInPicture) {
+        await v.requestPictureInPicture();
+        setIsPiP(true);
+      }
+    } catch (e) { console.warn('PiP error:', e); }
+  };
 
   const switchAudioTrack = (trackId: number) => {
     const v = videoRef.current;
@@ -684,7 +735,16 @@ export const VideoPlayer = ({
         </div>
       )}
 
-      {/* Resume prompt */}
+      {/* Feature: Seek/Volume OSD overlay */}
+      {seekOSD && (
+        <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none osd-overlay">
+          <div className="bg-black/70 backdrop-blur-md rounded-2xl px-8 py-4 3xl:px-10 3xl:py-5">
+            <span className="text-white text-2xl 3xl:text-3xl 4k:text-4xl font-bold">{seekOSD}</span>
+          </div>
+        </div>
+      )}
+
+
       {showResumePrompt && !isBuffering && (
         <div className="absolute top-20 start-1/2 -translate-x-1/2 z-30 bg-black/90 backdrop-blur-lg rounded-2xl border border-white/10 p-5 flex flex-col items-center gap-3 min-w-[280px] 3xl:min-w-[360px]" data-controls onClick={e => e.stopPropagation()}>
           <p className="text-white text-sm 3xl:text-base font-medium">
@@ -777,6 +837,14 @@ export const VideoPlayer = ({
               <button onClick={toggleFullscreen} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus">
                 {isFullscreen ? <Minimize className="w-5 h-5 3xl:w-6 3xl:h-6" /> : <Maximize className="w-5 h-5 3xl:w-6 3xl:h-6" />}
               </button>
+              {/* Feature: Picture-in-Picture */}
+              {'pictureInPictureEnabled' in document && (
+                <button onClick={togglePiP} className={`w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center transition-colors tv-focus ${isPiP ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`} title="Picture-in-Picture">
+                  <svg className="w-5 h-5 3xl:w-6 3xl:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" /><rect x="12" y="10" width="8" height="6" rx="1" fill="currentColor" opacity="0.3" /><line x1="2" y1="21" x2="22" y2="21" />
+                  </svg>
+                </button>
+              )}
               <button onClick={() => openExternal('vlc')} className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors tv-focus" title={labels.openExternal}>
                 <ExternalLink className="w-5 h-5 3xl:w-6 3xl:h-6" />
               </button>

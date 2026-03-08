@@ -54,7 +54,6 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-user-select: none;
     user-select: none;
-    /* Reduce layout recalcs on low-end chipsets */
     text-rendering: optimizeSpeed;
   }
 
@@ -80,7 +79,7 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Optimize images globally — content-visibility for off-screen */
+  /* Optimize images globally */
   img {
     contain-intrinsic-size: auto 200px;
     content-visibility: auto;
@@ -91,11 +90,11 @@
     user-select: text;
   }
 
-  /* Hide scrollbar — clean TV look */
+  /* Hide scrollbar */
   ::-webkit-scrollbar { display: none; }
   * { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* Reduce animation work on low-end devices */
+  /* Feature: Reduced motion for accessibility */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
@@ -131,14 +130,10 @@
 
   /* ═══════════════════════════════════════════
      TV FOCUS SYSTEM
-     Clean focus ring, no hover effects.
-     Remote-only interaction model.
-     GPU-composited transforms only.
      ═══════════════════════════════════════════ */
 
   .tv-focus {
     outline: none;
-    /* Use only transform/opacity for 60fps — no box-shadow transitions */
     transition: transform 0.1s ease, opacity 0.1s ease;
   }
 
@@ -149,7 +144,7 @@
     z-index: 20;
   }
 
-  /* Large TV screens: thicker focus ring */
+  /* Large TV screens: thicker focus ring + scale */
   @media (min-width: 1920px) {
     .tv-focus:focus-visible {
       box-shadow: 0 0 0 4px hsl(var(--primary) / 0.9);
@@ -182,7 +177,6 @@
 
   /* Content row cards: GPU-only scale transform on focus */
   .focus-card {
-    /* Only transform — no box-shadow transition for 60fps */
     transition: transform 0.12s ease-out;
     will-change: transform;
     contain: layout style;
@@ -207,7 +201,7 @@
   /* Kill all hover effects — TV is focus-only */
   :focus-visible { outline: none; }
 
-  /* GPU-promote fixed overlays (sidebar, player, bottom nav) */
+  /* GPU-promote fixed overlays */
   [data-sidebar],
   [data-video-player],
   [data-controls] {
@@ -217,8 +211,45 @@
     will-change: transform;
   }
 
-  /* Contain paint on card grids to reduce composite area */
+  /* Contain paint on card grids */
   [data-nav-row] {
     contain: layout;
+  }
+
+  /* Feature: Auto-hide cursor in fullscreen player */
+  [data-video-player].cursor-hidden {
+    cursor: none;
+  }
+  [data-video-player].cursor-hidden * {
+    cursor: none !important;
+  }
+
+  /* Feature: Smooth page transition */
+  .page-enter {
+    animation: page-fade-in 0.3s ease-out forwards;
+  }
+
+  @keyframes page-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Feature: Seek/Volume OSD overlay */
+  .osd-overlay {
+    animation: osd-pop 0.15s ease-out;
+  }
+
+  @keyframes osd-pop {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* Feature: Smooth skeleton pulse */
+  @keyframes smooth-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+  }
+  .skeleton-pulse {
+    animation: smooth-pulse 1.5s ease-in-out infinite;
   }
 }

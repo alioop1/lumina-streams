@@ -19,7 +19,6 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
   const [canScrollStart, setCanScrollStart] = useState(false);
   const [canScrollEnd, setCanScrollEnd] = useState(false);
 
-  // Check scroll position for arrow indicators
   const checkScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
@@ -54,7 +53,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
         <h2 className="font-display text-2xl 3xl:text-3xl 4k:text-4xl tracking-wide px-6 3xl:px-10 4k:px-14 mb-3 3xl:mb-5 text-foreground">{title}</h2>
         <div className="flex gap-4 3xl:gap-6 4k:gap-8 px-6 3xl:px-10 4k:px-14">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="flex-shrink-0 w-[200px] 3xl:w-[260px] 4k:w-[320px]">
+            <div key={i} className="flex-shrink-0 w-[160px] md:w-[200px] 3xl:w-[260px] 4k:w-[320px]">
               <div className="rounded-xl 4k:rounded-2xl aspect-[2/3] mb-2 bg-muted animate-pulse" />
               <div className="h-4 3xl:h-5 bg-muted rounded animate-pulse mb-1" />
               <div className="h-3 3xl:h-4 bg-muted rounded animate-pulse w-2/3" />
@@ -74,11 +73,19 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
     <div className="mb-8 3xl:mb-12 4k:mb-16 relative group/row">
       <h2 className="font-display text-2xl 3xl:text-3xl 4k:text-4xl tracking-wide px-6 3xl:px-10 4k:px-14 mb-3 3xl:mb-5 text-foreground">{title}</h2>
       
-      {/* Scroll arrows — visible on hover/focus */}
+      {/* Feature: Gradient edge indicators for scroll */}
+      <div className={`absolute top-[3rem] bottom-0 start-0 w-12 3xl:w-16 z-10 pointer-events-none transition-opacity duration-200 ${canScrollStart ? 'opacity-100' : 'opacity-0'}`}
+        style={{ background: isRTL ? 'linear-gradient(to left, transparent, hsl(var(--background)))' : 'linear-gradient(to right, transparent, hsl(var(--background)))' }}
+      />
+      <div className={`absolute top-[3rem] bottom-0 end-0 w-12 3xl:w-16 z-10 pointer-events-none transition-opacity duration-200 ${canScrollEnd ? 'opacity-100' : 'opacity-0'}`}
+        style={{ background: isRTL ? 'linear-gradient(to right, transparent, hsl(var(--background)))' : 'linear-gradient(to left, transparent, hsl(var(--background)))' }}
+      />
+
+      {/* Scroll arrows */}
       {canScrollStart && (
         <button
           onClick={() => scroll('start')}
-          className="absolute start-0 top-1/2 z-20 w-10 h-10 3xl:w-12 3xl:h-12 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-foreground opacity-0 group-hover/row:opacity-100 transition-opacity tv-focus"
+          className="absolute start-1 3xl:start-2 top-1/2 z-20 w-10 h-10 3xl:w-12 3xl:h-12 4k:w-14 4k:h-14 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-foreground opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity tv-focus"
           aria-label="Scroll back"
         >
           <StartArrow className="w-5 h-5 3xl:w-6 3xl:h-6" />
@@ -87,7 +94,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
       {canScrollEnd && (
         <button
           onClick={() => scroll('end')}
-          className="absolute end-0 top-1/2 z-20 w-10 h-10 3xl:w-12 3xl:h-12 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-foreground opacity-0 group-hover/row:opacity-100 transition-opacity tv-focus"
+          className="absolute end-1 3xl:end-2 top-1/2 z-20 w-10 h-10 3xl:w-12 3xl:h-12 4k:w-14 4k:h-14 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-foreground opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity tv-focus"
           aria-label="Scroll forward"
         >
           <EndArrow className="w-5 h-5 3xl:w-6 3xl:h-6" />
@@ -97,8 +104,8 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
       <div
         data-nav-row={rowId}
         ref={scrollRef}
-        className="flex gap-4 3xl:gap-6 4k:gap-8 overflow-x-auto px-6 3xl:px-10 4k:px-14 pt-3 pb-4 snap-x snap-mandatory scroll-smooth"
-        style={{ contain: 'layout', WebkitOverflowScrolling: 'touch' }}
+        className="flex gap-4 3xl:gap-6 4k:gap-8 overflow-x-auto px-6 3xl:px-10 4k:px-14 pt-3 3xl:pt-4 pb-4 3xl:pb-5 snap-x snap-mandatory scroll-smooth"
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {movies.map((movie, i) => (
           <button

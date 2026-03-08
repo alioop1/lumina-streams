@@ -14,11 +14,11 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
 
   return (
     <div
-      className="flex-shrink-0 w-[160px] md:w-[200px] 3xl:w-[260px] 4k:w-[320px] tv:w-[400px] snap-start cursor-pointer text-start bg-transparent border-none p-0 outline-none"
+      className="flex-shrink-0 w-[140px] sm:w-[160px] md:w-[200px] 3xl:w-[260px] 4k:w-[320px] tv:w-[400px] snap-start cursor-pointer text-start bg-transparent border-none p-0 outline-none"
       data-card-index={index}
     >
-      {/* Removed contain:strict — it clips focus rings and borders on scroll */}
-      <div className="relative rounded-xl 4k:rounded-2xl aspect-[2/3] mb-2 3xl:mb-3 movie-card-poster bg-card overflow-hidden">
+      {/* Feature: Full border frame on poster — no clipping */}
+      <div className="relative rounded-xl 4k:rounded-2xl aspect-[2/3] mb-2 3xl:mb-3 movie-card-poster bg-card overflow-hidden ring-1 ring-border/20">
         {movie.poster ? (
           <img
             src={movie.poster}
@@ -37,6 +37,7 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
             <span className="text-[10px] 3xl:text-xs 4k:text-sm font-bold text-primary-foreground tracking-wide">{movie.quality}</span>
           </div>
         )}
+        {/* Hover/focus overlay */}
         <div className="movie-card-overlay absolute inset-0 bg-gradient-to-t from-background/75 via-transparent to-transparent opacity-0 transition-opacity duration-150 pointer-events-none flex flex-col items-center justify-center gap-2">
           <div className="w-10 h-10 3xl:w-14 3xl:h-14 4k:w-16 4k:h-16 rounded-full bg-primary/90 flex items-center justify-center">
             <Play className="w-4 h-4 3xl:w-6 3xl:h-6 4k:w-7 4k:h-7 text-primary-foreground fill-primary-foreground ms-0.5" />
