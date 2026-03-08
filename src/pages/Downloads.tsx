@@ -8,6 +8,8 @@ const Downloads = () => {
   const { data: user } = useRDUser();
   const { data: torrents, isLoading: torrentsLoading } = useRDTorrents();
   const { data: downloads, isLoading: downloadsLoading } = useRDDownloads();
+  const torrentsList = Array.isArray(torrents) ? torrents : [];
+  const downloadsList = Array.isArray(downloads) ? downloads : [];
   const addMagnet = useRDAddMagnet();
   const deleteTorrent = useRDDeleteTorrent();
 
