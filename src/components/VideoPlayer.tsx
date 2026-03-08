@@ -758,6 +758,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       {showSettings && showControls && (
         <div
           data-controls
+          data-player-settings-panel="true"
           className="absolute bottom-24 end-4 w-64 max-h-80 overflow-y-auto bg-black/90 backdrop-blur-lg rounded-xl border border-white/10 text-white text-sm"
           onClick={(e) => e.stopPropagation()}
         >
