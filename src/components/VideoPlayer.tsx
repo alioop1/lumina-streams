@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeft, X, Settings, Volume2, Subtitles, ChevronRight, ChevronLeft, Maximize, Minimize, Play, Pause, SkipForward, SkipBack, Loader2, Languages, Download } from 'lucide-react';
 import { fetchSubtitles, type SubtitleTrack } from '@/lib/opensubtitles';
+import { realDebrid } from '@/lib/realDebrid';
 
 interface VideoPlayerProps {
   url: string;
@@ -10,11 +11,17 @@ interface VideoPlayerProps {
   mediaType?: 'movie' | 'series';
   season?: number;
   episode?: number;
+  rdFileId?: string | null; // Real-Debrid file ID for transcode/audio
 }
 
 type SettingsPanel = 'main' | 'speed' | 'audio' | 'subtitles';
 
-export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, episode }: VideoPlayerProps) => {
+interface RDAudioOption {
+  label: string;
+  url: string;
+}
+
+export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, episode, rdFileId }: VideoPlayerProps) => {
   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,7 +38,11 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [audioTracks, setAudioTracks] = useState<{ id: number; label: string; language: string; enabled: boolean }[]>([]);
+
+  // Audio from RD transcode
+  const [rdAudioOptions, setRdAudioOptions] = useState<RDAudioOption[]>([]);
+  const [activeAudio, setActiveAudio] = useState<string | null>(null);
+  const [loadingAudio, setLoadingAudio] = useState(false);
 
   // Subtitles state
   const [availableSubs, setAvailableSubs] = useState<SubtitleTrack[]>([]);
@@ -57,7 +68,46 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       .finally(() => setLoadingSubs(false));
   }, [imdbId, mediaType, season, episode]);
 
-  const addTrackToVideo = (sub: SubtitleTrack) => {
+  // Fetch audio tracks from RD transcode API
+  useEffect(() => {
+    if (!rdFileId || isYouTube) return;
+    setLoadingAudio(true);
+    realDebrid.getTranscode(rdFileId)
+      .then(data => {
+        const options: RDAudioOption[] = [];
+        for (const [quality, info] of Object.entries(data)) {
+          if (info && typeof info === 'object' && 'full' in info) {
+            const label = `${quality}${(info as any).acodec ? ` (${(info as any).acodec})` : ''}`;
+            options.push({ label, url: (info as any).full });
+          }
+        }
+        setRdAudioOptions(options);
+      })
+      .catch(e => console.warn('Transcode fetch failed:', e))
+      .finally(() => setLoadingAudio(false));
+  }, [rdFileId]);
+
+  // Fetch subtitle content and create blob URL to bypass CORS
+  const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
+    try {
+      const res = await fetch(subUrl);
+      const text = await res.text();
+      // Convert SRT to VTT if needed
+      let vttContent = text;
+      if (!text.trimStart().startsWith('WEBVTT')) {
+        vttContent = 'WEBVTT\n\n' + text
+          .replace(/\r\n/g, '\n')
+          .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+      }
+      const blob = new Blob([vttContent], { type: 'text/vtt' });
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      console.error('Failed to fetch subtitle:', e);
+      return subUrl; // fallback to direct URL
+    }
+  };
+
+  const addTrackToVideo = async (sub: SubtitleTrack) => {
     const v = videoRef.current;
     if (!v) return;
 
@@ -68,15 +118,16 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       else break;
     }
 
+    const blobUrl = await fetchSubAsBlob(sub.url);
+
     const track = document.createElement('track');
     track.kind = 'subtitles';
     track.label = sub.label;
     track.srclang = sub.lang;
-    track.src = sub.url;
+    track.src = blobUrl;
     track.default = true;
     v.appendChild(track);
 
-    // Ensure track is showing
     setTimeout(() => {
       if (v.textTracks[0]) {
         v.textTracks[0].mode = 'showing';
@@ -89,7 +140,6 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     if (!v) return;
 
     if (!sub) {
-      // Turn off subtitles
       for (let i = 0; i < v.textTracks.length; i++) {
         v.textTracks[i].mode = 'hidden';
       }
@@ -150,20 +200,6 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     video.addEventListener('playing', onCanPlay);
     video.addEventListener('volumechange', onVolumeChange);
 
-    const detectTracks = () => {
-      const at = (video as any).audioTracks;
-      if (at && at.length > 0) {
-        const tracks: typeof audioTracks = [];
-        for (let i = 0; i < at.length; i++) {
-          tracks.push({ id: i, label: at[i].label || `Track ${i + 1}`, language: at[i].language || '', enabled: at[i].enabled });
-        }
-        setAudioTracks(tracks);
-      }
-    };
-
-    video.addEventListener('loadedmetadata', detectTracks);
-    const trackTimer = setTimeout(detectTracks, 2000);
-
     return () => {
       video.removeEventListener('play', onPlay);
       video.removeEventListener('pause', onPause);
@@ -174,8 +210,6 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       video.removeEventListener('canplay', onCanPlay);
       video.removeEventListener('playing', onCanPlay);
       video.removeEventListener('volumechange', onVolumeChange);
-      video.removeEventListener('loadedmetadata', detectTracks);
-      clearTimeout(trackTimer);
     };
   }, []);
 
@@ -219,15 +253,17 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     setSettingsPanel('main');
   };
 
-  const selectAudioTrack = (idx: number) => {
+  const selectAudioTrack = (option: RDAudioOption) => {
     const v = videoRef.current;
     if (!v) return;
-    const at = (v as any).audioTracks;
-    if (at) {
-      for (let i = 0; i < at.length; i++) at[i].enabled = i === idx;
-      setAudioTracks(prev => prev.map((t, i) => ({ ...t, enabled: i === idx })));
-    }
+    const wasPlaying = !v.paused;
+    const time = v.currentTime;
+    v.src = option.url;
+    v.currentTime = time;
+    if (wasPlaying) v.play();
+    setActiveAudio(option.url);
     setSettingsPanel('main');
+    setShowSettings(false);
   };
 
   const toggleFullscreen = async () => {
@@ -437,7 +473,8 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={() => setSettingsPanel('audio')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors">
                 <span>שפת אודיו</span>
                 <span className="text-white/60 flex items-center gap-1">
-                  {audioTracks.find(t => t.enabled)?.label || 'ברירת מחדל'}
+                  {rdAudioOptions.find(o => o.url === activeAudio)?.label || 'ברירת מחדל'}
+                  {loadingAudio && <Loader2 className="w-3 h-3 animate-spin" />}
                   <ChevronLeft className="w-4 h-4" />
                 </span>
               </button>
@@ -471,13 +508,15 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10">
                 <ChevronRight className="w-4 h-4" /> שפת אודיו
               </button>
-              {audioTracks.length === 0 ? (
-                <div className="px-4 py-3 text-white/40 text-center">רצועת אודיו אחת בלבד</div>
+              {rdAudioOptions.length === 0 ? (
+                <div className="px-4 py-3 text-white/40 text-center">
+                  {loadingAudio ? 'טוען...' : 'אין רצועות אודיו נוספות'}
+                </div>
               ) : (
-                audioTracks.map((t, i) => (
-                  <button key={i} onClick={() => selectAudioTrack(i)} className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between ${t.enabled ? 'text-primary' : ''}`}>
-                    {t.label} {t.language && `(${t.language})`}
-                    {t.enabled && <span className="text-primary">✓</span>}
+                rdAudioOptions.map((opt, i) => (
+                  <button key={i} onClick={() => selectAudioTrack(opt)} className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between ${activeAudio === opt.url ? 'text-primary' : ''}`}>
+                    {opt.label}
+                    {activeAudio === opt.url && <span className="text-primary">✓</span>}
                   </button>
                 ))
               )}

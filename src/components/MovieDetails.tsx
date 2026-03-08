@@ -30,6 +30,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   );
 
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [rdFileId, setRdFileId] = useState<string | null>(null);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkInput, setLinkInput] = useState('');
   const [showTorrents, setShowTorrents] = useState(false);
@@ -57,24 +58,28 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
       if (link.startsWith('magnet:')) {
         const result = await addMagnet.mutateAsync(link);
         // Poll torrent info until we get links, then unrestrict
-        const pollForLinks = async (torrentId: string, retries = 15): Promise<string | null> => {
-          const { realDebrid } = await import('@/lib/realDebrid');
-          for (let i = 0; i < retries; i++) {
-            await new Promise(r => setTimeout(r, 2000));
-            const info = await realDebrid.getTorrentInfo(torrentId);
-            if (info.links && info.links.length > 0) {
-              const unrestricted = await unrestrict.mutateAsync(info.links[0]);
-              return unrestricted.download;
+          const pollForLinks = async (torrentId: string, retries = 15): Promise<{ url: string; fileId: string } | null> => {
+            const { realDebrid } = await import('@/lib/realDebrid');
+            for (let i = 0; i < retries; i++) {
+              await new Promise(r => setTimeout(r, 2000));
+              const info = await realDebrid.getTorrentInfo(torrentId);
+              if (info.links && info.links.length > 0) {
+                const unrestricted = await unrestrict.mutateAsync(info.links[0]);
+                return { url: unrestricted.download, fileId: unrestricted.id };
+              }
+              if (info.status === 'error' || info.status === 'dead') break;
             }
-            if (info.status === 'error' || info.status === 'dead') break;
+            return null;
+          };
+          const result2 = await pollForLinks(result.id);
+          if (result2) {
+            setStreamUrl(result2.url);
+            setRdFileId(result2.fileId);
           }
-          return null;
-        };
-        const url = await pollForLinks(result.id);
-        if (url) setStreamUrl(url);
       } else {
-        const result = await unrestrict.mutateAsync(link);
-        setStreamUrl(result.download);
+        const result3 = await unrestrict.mutateAsync(link);
+        setStreamUrl(result3.download);
+        setRdFileId(result3.id);
       }
     } catch (e) {
       console.error('Stream select failed:', e);
@@ -111,9 +116,10 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
       <VideoPlayer
         url={streamUrl}
         title={displayTitle}
-        onBack={() => setStreamUrl(null)}
+        onBack={() => { setStreamUrl(null); setRdFileId(null); }}
         imdbId={imdbId}
         mediaType={mediaType as 'movie' | 'series'}
+        rdFileId={rdFileId}
       />
     );
   }
