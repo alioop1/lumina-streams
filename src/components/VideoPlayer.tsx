@@ -230,7 +230,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       v.removeEventListener('loadedmetadata', detectAudioTracks);
       clearTimeout(timer);
     };
-  }, [url, isYouTube]);
+  }, [url, isYouTube, defaultAudioLabel]);
 
   const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
     try {
