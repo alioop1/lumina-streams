@@ -450,9 +450,9 @@ export const VideoPlayer = ({
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    const onPlay = () => setIsPlaying(true);
+    const onPlay = () => { setIsPlaying(true); setIsBuffering(false); };
     const onPause = () => setIsPlaying(false);
-    const onTime = () => setCurrentTime(v.currentTime);
+    const onTime = () => { setCurrentTime(v.currentTime); if (!v.paused && v.readyState >= 3) setIsBuffering(false); };
     const onDur = () => setDuration(v.duration);
     const onWait = () => setIsBuffering(true);
     const onCan = () => setIsBuffering(false);
@@ -464,6 +464,7 @@ export const VideoPlayer = ({
     v.addEventListener('durationchange', onDur);
     v.addEventListener('waiting', onWait);
     v.addEventListener('canplay', onCan);
+    v.addEventListener('canplaythrough', onCan);
     v.addEventListener('playing', onCan);
     v.addEventListener('volumechange', onVol);
     return () => {
@@ -474,10 +475,11 @@ export const VideoPlayer = ({
       v.removeEventListener('durationchange', onDur);
       v.removeEventListener('waiting', onWait);
       v.removeEventListener('canplay', onCan);
+      v.removeEventListener('canplaythrough', onCan);
       v.removeEventListener('playing', onCan);
       v.removeEventListener('volumechange', onVol);
     };
-  }, []);
+  }, [playbackUrl]);
 
   /* ═══ TV remote navigation ═══ */
   useEffect(() => {
