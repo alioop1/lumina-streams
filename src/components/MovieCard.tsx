@@ -50,7 +50,7 @@ export const MovieCard = memo(({ movie, onClick, index }: MovieCardProps) => {
             <Play className="w-5 h-5 text-primary-foreground fill-primary-foreground ms-0.5" />
           </div>
           <div className="absolute bottom-3 start-3 flex items-center gap-1">
-            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+            <Star className="w-3 h-3 text-primary fill-primary" />
             <span className="text-xs font-semibold text-foreground">{movie.rating}</span>
           </div>
         </div>
