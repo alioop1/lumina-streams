@@ -58,20 +58,42 @@ const getContentRows = (): NavRow[] => {
     if (items.length === 0) continue;
 
     let vertical = false;
+    let grid = false;
+    let gridCols = 1;
+
     if (items.length > 1) {
       const rects = items.map(el => el.getBoundingClientRect());
       const xSpread = Math.max(...rects.map(r => r.left)) - Math.min(...rects.map(r => r.left));
       const ySpread = Math.max(...rects.map(r => r.top)) - Math.min(...rects.map(r => r.top));
-      vertical = ySpread > xSpread;
+
+      // Detect grid: both spreads are significant
+      if (xSpread > 20 && ySpread > 20 && items.length > 2) {
+        grid = true;
+        // Count columns by checking how many items share roughly the same Y as the first item
+        const firstY = rects[0].top;
+        gridCols = rects.filter(r => Math.abs(r.top - firstY) < 20).length;
+        if (gridCols < 1) gridCols = 1;
+      } else {
+        vertical = ySpread > xSpread;
+      }
     }
 
     if (vertical) {
       items.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+    } else if (grid) {
+      // Sort grid items: top-to-bottom, then left-to-right within same row
+      items.sort((a, b) => {
+        const ar = a.getBoundingClientRect();
+        const br = b.getBoundingClientRect();
+        const rowDiff = Math.round((ar.top - br.top) / 20);
+        if (rowDiff !== 0) return rowDiff;
+        return ar.left - br.left;
+      });
     } else {
       items.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
     }
 
-    rows.push({ id: c.getAttribute('data-nav-row')!, y: rect.top, items, vertical });
+    rows.push({ id: c.getAttribute('data-nav-row')!, y: rect.top, items, vertical, grid, gridCols });
   }
 
   rows.sort((a, b) => a.y - b.y);
