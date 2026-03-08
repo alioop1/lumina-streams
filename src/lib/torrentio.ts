@@ -119,12 +119,35 @@ const detectLanguages = (title: string): string[] => {
   return Array.from(langs);
 };
 
+// Detect audio codec from title/filename - warn about browser-incompatible codecs
+type AudioCodecInfo = { codec: string; compatible: boolean };
+
+const detectAudioCodec = (title: string): AudioCodecInfo => {
+  const upper = title.toUpperCase();
+  // Incompatible codecs in browsers
+  if (/\bDTS[\s.-]?HD/i.test(upper)) return { codec: 'DTS-HD', compatible: false };
+  if (/\bTRUE[\s.-]?HD/i.test(upper)) return { codec: 'TrueHD', compatible: false };
+  if (/\bDTS/i.test(upper)) return { codec: 'DTS', compatible: false };
+  if (/\bEAC[\s.-]?3|E[\s.-]?AC3|DDP?\d/i.test(upper)) return { codec: 'EAC3/DD+', compatible: false };
+  if (/\bAC[\s.-]?3|DD[\s.]?5[\s.]?1/i.test(upper)) return { codec: 'AC3/DD', compatible: false };
+  // Compatible codecs
+  if (/\bAAC/i.test(upper)) return { codec: 'AAC', compatible: true };
+  if (/\bOPUS/i.test(upper)) return { codec: 'Opus', compatible: true };
+  if (/\bVORBIS/i.test(upper)) return { codec: 'Vorbis', compatible: true };
+  if (/\bFLAC/i.test(upper)) return { codec: 'FLAC', compatible: true };
+  // DDP5.1 Atmos pattern (very common in WEB-DL)
+  if (/DDP?5[\s.]?1/i.test(upper)) return { codec: 'DD+ 5.1', compatible: false };
+  if (/\bAtmos/i.test(upper)) return { codec: 'Atmos', compatible: false };
+  return { codec: '', compatible: true };
+};
+
 export const parseTorrentioTitle = (title: string) => {
   const lines = title.split('\n');
   const quality = lines[0] || '';
   const sizeMatch = quality.match(/💾\s*([\d.]+\s*(?:GB|MB))/i);
   const seedMatch = quality.match(/👤\s*(\d+)/);
   const languages = detectLanguages(title);
+  const audioCodec = detectAudioCodec(title);
 
   return {
     quality: lines[0]?.replace(/💾.*/, '').replace(/👤.*/, '').trim() || '',
@@ -132,6 +155,8 @@ export const parseTorrentioTitle = (title: string) => {
     seeds: seedMatch ? parseInt(seedMatch[1]) : 0,
     source: lines[1] || '',
     languages,
+    audioCodec: audioCodec.codec,
+    audioCompatible: audioCodec.compatible,
   };
 };
 
