@@ -18,6 +18,7 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
   const [selectedGenreId, setSelectedGenreId] = useState<string | null>(null);
   const [mediaTab, setMediaTab] = useState<MediaTab>('movie');
   const { t, dir, lang } = useLanguage();
+  const isTVDevice = useIsTVDevice();
 
   const { data: searchResults, isLoading: searchLoading } = useSearch(query);
   const { data: movieGenres } = useGenres('movie');
