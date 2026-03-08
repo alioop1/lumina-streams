@@ -30,6 +30,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   );
 
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [rdFileId, setRdFileId] = useState<string | null>(null);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkInput, setLinkInput] = useState('');
   const [showTorrents, setShowTorrents] = useState(false);
