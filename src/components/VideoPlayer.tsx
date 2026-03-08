@@ -753,6 +753,22 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         </div>
       )}
 
+      {/* No audio warning banner */}
+      {noAudioDetected && !isBuffering && (
+        <div className="absolute top-20 start-1/2 -translate-x-1/2 z-20 bg-yellow-500/90 text-black px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg max-w-md text-center">
+          <Volume2 className="w-5 h-5 flex-shrink-0" />
+          {lang === 'he'
+            ? 'לא זוהה אודיו — ייתכן שקודק האודיו (DTS/AC3) לא נתמך בדפדפן. נסה מקור אחר עם AAC.'
+            : 'No audio detected — the audio codec (DTS/AC3) may not be supported. Try a source with AAC audio.'}
+          <button
+            onClick={() => setNoAudioDetected(false)}
+            className="ms-2 text-black/60 hover:text-black tv-focus"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Side toolbar removed - controls are in bottom bar */}
 
       <div
