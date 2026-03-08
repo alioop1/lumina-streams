@@ -90,8 +90,24 @@ const getContentRows = (): NavRow[] => {
 
 const focusEl = (el: HTMLElement | undefined) => {
   if (!el) return;
-  el.focus({ preventScroll: false });
-  el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+  el.focus({ preventScroll: true });
+  // Scroll the element's parent scrollable container to show it at the start
+  const scrollParent = el.closest('.overflow-x-auto');
+  if (scrollParent) {
+    const isRTL = resolveIsRTL();
+    const parentRect = scrollParent.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    // Calculate offset to place element at the start edge with some padding
+    if (isRTL) {
+      const offset = elRect.right - parentRect.right + 24;
+      scrollParent.scrollLeft += offset;
+    } else {
+      const offset = elRect.left - parentRect.left - 24;
+      scrollParent.scrollLeft += offset;
+    }
+  } else {
+    el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+  }
 };
 
 const isInSidebar = (el: HTMLElement): boolean => !!el.closest('[data-sidebar]');
@@ -142,7 +158,7 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
 
       // Throttle
       const now = performance.now();
-      if (now - lastNav < 120) { e.preventDefault(); return; }
+      if (now - lastNav < 80) { e.preventDefault(); return; }
       lastNav = now;
       e.preventDefault();
       e.stopPropagation();
@@ -226,9 +242,11 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       const goToPrevRow = () => {
         if (activeRowIdx > 0) {
           const prev = rows[activeRowIdx - 1];
-          focusEl(prev.items[Math.min(activeColIdx, prev.items.length - 1)]);
+          // Always start from the first item in the row (respecting RTL)
+          const isRTL = resolveIsRTL();
+          const idx = prev.vertical ? 0 : (isRTL ? prev.items.length - 1 : 0);
+          focusEl(prev.items[idx]);
         } else {
-          // At first row, go up → sidebar
           goToSidebar();
         }
       };
@@ -236,7 +254,10 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       const goToNextRow = () => {
         if (activeRowIdx < rows.length - 1) {
           const next = rows[activeRowIdx + 1];
-          focusEl(next.items[Math.min(activeColIdx, next.items.length - 1)]);
+          // Always start from the first item in the row (respecting RTL)
+          const isRTL = resolveIsRTL();
+          const idx = next.vertical ? 0 : (isRTL ? next.items.length - 1 : 0);
+          focusEl(next.items[idx]);
         }
       };
 

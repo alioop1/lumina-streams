@@ -58,15 +58,12 @@
 
   /* GPU-accelerated compositing for TV/streamer chipsets */
   #root {
-    will-change: auto;
     contain: layout style;
   }
 
-  /* Force GPU layer promotion on key animated containers */
-  [data-nav-row],
+  /* Force GPU layer promotion on focusable elements */
   .tv-focus,
-  .focus-card,
-  [data-video-player] {
+  .focus-card {
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
     backface-visibility: hidden;
@@ -76,13 +73,12 @@
   /* Reduce paint on scrollable areas */
   .overflow-x-auto,
   .overflow-y-auto {
-    contain: layout paint;
+    contain: layout;
     -webkit-overflow-scrolling: touch;
   }
 
   /* Optimize images globally */
   img {
-    content-visibility: auto;
     contain-intrinsic-size: auto 200px;
   }
 
@@ -99,8 +95,6 @@
 @layer utilities {
   .glass {
     background: hsl(var(--glass));
-    backdrop-filter: blur(20px) saturate(1.5);
-    -webkit-backdrop-filter: blur(20px) saturate(1.5);
     border: 1px solid hsl(var(--glass-border));
   }
 
@@ -130,7 +124,7 @@
 
   .tv-focus {
     outline: none;
-    transition: box-shadow 0.15s ease, transform 0.15s ease;
+    transition: box-shadow 0.1s ease, transform 0.1s ease;
   }
 
   .tv-focus:focus-visible {
@@ -148,7 +142,7 @@
 
   /* Content row cards: smooth zoom, NO border/ring — GPU-accelerated */
   .focus-card {
-    transition: transform 0.2s cubic-bezier(0.25, 0, 0.2, 1);
+    transition: transform 0.1s ease;
     will-change: transform;
   }
 
