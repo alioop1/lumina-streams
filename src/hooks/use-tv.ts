@@ -3,14 +3,51 @@ import { useEffect, useMemo, useState } from 'react';
 const TV_UA_REGEX = /Android TV|GoogleTV|SmartTV|SMART-TV|HbbTV|AFT|BRAVIA|TV/i;
 const ANDROID_TV_HINT_REGEX = /AFT|BRAVIA|MIBOX|SHIELD|ADT-|SmartTV|GoogleTV/i;
 
+const KEYCODE_MAP: Record<number, string> = {
+  19: 'ArrowUp',
+  20: 'ArrowDown',
+  21: 'ArrowLeft',
+  22: 'ArrowRight',
+  23: 'Enter',
+  66: 'Enter',
+  3: 'Home',
+  36: 'Home',
+};
+
+const normalizeRemoteKey = (e: KeyboardEvent): string => {
+  const key = e.key || '';
+  const code = e.code || '';
+  const lowered = key.toLowerCase();
+
+  if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'enter', ' ', 'home'].includes(lowered)) {
+    return key === ' ' ? ' ' : key;
+  }
+
+  if (lowered === 'select' || lowered === 'ok' || lowered === 'dpad_center') {
+    return 'Enter';
+  }
+
+  if (lowered === 'dpad_up') return 'ArrowUp';
+  if (lowered === 'dpad_down') return 'ArrowDown';
+  if (lowered === 'dpad_left') return 'ArrowLeft';
+  if (lowered === 'dpad_right') return 'ArrowRight';
+
+  if (code === 'Space') return ' ';
+  if (code.startsWith('Arrow')) return code;
+
+  return KEYCODE_MAP[e.keyCode] || '';
+};
+
 export const detectTVDevice = () => {
   if (typeof window === 'undefined') return false;
 
   const ua = window.navigator.userAgent || '';
   const hasTVSignature = TV_UA_REGEX.test(ua);
   const isAndroidTVLike = ua.includes('Android') && ANDROID_TV_HINT_REGEX.test(ua);
+  const forceTVMode = window.localStorage.getItem('force-tv-mode') === 'true';
+  const capacitorRuntime = Boolean((window as any).Capacitor);
 
-  return hasTVSignature || isAndroidTVLike;
+  return forceTVMode || hasTVSignature || isAndroidTVLike || capacitorRuntime;
 };
 
 export const useIsTVDevice = () => {
@@ -26,6 +63,37 @@ export const useIsTVDevice = () => {
 const isHTMLElementVisible = (el: HTMLElement) => {
   const style = window.getComputedStyle(el);
   return style.display !== 'none' && style.visibility !== 'hidden' && !el.hasAttribute('disabled');
+};
+
+const getCenter = (el: HTMLElement) => {
+  const rect = el.getBoundingClientRect();
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+  };
+};
+
+const getSpatialNext = (current: HTMLElement, focusable: HTMLElement[], direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight') => {
+  const currentCenter = getCenter(current);
+  const candidates = focusable
+    .filter((el) => el !== current)
+    .map((el) => ({ el, center: getCenter(el) }))
+    .filter(({ center }) => {
+      if (direction === 'ArrowRight') return center.x > currentCenter.x + 4;
+      if (direction === 'ArrowLeft') return center.x < currentCenter.x - 4;
+      if (direction === 'ArrowDown') return center.y > currentCenter.y + 4;
+      return center.y < currentCenter.y - 4;
+    })
+    .map(({ el, center }) => {
+      const dx = Math.abs(center.x - currentCenter.x);
+      const dy = Math.abs(center.y - currentCenter.y);
+      const primary = direction === 'ArrowLeft' || direction === 'ArrowRight' ? dx : dy;
+      const secondary = direction === 'ArrowLeft' || direction === 'ArrowRight' ? dy : dx;
+      return { el, score: primary * 10 + secondary };
+    })
+    .sort((a, b) => a.score - b.score);
+
+  return candidates[0]?.el ?? null;
 };
 
 export const useTVGlobalNavigation = (enabled: boolean) => {
@@ -44,18 +112,23 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
         return rect.width > 0 && rect.height > 0;
       });
 
-    const focusAt = (index: number) => {
-      const focusable = getFocusable();
-      const target = focusable[index];
+    const focusElement = (target: HTMLElement | null) => {
       if (!target) return;
       target.focus();
       target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     };
 
+    const focusAt = (index: number) => {
+      const focusable = getFocusable();
+      focusElement(focusable[index] || null);
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
       if (document.querySelector('[data-video-player="true"]')) return;
-      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home'].includes(e.key)) return;
+
+      const key = normalizeRemoteKey(e);
+      if (!key) return;
 
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
@@ -68,15 +141,41 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       const active = document.activeElement as HTMLElement | null;
       const activeIndex = active ? focusable.indexOf(active) : -1;
 
-      if (e.key === 'Home') {
+      if (key === 'Home') {
         e.preventDefault();
         focusAt(0);
         return;
       }
 
-      const moveForward = e.key === 'ArrowDown' || e.key === 'ArrowRight';
-      const nextIndex =
-        activeIndex === -1 ? 0 : moveForward ? Math.min(activeIndex + 1, focusable.length - 1) : Math.max(activeIndex - 1, 0);
+      if (key === 'Enter' || key === ' ') {
+        if (active && active !== document.body) {
+          e.preventDefault();
+          active.click();
+        }
+        return;
+      }
+
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) return;
+
+      if (activeIndex === -1) {
+        e.preventDefault();
+        focusAt(0);
+        return;
+      }
+
+      const current = focusable[activeIndex];
+      const nextSpatial = getSpatialNext(current, focusable, key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight');
+
+      if (nextSpatial) {
+        e.preventDefault();
+        focusElement(nextSpatial);
+        return;
+      }
+
+      const moveForward = key === 'ArrowDown' || key === 'ArrowRight';
+      const nextIndex = moveForward
+        ? Math.min(activeIndex + 1, focusable.length - 1)
+        : Math.max(activeIndex - 1, 0);
 
       if (nextIndex !== activeIndex) {
         e.preventDefault();
@@ -89,13 +188,13 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       if (!active || active === document.body) {
         focusAt(0);
       }
-    }, 150);
+    }, 120);
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
 
     return () => {
       window.clearTimeout(ensureInitialFocus);
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
     };
   }, [enabled, focusableSelector]);
 };

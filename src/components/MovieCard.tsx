@@ -19,7 +19,7 @@ export const MovieCard = memo(({ movie, onClick, index }: MovieCardProps) => {
       onClick={onClick}
       className="flex-shrink-0 w-[140px] md:w-[180px] snap-start group/card cursor-pointer"
     >
-      <div className="relative rounded-xl overflow-hidden aspect-[2/3] mb-2 movie-card-poster">
+      <div className="relative rounded-xl overflow-hidden aspect-[2/3] mb-2 movie-card-poster border border-border/60 bg-card">
         {posterSrc ? (
           <img
             src={posterSrc}

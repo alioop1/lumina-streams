@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
@@ -20,9 +20,10 @@ const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const { dir } = useLanguage();
+  const location = useLocation();
   const isTVDevice = useIsTVDevice();
 
-  useTVGlobalNavigation(isTVDevice);
+  useTVGlobalNavigation(true);
 
   useEffect(() => {
     document.documentElement.classList.toggle('tv-device', isTVDevice);
@@ -33,6 +34,20 @@ const AppLayout = () => {
       document.body.classList.remove('tv-device');
     };
   }, [isTVDevice]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (document.querySelector('[data-video-player="true"]')) return;
+      const mainFocusable = document.querySelector<HTMLElement>('main .tv-focus, main button, main [tabindex], main a, main input');
+      const active = document.activeElement as HTMLElement | null;
+
+      if (!active || active === document.body || active.closest('[data-sidebar]')) {
+        mainFocusable?.focus();
+      }
+    }, 140);
+
+    return () => window.clearTimeout(timer);
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen flex w-full" dir={dir} data-tv-device={isTVDevice ? 'true' : 'false'}>
