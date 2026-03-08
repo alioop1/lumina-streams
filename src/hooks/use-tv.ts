@@ -203,7 +203,7 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
 
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
         const now = performance.now();
-        if (now - lastArrowAt < 55) {
+        if (e.repeat || now - lastArrowAt < 120) {
           e.preventDefault();
           return;
         }
