@@ -202,48 +202,76 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
   return (
     <div className="min-h-screen bg-background animate-fade-in" dir={dir}>
-      <div className="relative h-[50vh]">
+      {/* ══════ HERO: Full-width backdrop with info overlay ══════ */}
+      <div className="relative h-[70vh] min-h-[500px]">
         <img
           src={backdrop}
           alt={movie.title}
           className="w-full h-full object-cover"
         />
-         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        <div data-nav-row="details-back">
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent" />
+
+        {/* Back button */}
+        <div data-nav-row="details-back" className="absolute top-8 start-8 z-20">
           <button
             onClick={onBack}
-            className="absolute top-12 start-4 glass w-10 h-10 rounded-full flex items-center justify-center text-foreground tv-focus"
+            className="glass w-12 h-12 rounded-full flex items-center justify-center text-foreground tv-focus"
           >
-            <BackArrow className="w-5 h-5" />
+            <BackArrow className="w-6 h-6" />
           </button>
+        </div>
+
+        {/* Info overlay on left side of backdrop */}
+        <div className="absolute bottom-0 start-0 end-0 p-8 pb-10 z-10">
+          <div className="max-w-[55%]">
+            <h1 className="font-display text-5xl lg:text-6xl text-foreground text-glow leading-tight">
+              {displayTitle}
+            </h1>
+            {lang === 'he' && movie.titleHe && (
+              <p className="text-muted-foreground text-base mt-2" dir="ltr">{movie.title}</p>
+            )}
+
+            {/* Meta row */}
+            <div className="flex items-center gap-4 mt-4 text-base text-muted-foreground flex-wrap">
+              <span className="flex items-center gap-1.5">
+                <Star className="w-5 h-5 text-primary fill-primary" />
+                <span className="text-foreground font-bold text-lg">{detailMovie.rating}</span>
+              </span>
+              <span className="text-foreground">{detailMovie.year}</span>
+              <span>{detailMovie.duration}</span>
+              {detailMovie.quality && (
+                <span className="bg-primary/20 text-primary px-2.5 py-1 rounded text-xs font-bold tracking-wide">
+                  {detailMovie.quality}
+                </span>
+              )}
+            </div>
+
+            {/* Genres */}
+            <div className="flex gap-2 flex-wrap mt-4">
+              {genres.map((g: any) => {
+                const name = typeof g === 'string' ? g : g.name;
+                return (
+                  <span key={name} className="glass px-3 py-1.5 rounded-full text-xs text-secondary-foreground font-medium">
+                    {name}
+                  </span>
+                );
+              })}
+            </div>
+
+            {/* Synopsis - shown inline in hero for TV readability */}
+            <p className="text-sm text-muted-foreground leading-relaxed mt-4 line-clamp-3 max-w-[600px]">
+              {detailMovie.overview}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="px-4 -mt-20 relative z-10 pb-24 space-y-6">
-        <div>
-          <h1 className="font-display text-4xl text-foreground text-glow">
-            {displayTitle}
-          </h1>
-          {lang === 'he' && movie.titleHe && (
-            <p className="text-muted-foreground text-sm mt-1">{movie.title}</p>
-          )}
-        </div>
+      {/* ══════ MAIN CONTENT AREA ══════ */}
+      <div className="px-8 pb-24 space-y-8 -mt-2 relative z-10">
 
-        <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-          <span className="flex items-center gap-1">
-            <Star className="w-4 h-4 text-primary fill-primary" />
-            <span className="text-foreground font-semibold">{detailMovie.rating}</span>
-          </span>
-          <span>{detailMovie.year}</span>
-          <span>{detailMovie.duration}</span>
-          {detailMovie.quality && (
-            <span className="glass-strong px-2 py-0.5 rounded text-xs text-foreground font-medium">
-              {detailMovie.quality}
-            </span>
-          )}
-        </div>
-
-        <div data-nav-row="details-actions" className="flex gap-3">
+        {/* Action buttons - large, TV-friendly */}
+        <div data-nav-row="details-actions" className="flex gap-4 items-center">
           <button
             onClick={() => {
               if (movie.type === 'series') {
@@ -254,19 +282,29 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                 }, 80);
                 return;
               }
-
               setShowTorrents(!showTorrents);
             }}
-            className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold glow-red transition-all hover:bg-primary/90 tv-focus"
+            className="flex items-center justify-center gap-3 bg-primary text-primary-foreground px-8 py-4 rounded-xl font-bold text-base glow-red transition-all tv-focus min-w-[220px]"
           >
-            <Search className="w-5 h-5" />
+            <Search className="w-6 h-6" />
             {movie.type === 'series'
-              ? (lang === 'he' ? 'בחר פרק לטורנטים' : 'Choose Episode')
-              : (lang === 'he' ? 'חפש טורנטים' : 'Find Torrents')}
+              ? (lang === 'he' ? 'בחר פרק' : 'Choose Episode')
+              : (lang === 'he' ? 'חפש מקורות' : 'Find Sources')}
           </button>
+
+          {trailer && (
+            <button
+              onClick={() => setStreamUrl(`https://www.youtube.com/embed/${trailer.key}?autoplay=1`)}
+              className="flex items-center gap-3 glass px-6 py-4 rounded-xl text-foreground font-medium text-base transition-colors tv-focus"
+            >
+              <Play className="w-5 h-5 text-primary fill-primary" />
+              {lang === 'he' ? 'טריילר' : 'Trailer'}
+            </button>
+          )}
+
           <button
             onClick={() => setShowLinkInput(true)}
-            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus"
+            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground transition-colors tv-focus"
           >
             <Link className="w-5 h-5" />
           </button>
@@ -276,39 +314,37 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               navigator.clipboard.writeText(text);
               alert(lang === 'he' ? 'נוסף לרשימה!' : 'Added to watchlist!');
             }}
-            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus"
+            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground transition-colors tv-focus"
           >
             <Plus className="w-6 h-6" />
           </button>
           <button
             onClick={handleShare}
-            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus"
+            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground transition-colors tv-focus"
           >
             <Share2 className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Movie torrent results - shown inline for movies */}
-        {showTorrents && movie.type !== 'series' && renderTorrentResults()}
-
+        {/* Link input panel */}
         {showLinkInput && (
-          <div className="glass rounded-xl p-4 space-y-3">
-            <div className="flex items-center gap-2 text-foreground text-sm font-medium">
-              <Link className="w-4 h-4" />
+          <div className="glass rounded-xl p-5 space-y-3 max-w-2xl">
+            <div className="flex items-center gap-2 text-foreground font-medium">
+              <Link className="w-5 h-5" />
               {lang === 'he' ? 'הדבק קישור או מגנט לצפייה' : 'Paste a link or magnet to watch'}
             </div>
-            <div data-nav-row="details-link-input" className="flex gap-2">
+            <div data-nav-row="details-link-input" className="flex gap-3">
               <input
                 value={linkInput}
                 onChange={e => setLinkInput(e.target.value)}
                 placeholder={lang === 'he' ? 'קישור / magnet...' : 'Link / magnet...'}
-                className="flex-1 bg-secondary text-foreground placeholder:text-muted-foreground px-3 py-2.5 rounded-lg outline-none focus:ring-2 focus:ring-primary text-sm tv-focus"
+                className="flex-1 bg-secondary text-foreground placeholder:text-muted-foreground px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-primary text-sm tv-focus"
                 dir="ltr"
               />
               <button
                 onClick={handleUnrestrict}
                 disabled={unrestrict.isPending || !linkInput.trim()}
-                className="bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium text-sm disabled:opacity-50 tv-focus flex items-center gap-2"
+                className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold disabled:opacity-50 tv-focus flex items-center gap-2"
               >
                 {unrestrict.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 {lang === 'he' ? 'הפעל' : 'Play'}
@@ -316,89 +352,62 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             </div>
             <button
               onClick={() => setShowLinkInput(false)}
-              className="text-xs text-muted-foreground hover:text-foreground tv-focus"
+              className="text-sm text-muted-foreground tv-focus px-2 py-1"
             >
               {lang === 'he' ? 'ביטול' : 'Cancel'}
             </button>
           </div>
         )}
 
-        {trailer && (
-          <button
-            onClick={() => setStreamUrl(`https://www.youtube.com/embed/${trailer.key}?autoplay=1`)}
-            className="w-full glass rounded-xl p-3 flex items-center gap-3 tv-focus text-start"
-          >
-            <div className="w-16 h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <Play className="w-5 h-5 text-primary fill-primary" />
-            </div>
-            <div>
-              <h4 className="text-sm font-medium text-foreground">
-                {lang === 'he' ? 'צפה בטריילר' : 'Watch Trailer'}
-              </h4>
-              <p className="text-xs text-muted-foreground">YouTube</p>
-            </div>
-          </button>
+        {/* Movie torrent results */}
+        {showTorrents && movie.type !== 'series' && (
+          <div className="max-w-3xl">
+            {renderTorrentResults()}
+          </div>
         )}
 
-        <div className="flex gap-2 flex-wrap">
-          {genres.map((g: any) => {
-            const name = typeof g === 'string' ? g : g.name;
-            return (
-              <span key={name} className="glass px-3 py-1.5 rounded-full text-xs text-secondary-foreground">
-                {name}
-              </span>
-            );
-          })}
-        </div>
-
-        <div>
-          <h3 className="font-semibold text-foreground mb-2">{t('synopsis')}</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {detailMovie.overview}
-          </p>
-        </div>
-
+        {/* Cast - horizontal scroll with bigger items */}
         {cast.length > 0 && (
           <div>
-            <h3 className="font-semibold text-foreground mb-3">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
               {lang === 'he' ? 'שחקנים' : 'Cast'}
             </h3>
-            <div className="flex gap-3 overflow-x-auto pb-2">
+            <div className="flex gap-5 overflow-x-auto pb-2">
               {cast.map((actor: any) => (
-                <div key={actor.id} className="flex-shrink-0 w-20 text-center">
+                <div key={actor.id} className="flex-shrink-0 w-24 text-center">
                   {actor.profile_path ? (
                     <img
                       src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`}
                       alt={actor.name}
-                      className="w-16 h-16 rounded-full object-cover mx-auto mb-1"
+                      className="w-20 h-20 rounded-full object-cover mx-auto mb-2 ring-2 ring-border"
                       loading="lazy"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-full bg-muted mx-auto mb-1 flex items-center justify-center text-muted-foreground text-xs">
+                    <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-2 flex items-center justify-center text-muted-foreground text-lg ring-2 ring-border">
                       {actor.name?.[0]}
                     </div>
                   )}
-                  <p className="text-xs text-foreground truncate">{actor.name}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">{actor.character}</p>
+                  <p className="text-sm text-foreground truncate font-medium">{actor.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{actor.character}</p>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Series: Seasons & Episodes */}
+        {/* ══════ Series: Seasons & Episodes ══════ */}
         {movie.type === 'series' && seasons.length > 0 && (
           <div ref={episodeSectionRef}>
-            <h3 className="font-semibold text-foreground mb-3">{t('seasons')}</h3>
-            <div data-nav-row="details-seasons" className="flex gap-2 overflow-x-auto pb-2">
+            <h3 className="text-lg font-semibold text-foreground mb-4">{t('seasons')}</h3>
+            <div data-nav-row="details-seasons" className="flex gap-3 overflow-x-auto pb-3">
               {seasons.map((s: any) => (
                 <button
                   key={s.season_number}
                   onClick={() => { setSelectedSeason(s.season_number); setSelectedEpisode(null); setShowTorrents(false); }}
-                  className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all tv-focus ${
+                  className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all tv-focus ${
                     selectedSeason === s.season_number
                       ? 'bg-primary text-primary-foreground'
-                      : 'glass text-muted-foreground hover:text-foreground'
+                      : 'glass text-muted-foreground'
                   }`}
                 >
                   {t('season')} {s.season_number}
@@ -406,75 +415,79 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               ))}
             </div>
 
-            {/* Episode hint */}
             {!selectedEpisode && (
-              <p className="text-xs text-muted-foreground mt-2">
-                {lang === 'he' ? '👆 לחץ על פרק כדי לחפש טורנטים' : '👆 Click an episode to search for torrents'}
+              <p className="text-sm text-muted-foreground mt-3">
+                {lang === 'he' ? '👆 בחר פרק כדי לחפש מקורות' : '👆 Select an episode to find sources'}
               </p>
             )}
 
             {seasonData?.episodes && (
-              <div data-nav-row="details-episodes" className="mt-4 space-y-3">
+              <div data-nav-row="details-episodes" className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {seasonData.episodes.map((ep: any) => (
                   <button
                     key={ep.id}
                     data-episode-button="true"
                     onClick={() => { setSelectedEpisode(ep.episode_number); setShowTorrents(true); }}
-                    className={`w-full rounded-xl p-3 flex items-center gap-3 tv-focus text-start transition-all ${
+                    className={`w-full rounded-xl p-4 flex items-center gap-4 tv-focus text-start transition-all ${
                       selectedEpisode === ep.episode_number
-                        ? 'ring-2 ring-primary bg-primary/10'
-                        : 'glass hover:bg-accent/50'
+                        ? 'bg-primary/10 ring-2 ring-primary'
+                        : 'glass'
                     }`}
                   >
                     {ep.still_path ? (
                       <img
                         src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
                         alt={ep.name}
-                        className="w-24 h-14 rounded-lg object-cover flex-shrink-0"
+                        className="w-32 h-[4.5rem] rounded-lg object-cover flex-shrink-0"
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-24 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                      <div className="w-32 h-[4.5rem] rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                         <Play className="w-6 h-6 text-muted-foreground" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-foreground">
+                      <h4 className="text-sm font-semibold text-foreground">
                         {t('episode')} {ep.episode_number}: {ep.name}
                       </h4>
-                      <p className="text-xs text-muted-foreground line-clamp-1">{ep.overview}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{ep.overview}</p>
                       {ep.runtime && (
-                        <p className="text-xs text-muted-foreground">{ep.runtime} {t('minutes')}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{ep.runtime} {t('minutes')}</p>
                       )}
                     </div>
                     {selectedEpisode === ep.episode_number && (
-                      <Search className="w-4 h-4 text-primary flex-shrink-0" />
+                      <Search className="w-5 h-5 text-primary flex-shrink-0" />
                     )}
                   </button>
                 ))}
               </div>
             )}
 
-            {/* Series torrent results - shown AFTER episodes */}
-            {showTorrents && selectedEpisode !== null && renderTorrentResults()}
+            {/* Series torrent results */}
+            {showTorrents && selectedEpisode !== null && (
+              <div className="mt-6 max-w-3xl">
+                {renderTorrentResults()}
+              </div>
+            )}
           </div>
         )}
 
+        {/* Recommendations */}
         {recommendations.length > 0 && (
           <div>
-            <h3 className="font-semibold text-foreground mb-3">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
               {lang === 'he' ? 'המלצות דומות' : 'Recommendations'}
             </h3>
-            <div className="flex gap-3 overflow-x-auto pb-2">
+            <div className="flex gap-4 overflow-x-auto pb-2">
               {recommendations.filter((r: any) => r.poster_path).slice(0, 10).map((rec: any) => (
-                <div key={rec.id} className="flex-shrink-0 w-28">
+                <div key={rec.id} className="flex-shrink-0 w-32">
                   <img
                     src={`https://image.tmdb.org/t/p/w342${rec.poster_path}`}
                     alt={rec.title || rec.name}
-                    className="w-full rounded-lg aspect-[2/3] object-cover mb-1"
+                    className="w-full rounded-xl aspect-[2/3] object-cover mb-1.5"
                     loading="lazy"
                   />
-                  <p className="text-xs text-foreground truncate">{rec.title || rec.name}</p>
+                  <p className="text-sm text-foreground truncate font-medium">{rec.title || rec.name}</p>
                 </div>
               ))}
             </div>
