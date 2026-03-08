@@ -48,8 +48,14 @@ const SearchRoute = () => {
         </div>
       ) : (
         <div data-nav-row="search-results" className="flex flex-wrap gap-4">
-          {filtered.map(movie => (
-            <MovieCard key={movie.id} movie={movie} onClick={() => setSelectedMovie(movie)} />
+          {filtered.map((movie, i) => (
+            <button
+              key={movie.id}
+              onClick={() => setSelectedMovie(movie)}
+              className="tv-focus flex-shrink-0 rounded-xl text-start focus-card outline-none"
+            >
+              <MovieCard movie={movie} index={i} />
+            </button>
           ))}
         </div>
       )}
