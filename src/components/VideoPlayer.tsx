@@ -176,25 +176,44 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       .finally(() => setLoadingSubs(false));
   }, [imdbId, mediaType, season, episode]);
 
-  // Fetch audio tracks automatically
+  // Detect embedded audio tracks from the video element
   useEffect(() => {
-    if (!rdFileId || isYouTube) return;
+    const v = videoRef.current;
+    if (!v || isYouTube) return;
+
+    const detectAudioTracks = () => {
+      const vAny = v as any;
+      const tracks = vAny.audioTracks;
+      if (!tracks || tracks.length === 0) {
+        setEmbeddedAudioTracks([]);
+        setLoadingAudio(false);
+        return;
+      }
+      const list: AudioTrackInfo[] = [];
+      for (let i = 0; i < tracks.length; i++) {
+        const t = tracks[i];
+        list.push({
+          index: i,
+          label: t.label || t.language || `Track ${i + 1}`,
+          language: t.language || '',
+          enabled: t.enabled,
+        });
+        if (t.enabled) setActiveAudioIdx(i);
+      }
+      setEmbeddedAudioTracks(list);
+      setLoadingAudio(false);
+    };
+
     setLoadingAudio(true);
-    realDebrid.getTranscode(rdFileId)
-      .then(data => {
-        const options: RDAudioOption[] = [];
-        for (const [quality, info] of Object.entries(data)) {
-          if (info && typeof info === 'object' && 'full' in info) {
-            const label = `${quality}${(info as any).acodec ? ` (${(info as any).acodec})` : ''}`;
-            options.push({ label, url: (info as any).full });
-          }
-        }
-        setRdAudioOptions(options);
-        // Auto-select default audio (original stream) - no switch needed as video already plays with default audio
-      })
-      .catch(e => console.warn('Transcode fetch failed:', e))
-      .finally(() => setLoadingAudio(false));
-  }, [rdFileId]);
+    v.addEventListener('loadedmetadata', detectAudioTracks);
+    // Also try after a short delay for browsers that populate audioTracks late
+    const timer = setTimeout(detectAudioTracks, 2000);
+
+    return () => {
+      v.removeEventListener('loadedmetadata', detectAudioTracks);
+      clearTimeout(timer);
+    };
+  }, [url, isYouTube]);
 
   const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
     try {
