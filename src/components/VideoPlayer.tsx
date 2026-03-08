@@ -118,6 +118,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<number | null>(null);
+  const lastFocusedControlRef = useRef<HTMLElement | null>(null);
 
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
