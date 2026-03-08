@@ -32,6 +32,42 @@ const isWebAudioCodecCompatible = (codec?: string) => {
   return c.includes('aac') || c.includes('mp3') || c.includes('opus') || c.includes('vorbis') || c.includes('flac');
 };
 
+type PlaybackStreamKind = 'mp4' | 'webm' | 'hls' | 'dash' | 'other';
+
+const detectPlaybackStreamKind = (streamUrl: string): PlaybackStreamKind => {
+  const path = streamUrl.split('?')[0].toLowerCase();
+  if (path.endsWith('.mp4')) return 'mp4';
+  if (path.endsWith('.webm')) return 'webm';
+  if (path.endsWith('.m3u8')) return 'hls';
+  if (path.endsWith('.mpd')) return 'dash';
+  return 'other';
+};
+
+const canPlayKind = (video: HTMLVideoElement | null, kind: PlaybackStreamKind) => {
+  if (!video) return '';
+  switch (kind) {
+    case 'mp4':
+      return video.canPlayType('video/mp4');
+    case 'webm':
+      return video.canPlayType('video/webm');
+    case 'hls':
+      return video.canPlayType('application/vnd.apple.mpegurl') || video.canPlayType('application/x-mpegURL');
+    case 'dash':
+      return video.canPlayType('application/dash+xml');
+    default:
+      return '';
+  }
+};
+
+const scoreTranscodedSource = (streamUrl: string, codec: string | undefined, video: HTMLVideoElement | null) => {
+  const kind = detectPlaybackStreamKind(streamUrl);
+  const playability = canPlayKind(video, kind);
+  const playabilityScore = playability === 'probably' ? 120 : playability === 'maybe' ? 70 : 0;
+  const kindScore = kind === 'mp4' ? 50 : kind === 'webm' ? 40 : kind === 'hls' ? 25 : kind === 'dash' ? 10 : 0;
+  const codecScore = isWebAudioCodecCompatible(codec) ? 35 : 0;
+  return playabilityScore + kindScore + codecScore;
+};
+
 const PLAYER_KEYCODE_MAP: Record<number, string> = {
   13: 'Enter',
   19: 'ArrowUp',
@@ -129,6 +165,8 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<number | null>(null);
   const lastFocusedControlRef = useRef<HTMLElement | null>(null);
+  const fallbackQueueRef = useRef<string[]>([]);
+  const failedUrlsRef = useRef<Set<string>>(new Set());
   const { data: transcodeData, isLoading: loadingTranscode } = useRDTranscode(rdFileId || null);
 
   const [playbackUrl, setPlaybackUrl] = useState(url);
@@ -184,6 +222,31 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     externalPlayerHint: lang === 'he' ? 'לניגון עם כל הקודקים (DTS, AC3, EAC3 וכו\')' : 'For playback with all codecs (DTS, AC3, EAC3, etc.)',
   };
 
+  const switchToNextPlaybackSource = useCallback(() => {
+    const nextIdx = fallbackQueueRef.current.findIndex(
+      (candidate) => candidate && candidate !== playbackUrl && !failedUrlsRef.current.has(candidate),
+    );
+
+    if (nextIdx >= 0) {
+      const [next] = fallbackQueueRef.current.splice(nextIdx, 1);
+      setPlaybackUrl(next);
+      setUsingTranscode(next !== url);
+      setIsBuffering(true);
+      setNoAudioDetected(false);
+      return true;
+    }
+
+    if (playbackUrl !== url && !failedUrlsRef.current.has(url)) {
+      setPlaybackUrl(url);
+      setUsingTranscode(false);
+      setIsBuffering(true);
+      setNoAudioDetected(false);
+      return true;
+    }
+
+    return false;
+  }, [playbackUrl, url]);
+
   const openInExternalPlayer = (playerType: 'vlc' | 'mx' | 'system') => {
     const videoUrl = url; // Always use original (not transcoded) URL for external player
     let intentUrl = '';
@@ -224,25 +287,43 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     setPlaybackUrl(url);
     setUsingTranscode(false);
     setNoAudioDetected(false);
+    setIsBuffering(true);
+    fallbackQueueRef.current = [];
+    failedUrlsRef.current = new Set();
   }, [url]);
 
-  // Prefer RD transcode stream when available to improve codec compatibility
+  // Prefer the most playable transcoded source (avoid unsupported manifests like m3u8 on non-Safari)
   useEffect(() => {
     if (!transcodeData || isYouTube) return;
 
-    const candidates = Object.values(transcodeData as Record<string, any>)
+    const video = videoRef.current;
+
+    const ranked = Object.values(transcodeData as Record<string, any>)
       .filter((item: any) => item?.full)
-      .map((item: any) => ({ full: item.full as string, acodec: (item.acodec as string | undefined) || '' }));
+      .map((item: any) => {
+        const full = item.full as string;
+        const acodec = (item.acodec as string | undefined) || '';
+        return {
+          full,
+          score: scoreTranscodedSource(full, acodec, video),
+        };
+      })
+      .sort((a, b) => b.score - a.score);
 
-    if (candidates.length === 0) return;
+    const orderedUrls = [...new Set(ranked.map((c) => c.full))].filter((candidate) => !failedUrlsRef.current.has(candidate));
 
-    const preferred = candidates.find((c) => isWebAudioCodecCompatible(c.acodec)) || candidates[0];
+    if (orderedUrls.length === 0) return;
 
-    if (preferred?.full && preferred.full !== playbackUrl) {
-      setPlaybackUrl(preferred.full);
-      setUsingTranscode(true);
+    const preferred = orderedUrls[0];
+    fallbackQueueRef.current = orderedUrls.slice(1);
+
+    if (preferred !== playbackUrl) {
+      setPlaybackUrl(preferred);
+      setIsBuffering(true);
     }
-  }, [transcodeData, isYouTube, playbackUrl]);
+
+    setUsingTranscode(preferred !== url);
+  }, [transcodeData, isYouTube, playbackUrl, url]);
 
   // Fetch subtitles
   useEffect(() => {
@@ -374,6 +455,12 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     };
   }, [playbackUrl, isYouTube]);
 
+  // Auto-switch source if audio is silent (tries next transcoded source automatically)
+  useEffect(() => {
+    if (!noAudioDetected || isYouTube) return;
+    switchToNextPlaybackSource();
+  }, [noAudioDetected, isYouTube, switchToNextPlaybackSource]);
+
   const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
     try {
       const res = await fetch(subUrl);
@@ -460,7 +547,10 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     const onTimeUpdate = () => setCurrentTime(video.currentTime);
     const onDuration = () => setDuration(video.duration);
     const onWaiting = () => setIsBuffering(true);
-    const onCanPlay = () => setIsBuffering(false);
+    const onCanPlay = () => {
+      setIsBuffering(false);
+      setNoAudioDetected(false);
+    };
     const onVolumeChange = () => { setVolume(video.volume); setIsMuted(video.muted); };
 
     video.addEventListener('play', onPlay);
@@ -485,6 +575,20 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       video.removeEventListener('volumechange', onVolumeChange);
     };
   }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || isYouTube) return;
+
+    const onError = () => {
+      failedUrlsRef.current.add(playbackUrl);
+      setIsBuffering(false);
+      switchToNextPlaybackSource();
+    };
+
+    video.addEventListener('error', onError);
+    return () => video.removeEventListener('error', onError);
+  }, [isYouTube, playbackUrl, switchToNextPlaybackSource]);
 
   // ========== Smart TV remote navigation ==========
   useEffect(() => {
