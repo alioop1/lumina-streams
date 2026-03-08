@@ -464,8 +464,8 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                       {actor.name?.[0]}
                     </div>
                   )}
-                  <p className="text-sm text-foreground truncate font-medium">{actor.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{actor.character}</p>
+                  <p className="text-sm 3xl:text-base text-foreground truncate font-medium">{actor.name}</p>
+                  <p className="text-xs 3xl:text-sm text-muted-foreground truncate">{actor.character}</p>
                 </div>
               ))}
             </div>
