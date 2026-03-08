@@ -278,7 +278,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         className="w-full h-full object-contain"
         autoPlay
         playsInline
-        crossOrigin="anonymous"
+        
       />
 
       {isBuffering && (
