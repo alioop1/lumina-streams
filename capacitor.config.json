@@ -1,5 +1,12 @@
 {
   "appId": "app.lovable.bbdcab76b76c4e1890ecf2b7b73f0e37",
   "appName": "Lumina Streams",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "url": "https://bbdcab76-b76c-4e18-90ec-f2b7b73f0e37.lovableproject.com?forceHideBadge=true",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
 }
