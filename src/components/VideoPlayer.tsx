@@ -113,7 +113,7 @@ export const VideoPlayer = ({
 
   // ── State ──
   const [playbackUrl, setPlaybackUrl] = useState(url);
-  const [playbackMode, setPlaybackMode] = useState<'direct' | 'transcode'>('direct');
+  const [, setPlaybackMode] = useState<'direct' | 'transcode'>('direct');
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsPanel, setSettingsPanel] = useState<SettingsPanel>('main');
