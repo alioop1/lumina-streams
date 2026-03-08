@@ -24,6 +24,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
   const { data: details } = useMovieDetails(tmdbId, mediaType);
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null);
   const { data: seasonData } = useSeason(
     movie.type === 'series' ? tmdbId : null,
     selectedSeason
