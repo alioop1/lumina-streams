@@ -88,7 +88,13 @@ serve(async (req) => {
       });
     }
 
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = { raw: text };
+    }
 
     if (!response.ok) {
       return new Response(JSON.stringify({ error: 'Real-Debrid API error', details: data }), {
