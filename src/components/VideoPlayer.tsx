@@ -455,6 +455,12 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     };
   }, [playbackUrl, isYouTube]);
 
+  // Auto-switch source if audio is silent (tries next transcoded source automatically)
+  useEffect(() => {
+    if (!noAudioDetected || isYouTube) return;
+    switchToNextPlaybackSource();
+  }, [noAudioDetected, isYouTube, switchToNextPlaybackSource]);
+
   const fetchSubAsBlob = async (subUrl: string): Promise<string> => {
     try {
       const res = await fetch(subUrl);
