@@ -7,7 +7,7 @@ interface ContentRowProps {
   movies: Movie[];
   onMovieClick: (movie: Movie) => void;
   isLoading?: boolean;
-  rowId: string; // Unique row identifier for navigation
+  rowId: string;
 }
 
 export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId }: ContentRowProps) => {
@@ -40,6 +40,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
         data-nav-row={rowId}
         ref={scrollRef}
         className="flex gap-4 overflow-x-auto px-6 pt-3 pb-2"
+        style={{ contain: 'layout' }}
       >
         {movies.map((movie, i) => (
           <button

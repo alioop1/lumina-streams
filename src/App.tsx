@@ -41,7 +41,7 @@ const AppLayout = () => {
   return (
     <div className="min-h-screen flex w-full bg-background text-foreground" dir={dir}>
       <AppSidebar collapsed={sidebarCollapsed} />
-      <main className={`flex-1 ${mainMargin} overflow-y-auto transition-all duration-200`}>
+      <main className={`flex-1 ${mainMargin} overflow-y-auto transition-[margin] duration-200`} style={{ contain: 'layout style' }}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<SearchRoute />} />

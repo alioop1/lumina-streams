@@ -26,11 +26,12 @@ export const AppSidebar = ({ collapsed }: Props) => {
     <nav
       data-sidebar
       className={cn(
-        'fixed top-0 h-full z-50 flex flex-col transition-all duration-200',
+        'fixed top-0 h-full z-50 flex flex-col transition-[width] duration-200',
         'bg-sidebar border-sidebar-border',
         collapsed ? 'w-16' : 'w-56',
         isRTL ? 'right-0 border-s' : 'left-0 border-e'
       )}
+      style={{ contain: 'layout style paint', willChange: 'width' }}
     >
       {/* Logo */}
       <div className="h-16 flex items-center px-4 shrink-0 border-b border-sidebar-border justify-center">
