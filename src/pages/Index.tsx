@@ -25,7 +25,7 @@ const Index = () => {
     return (
       <Suspense fallback={
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <Loader2 className="w-8 h-8 3xl:w-12 3xl:h-12 text-primary animate-spin" />
         </div>
       }>
         <MovieDetails movie={selectedMovie} onBack={handleBack} />
@@ -34,10 +34,10 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 3xl:pb-28 4k:pb-32">
       <HeroBanner movies={trending || []} onInfoClick={handleMovieClick} />
 
-      <div className="mt-6 space-y-2">
+      <div className="mt-6 3xl:mt-10 4k:mt-12 space-y-2 3xl:space-y-4">
         <ContentRow
           rowId="trending"
           title={t('trendingNow')}
