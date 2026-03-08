@@ -200,20 +200,6 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     video.addEventListener('playing', onCanPlay);
     video.addEventListener('volumechange', onVolumeChange);
 
-    const detectTracks = () => {
-      const at = (video as any).audioTracks;
-      if (at && at.length > 0) {
-        const tracks: typeof audioTracks = [];
-        for (let i = 0; i < at.length; i++) {
-          tracks.push({ id: i, label: at[i].label || `Track ${i + 1}`, language: at[i].language || '', enabled: at[i].enabled });
-        }
-        setAudioTracks(tracks);
-      }
-    };
-
-    video.addEventListener('loadedmetadata', detectTracks);
-    const trackTimer = setTimeout(detectTracks, 2000);
-
     return () => {
       video.removeEventListener('play', onPlay);
       video.removeEventListener('pause', onPause);
