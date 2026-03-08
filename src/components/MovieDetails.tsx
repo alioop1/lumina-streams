@@ -206,13 +206,15 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           alt={movie.title}
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        <button
-          onClick={onBack}
-          className="absolute top-12 start-4 glass w-10 h-10 rounded-full flex items-center justify-center text-foreground tv-focus"
-        >
-          <BackArrow className="w-5 h-5" />
-        </button>
+         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div data-nav-row="details-back">
+          <button
+            onClick={onBack}
+            className="absolute top-12 start-4 glass w-10 h-10 rounded-full flex items-center justify-center text-foreground tv-focus"
+          >
+            <BackArrow className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <div className="px-4 -mt-20 relative z-10 pb-24 space-y-6">
