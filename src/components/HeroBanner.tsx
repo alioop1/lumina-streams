@@ -29,6 +29,8 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
   }, [heroMovies.length]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
+    if (isTVDevice) return;
+
     const isRTL = dir === 'rtl';
     const nextKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
     const prevKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
@@ -54,7 +56,7 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
         firstRowItem?.focus();
         break;
     }
-  }, [dir]);
+  }, [dir, isTVDevice]);
 
   const handlePlay = useCallback(() => {
     if (movie) {
