@@ -772,7 +772,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={() => setSettingsPanel('audio')} className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors tv-focus">
                 <span>{labels.audioLang}</span>
                 <span className="text-white/60 flex items-center gap-1">
-                  {rdAudioOptions.find(o => o.url === activeAudio)?.label || labels.default}
+                  {embeddedAudioTracks[activeAudioIdx]?.label || labels.default}
                   {loadingAudio && <Loader2 className="w-3 h-3 animate-spin" />}
                   <NavChevron className="w-4 h-4" />
                 </span>
