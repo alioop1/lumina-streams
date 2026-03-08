@@ -62,7 +62,17 @@ export const useIsTVDevice = () => {
 
 const isHTMLElementVisible = (el: HTMLElement) => {
   const style = window.getComputedStyle(el);
-  return style.display !== 'none' && style.visibility !== 'hidden' && !el.hasAttribute('disabled');
+  const hasNoOpacity = Number(style.opacity) <= 0.01;
+  const hiddenByAria = el.getAttribute('aria-hidden') === 'true' || !!el.closest('[aria-hidden="true"]');
+
+  return (
+    style.display !== 'none' &&
+    style.visibility !== 'hidden' &&
+    style.pointerEvents !== 'none' &&
+    !hasNoOpacity &&
+    !hiddenByAria &&
+    !el.hasAttribute('disabled')
+  );
 };
 
 const getCenter = (el: HTMLElement) => {
