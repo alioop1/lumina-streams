@@ -599,7 +599,7 @@ export const VideoPlayer = ({
 
       {isBuffering && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <Loader2 className="w-12 h-12 text-primary animate-spin" />
+          <Loader2 className="w-12 h-12 3xl:w-16 3xl:h-16 4k:w-20 4k:h-20 text-primary animate-spin" />
         </div>
       )}
 
