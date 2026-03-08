@@ -119,8 +119,10 @@ const detectLanguages = (title: string): string[] => {
   return Array.from(langs);
 };
 
-// Detect audio codec from title/filename - warn about browser-incompatible codecs
+// Detect media codec compatibility for browser playback
+
 type AudioCodecInfo = { codec: string; compatible: boolean };
+type VideoCodecInfo = { codec: string; compatible: boolean };
 
 const detectAudioCodec = (title: string): AudioCodecInfo => {
   const upper = title.toUpperCase();
@@ -141,6 +143,17 @@ const detectAudioCodec = (title: string): AudioCodecInfo => {
   return { codec: '', compatible: true };
 };
 
+const detectVideoCodec = (title: string): VideoCodecInfo => {
+  const upper = title.toUpperCase();
+  const hasHevc = /\b(H[\s.-]?265|HEVC|X265)\b/i.test(upper);
+  const hasHdrDv = /\b(HDR|DV|DOLBY[\s.-]?VISION)\b/i.test(upper);
+  const hasH264 = /\b(H[\s.-]?264|AVC|X264)\b/i.test(upper);
+
+  if (hasHevc || hasHdrDv) return { codec: 'HEVC/HDR', compatible: false };
+  if (hasH264) return { codec: 'H264/AVC', compatible: true };
+  return { codec: '', compatible: true };
+};
+
 export const parseTorrentioTitle = (title: string) => {
   const lines = title.split('\n');
   const quality = lines[0] || '';
@@ -148,6 +161,7 @@ export const parseTorrentioTitle = (title: string) => {
   const seedMatch = quality.match(/👤\s*(\d+)/);
   const languages = detectLanguages(title);
   const audioCodec = detectAudioCodec(title);
+  const videoCodec = detectVideoCodec(title);
 
   return {
     quality: lines[0]?.replace(/💾.*/, '').replace(/👤.*/, '').trim() || '',
@@ -157,6 +171,8 @@ export const parseTorrentioTitle = (title: string) => {
     languages,
     audioCodec: audioCodec.codec,
     audioCompatible: audioCodec.compatible,
+    videoCodec: videoCodec.codec,
+    videoCompatible: videoCodec.compatible,
   };
 };
 
