@@ -579,15 +579,16 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
     setSettingsPanel('main');
   };
 
-  const selectAudioTrack = (option: RDAudioOption) => {
+  const selectAudioTrack = (trackIdx: number) => {
     const v = videoRef.current;
     if (!v) return;
-    const wasPlaying = !v.paused;
-    const time = v.currentTime;
-    v.src = option.url;
-    v.currentTime = time;
-    if (wasPlaying) v.play();
-    setActiveAudio(option.url);
+    const vAny = v as any;
+    const tracks = vAny.audioTracks;
+    if (!tracks) return;
+    for (let i = 0; i < tracks.length; i++) {
+      tracks[i].enabled = i === trackIdx;
+    }
+    setActiveAudioIdx(trackIdx);
     setSettingsPanel('main');
     setShowSettings(false);
   };
