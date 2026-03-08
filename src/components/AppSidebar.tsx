@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { TranslationKey } from '@/lib/translations';
 import { cn } from '@/lib/utils';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useIsTVDevice } from '@/hooks/use-tv';
 
 const tabs: { icon: typeof Home; labelKey: TranslationKey; path: string }[] = [
@@ -21,15 +21,6 @@ export const AppSidebar = () => {
   const isTVDevice = useIsTVDevice();
   const isRTL = dir === 'rtl';
   const [expanded, setExpanded] = useState(isTVDevice);
-  const [focusedIndex, setFocusedIndex] = useState(-1);
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  const focusMainContent = useCallback(() => {
-    const mainContent = document.querySelector('main');
-    const firstFocusable = mainContent?.querySelector<HTMLElement>('.tv-focus, [tabindex], a, button, input');
-    firstFocusable?.focus();
-  }, []);
 
   useEffect(() => {
     if (isTVDevice) {
@@ -37,77 +28,11 @@ export const AppSidebar = () => {
     }
   }, [isTVDevice]);
 
-  useEffect(() => {
-    const routeIndex = tabs.findIndex((tab) => tab.path === location.pathname);
-    if (routeIndex >= 0) {
-      setFocusedIndex(routeIndex);
-    }
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (focusedIndex >= 0 && buttonRefs.current[focusedIndex]) {
-      buttonRefs.current[focusedIndex]?.focus();
-    }
-  }, [focusedIndex]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setFocusedIndex(prev => Math.min((prev < 0 ? 0 : prev + 1), tabs.length - 1));
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setFocusedIndex(prev => Math.max((prev <= 0 ? 0 : prev - 1), 0));
-        break;
-      case 'ArrowRight':
-        e.preventDefault();
-        if (isRTL) {
-          if (!isTVDevice) setExpanded(true);
-        } else {
-          if (!isTVDevice) setExpanded(false);
-          focusMainContent();
-        }
-        break;
-      case 'ArrowLeft':
-        e.preventDefault();
-        if (isRTL) {
-          if (!isTVDevice) setExpanded(false);
-          focusMainContent();
-        } else if (!isTVDevice) {
-          setExpanded(true);
-        }
-        break;
-      case 'Enter':
-      case ' ':
-        e.preventDefault();
-        if (focusedIndex >= 0) {
-          navigate(tabs[focusedIndex].path);
-        }
-        break;
-    }
-  }, [focusedIndex, navigate, isRTL, isTVDevice, focusMainContent]);
-
-  useEffect(() => {
-    if (isTVDevice) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
-        setExpanded(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isTVDevice]);
-
   return (
     <div
-      ref={sidebarRef}
       data-sidebar
       onMouseEnter={!isTVDevice ? () => setExpanded(true) : undefined}
       onMouseLeave={!isTVDevice ? () => setExpanded(false) : undefined}
-      onKeyDown={handleKeyDown}
       className={cn(
         'fixed top-0 h-full z-50 flex flex-col',
         'bg-[hsl(var(--sidebar-background))] transition-all duration-200 ease-out',
@@ -130,15 +55,13 @@ export const AppSidebar = () => {
       </div>
 
       <nav className="flex-1 flex flex-col pt-4 gap-1 px-2">
-        {tabs.map(({ icon: Icon, labelKey, path }, index) => {
+        {tabs.map(({ icon: Icon, labelKey, path }) => {
           const active = location.pathname === path;
           return (
             <button
               key={path}
-              ref={el => { buttonRefs.current[index] = el; }}
               onClick={() => navigate(path)}
               onFocus={() => {
-                setFocusedIndex(index);
                 if (!isTVDevice) setExpanded(true);
               }}
               tabIndex={0}
@@ -149,7 +72,7 @@ export const AppSidebar = () => {
                 expanded || isTVDevice ? 'px-4' : 'px-0 justify-center',
                 active
                   ? 'bg-primary/15 text-primary'
-                  : 'text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]',
+                  : 'text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]'
               )}
             >
               {active && (

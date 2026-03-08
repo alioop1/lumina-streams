@@ -106,7 +106,7 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
             tabIndex={0}
           >
             <Plus className="w-5 h-5" />
-          </motion.button>
+          </button>
         </div>
 
         <div className="flex gap-2 pt-2">
