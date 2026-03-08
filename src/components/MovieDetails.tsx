@@ -555,6 +555,26 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             <h3 className="text-lg font-semibold text-foreground mb-4">
               {lang === 'he' ? 'המלצות דומות' : 'Recommendations'}
             </h3>
+            <div className="flex gap-4 3xl:gap-6 overflow-x-auto pb-2">
+              {recommendations.filter((r: any) => r.poster_path).slice(0, 10).map((rec: any) => (
+                <div key={rec.id} className="flex-shrink-0 w-32 3xl:w-44 4k:w-52">
+                  <img
+                    src={`https://image.tmdb.org/t/p/w342${rec.poster_path}`}
+                    alt={rec.title || rec.name}
+                    className="w-full rounded-xl 3xl:rounded-2xl aspect-[2/3] object-cover mb-1.5 3xl:mb-2"
+                    loading="lazy"
+                  />
+                  <p className="text-sm 3xl:text-base text-foreground truncate font-medium">{rec.title || rec.name}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+            </h3>
             <div className="flex gap-4 overflow-x-auto pb-2">
               {recommendations.filter((r: any) => r.poster_path).slice(0, 10).map((rec: any) => (
                 <div key={rec.id} className="flex-shrink-0 w-32">
