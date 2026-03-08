@@ -374,7 +374,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
               onClick={() => setStreamUrl(`https://www.youtube.com/embed/${trailer.key}?autoplay=1`)}
               className="flex items-center gap-3 3xl:gap-4 glass px-6 py-4 3xl:px-8 3xl:py-5 rounded-xl 3xl:rounded-2xl text-foreground font-medium text-base 3xl:text-lg transition-colors tv-focus"
             >
-              <Play className="w-5 h-5 text-primary fill-primary" />
+              <Play className="w-5 h-5 3xl:w-6 3xl:h-6 text-primary fill-primary" />
               {lang === 'he' ? 'טריילר' : 'Trailer'}
             </button>
           )}
