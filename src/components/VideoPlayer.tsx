@@ -831,13 +831,25 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
               <button onClick={() => setSettingsPanel('main')} className="w-full px-4 py-2 flex items-center gap-2 text-white/60 hover:bg-white/10 transition-colors border-b border-white/10 tv-focus">
                 <BackChevron className="w-4 h-4" /> {labels.audioLang}
               </button>
+
+              {!canSwitchAudioTracks && (
+                <div className="px-4 py-2 text-white/40 text-xs text-center">
+                  {labels.cannotSwitchAudio}
+                </div>
+              )}
+
               {embeddedAudioTracks.length === 0 ? (
                 <div className="px-4 py-3 text-white/40 text-center">
                   {loadingAudio ? labels.loading : labels.noAudio}
                 </div>
               ) : (
                 embeddedAudioTracks.map((track) => (
-                  <button key={track.index} onClick={() => selectAudioTrack(track.index)} className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus ${activeAudioIdx === track.index ? 'text-primary' : ''}`}>
+                  <button
+                    key={track.index}
+                    onClick={() => selectAudioTrack(track.index)}
+                    disabled={!canSwitchAudioTracks}
+                    className={`w-full px-4 py-2.5 text-start hover:bg-white/10 transition-colors flex items-center justify-between tv-focus disabled:opacity-60 ${activeAudioIdx === track.index ? 'text-primary' : ''}`}
+                  >
                     <div>
                       <div>{track.label}</div>
                       {track.language && track.language !== track.label && <div className="text-xs text-white/40">{track.language}</div>}
