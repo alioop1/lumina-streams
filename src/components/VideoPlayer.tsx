@@ -322,10 +322,11 @@ export const VideoPlayer = ({
     const onDur = () => {
       setDuration(v.duration);
       // Detect embedded audio tracks (for multi-audio files)
-      if (v.audioTracks && v.audioTracks.length > 1) {
+      const vAny = v as any;
+      if (vAny.audioTracks && vAny.audioTracks.length > 1) {
         const tracks: { id: number; label: string; lang: string; enabled: boolean }[] = [];
-        for (let i = 0; i < v.audioTracks.length; i++) {
-          const t = v.audioTracks[i] as any;
+        for (let i = 0; i < vAny.audioTracks.length; i++) {
+          const t = vAny.audioTracks[i];
           tracks.push({
             id: i,
             label: t.label || t.language || `Track ${i + 1}`,
