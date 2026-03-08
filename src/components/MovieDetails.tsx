@@ -449,7 +449,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
             <h3 className="text-lg 3xl:text-xl 4k:text-2xl font-semibold text-foreground mb-4 3xl:mb-6">
               {lang === 'he' ? 'שחקנים' : 'Cast'}
             </h3>
-            <div className="flex gap-5 overflow-x-auto pb-2">
+            <div className="flex gap-5 3xl:gap-7 overflow-x-auto pb-2">
               {cast.map((actor: any) => (
                 <div key={actor.id} className="flex-shrink-0 w-24 text-center">
                   {actor.profile_path ? (
