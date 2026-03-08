@@ -269,7 +269,7 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
       v.removeEventListener('loadedmetadata', detectAudioTracks);
       clearTimeout(timer);
     };
-  }, [url, isYouTube, defaultAudioLabel]);
+  }, [playbackUrl, isYouTube, defaultAudioLabel]);
 
   // Detect no-audio via Web Audio API analyzer
   useEffect(() => {
