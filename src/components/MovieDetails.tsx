@@ -456,7 +456,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                     <img
                       src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`}
                       alt={actor.name}
-                      className="w-20 h-20 rounded-full object-cover mx-auto mb-2 ring-2 ring-border"
+                      className="w-20 h-20 3xl:w-28 3xl:h-28 4k:w-32 4k:h-32 rounded-full object-cover mx-auto mb-2 3xl:mb-3 ring-2 ring-border"
                       loading="lazy"
                     />
                   ) : (
