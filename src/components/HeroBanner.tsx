@@ -42,11 +42,12 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
   const displayTitle = lang === 'he' ? (movie.titleHe || movie.title) : movie.title;
 
   return (
-    <div className="relative w-full h-[70vh] overflow-hidden" dir={dir}>
+    <div className="relative w-full h-[70vh] overflow-hidden" dir={dir} style={{ contain: 'layout style paint' }}>
       <img
         src={movie.backdrop || movie.poster}
         alt={movie.title}
         className="absolute inset-0 w-full h-full object-cover"
+        style={{ contentVisibility: 'auto' }}
       />
       <div className="absolute inset-0 gradient-fade-bottom" />
       <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background" />

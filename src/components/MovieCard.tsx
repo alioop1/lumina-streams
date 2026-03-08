@@ -17,7 +17,8 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
       className="flex-shrink-0 w-[160px] md:w-[200px] snap-start group/card cursor-pointer text-start bg-transparent border-none p-0 outline-none"
       data-card-index={index}
     >
-      <div className="relative rounded-xl aspect-[2/3] mb-2 movie-card-poster bg-card">
+      {/* contain: strict limits paint/layout to this box — huge win on 2GB devices */}
+      <div className="relative rounded-xl aspect-[2/3] mb-2 movie-card-poster bg-card" style={{ contain: 'strict' }}>
         {movie.poster ? (
           <img
             src={movie.poster}

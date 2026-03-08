@@ -54,6 +54,8 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-user-select: none;
     user-select: none;
+    /* Reduce layout recalcs on low-end chipsets */
+    text-rendering: optimizeSpeed;
   }
 
   /* GPU-accelerated compositing for TV/streamer chipsets */
@@ -68,6 +70,7 @@
     -webkit-transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
+    will-change: transform;
   }
 
   /* Reduce paint on scrollable areas */
@@ -77,9 +80,10 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Optimize images globally */
+  /* Optimize images globally — content-visibility for off-screen */
   img {
     contain-intrinsic-size: auto 200px;
+    content-visibility: auto;
   }
 
   input, textarea {
@@ -90,6 +94,15 @@
   /* Hide scrollbar — clean TV look */
   ::-webkit-scrollbar { display: none; }
   * { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Reduce animation work on low-end devices */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @layer utilities {
@@ -120,11 +133,13 @@
      TV FOCUS SYSTEM
      Clean focus ring, no hover effects.
      Remote-only interaction model.
+     GPU-composited transforms only.
      ═══════════════════════════════════════════ */
 
   .tv-focus {
     outline: none;
-    transition: box-shadow 0.1s ease, transform 0.1s ease;
+    /* Use only transform/opacity for 60fps — no box-shadow transitions */
+    transition: transform 0.1s ease, opacity 0.1s ease;
   }
 
   .tv-focus:focus-visible {
@@ -140,16 +155,18 @@
     box-shadow: 0 0 0 2px hsl(var(--primary) / 0.8);
   }
 
-  /* Content row cards: white rounded border on poster only */
+  /* Content row cards: GPU-only scale transform on focus */
   .focus-card {
-    transition: transform 0.14s ease-out;
+    /* Only transform — no box-shadow transition for 60fps */
+    transition: transform 0.12s ease-out;
     will-change: transform;
+    contain: layout style;
   }
 
   .focus-card:focus-visible {
     outline: none;
     box-shadow: none;
-    transform: scale(1.05);
+    transform: scale(1.05) translateZ(0);
     z-index: 20;
   }
 
@@ -164,4 +181,19 @@
 
   /* Kill all hover effects — TV is focus-only */
   :focus-visible { outline: none; }
+
+  /* GPU-promote fixed overlays (sidebar, player, bottom nav) */
+  [data-sidebar],
+  [data-video-player],
+  [data-controls] {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform;
+  }
+
+  /* Contain paint on card grids to reduce composite area */
+  [data-nav-row] {
+    contain: layout;
+  }
 }
