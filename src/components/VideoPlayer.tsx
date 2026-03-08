@@ -470,12 +470,20 @@ export const VideoPlayer = ({
     window.location.href = href;
   };
 
-  /* ═══ Controls hide timer ═══ */
+  /* ═══ Controls hide timer + cursor auto-hide ═══ */
   const resetHideTimer = useCallback(() => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     setShowControls(true);
+    // Show cursor
+    containerRef.current?.classList.remove('cursor-hidden');
+    if (cursorTimer.current) clearTimeout(cursorTimer.current);
+    
     hideTimerRef.current = window.setTimeout(() => {
-      if (isPlaying && !showSettings) setShowControls(false);
+      if (isPlaying && !showSettings) {
+        setShowControls(false);
+        // Feature: Auto-hide cursor after controls hide
+        containerRef.current?.classList.add('cursor-hidden');
+      }
     }, 3000);
   }, [isPlaying, showSettings]);
 
