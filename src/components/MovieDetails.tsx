@@ -177,7 +177,14 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           >
             <Link className="w-5 h-5" />
           </button>
-          <button className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus">
+          <button
+            onClick={() => {
+              const text = `${displayTitle} (${detailMovie.year})`;
+              navigator.clipboard.writeText(text);
+              alert(lang === 'he' ? 'נוסף לרשימה!' : 'Added to watchlist!');
+            }}
+            className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus"
+          >
             <Plus className="w-6 h-6" />
           </button>
           <button
