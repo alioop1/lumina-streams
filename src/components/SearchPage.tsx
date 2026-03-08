@@ -232,7 +232,7 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
               tabIndex={0}
               onClick={() => onMovieClick(movie)}
               onKeyDown={e => handleResultKeyDown(e, i)}
-              className="tv-focus rounded-lg text-start"
+              className="tv-focus focus-card rounded-lg text-start"
             >
               <MovieCard
                 movie={movie}
