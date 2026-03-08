@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppSidebar } from "@/components/AppSidebar";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
-import { useTVNavigation } from "@/hooks/use-tv";
+import { useTVGlobalNavigation } from "@/hooks/use-tv";
 import Index from "./pages/Index";
 import SearchRoute from "./pages/Search";
 import Watchlist from "./pages/Watchlist";
@@ -18,12 +18,12 @@ const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const { dir } = useLanguage();
-  useTVNavigation();
+  useTVGlobalNavigation(true);
 
   return (
     <div className="min-h-screen flex w-full bg-background text-foreground" dir={dir}>
       <AppSidebar />
-      <main data-nav-region="main" className="flex-1 ms-56 overflow-y-auto">
+      <main className="flex-1 ms-56 overflow-y-auto">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<SearchRoute />} />

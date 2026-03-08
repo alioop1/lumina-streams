@@ -20,7 +20,7 @@ export const AppSidebar = () => {
 
   return (
     <nav
-      data-nav-region="sidebar"
+      data-sidebar
       className={cn(
         'fixed top-0 h-full z-50 flex flex-col w-56',
         'bg-sidebar border-sidebar-border',
@@ -40,13 +40,12 @@ export const AppSidebar = () => {
           return (
             <button
               key={path}
-              tabIndex={0}
               onClick={() => navigate(path)}
               className={cn(
                 'tv-focus relative flex items-center gap-3 rounded-lg px-4 h-12',
                 'transition-colors duration-100',
                 active
-                  ? 'bg-primary/15 text-primary tv-sidebar-active'
+                  ? 'bg-primary/15 text-primary'
                   : 'text-sidebar-foreground'
               )}
             >
