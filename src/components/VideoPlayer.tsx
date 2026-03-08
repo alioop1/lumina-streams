@@ -280,6 +280,11 @@ export const VideoPlayer = ({
       // Code 4/3 = unsupported or decode error in current browser.
       if (code === 4 || code === 3) {
         if (fallbackToTranscode(`media error ${code}`)) return;
+        if (rdFileId) {
+          setNeedsTranscodeFallback(true);
+          setIsBuffering(true);
+          return;
+        }
       }
 
       setIsBuffering(false);
