@@ -634,17 +634,17 @@ export const VideoPlayer = ({
         </div>
 
         {/* Bottom bar */}
-        <div className="p-4 bg-gradient-to-t from-black/70 to-transparent space-y-2">
+        <div className="p-4 3xl:p-6 4k:p-8 bg-gradient-to-t from-black/70 to-transparent space-y-2 3xl:space-y-3">
           {/* Progress */}
-          <div className="flex items-center gap-3">
-            <span className="text-white text-xs min-w-[40px]">{formatTime(currentTime)}</span>
-            <div className="relative flex-1 h-6 flex items-center group">
-              <div className="absolute inset-x-0 h-1 bg-white/20 rounded-full group-hover:h-1.5 transition-all">
+          <div className="flex items-center gap-3 3xl:gap-4">
+            <span className="text-white text-xs 3xl:text-sm 4k:text-base min-w-[40px] 3xl:min-w-[50px]">{formatTime(currentTime)}</span>
+            <div className="relative flex-1 h-6 3xl:h-8 flex items-center group">
+              <div className="absolute inset-x-0 h-1 3xl:h-1.5 4k:h-2 bg-white/20 rounded-full group-hover:h-1.5 3xl:group-hover:h-2 transition-all">
                 <div className="h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
               </div>
               <input type="range" min={0} max={duration || 0} value={currentTime} onChange={handleSeek} className="absolute inset-x-0 w-full h-full opacity-0 cursor-pointer" step={0.1} />
             </div>
-            <span className="text-white text-xs min-w-[40px] text-end">{formatTime(duration)}</span>
+            <span className="text-white text-xs 3xl:text-sm 4k:text-base min-w-[40px] 3xl:min-w-[50px] text-end">{formatTime(duration)}</span>
           </div>
 
           {/* Buttons row */}
