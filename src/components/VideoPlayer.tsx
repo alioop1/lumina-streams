@@ -300,6 +300,37 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         </div>
       )}
 
+      {/* Always-visible floating toolbar - top right */}
+      <div
+        data-controls
+        className="absolute top-16 right-4 z-20 flex flex-col gap-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={() => { setSettingsPanel('subtitles'); setShowSettings(true); setShowControls(true); }}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-md transition-colors ${activeSub ? 'bg-primary/80 text-white' : 'bg-black/60 text-white hover:bg-black/80'}`}
+        >
+          <Subtitles className="w-4 h-4" />
+          <span className="text-xs font-medium">כתוביות</span>
+          {loadingSubs && <Loader2 className="w-3 h-3 animate-spin" />}
+        </button>
+        <button
+          onClick={() => { setSettingsPanel('audio'); setShowSettings(true); setShowControls(true); }}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/60 text-white hover:bg-black/80 backdrop-blur-md transition-colors"
+        >
+          <Languages className="w-4 h-4" />
+          <span className="text-xs font-medium">אודיו</span>
+        </button>
+        <button
+          onClick={handleDownloadSubtitle}
+          disabled={availableSubs.length === 0}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/60 text-white hover:bg-black/80 backdrop-blur-md transition-colors disabled:opacity-30"
+        >
+          <Download className="w-4 h-4" />
+          <span className="text-xs font-medium">הורד כתוביות</span>
+        </button>
+      </div>
+
       <div
         data-controls
         className={`absolute inset-0 flex flex-col justify-between transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
