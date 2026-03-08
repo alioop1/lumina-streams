@@ -466,8 +466,8 @@ export const VideoPlayer = ({ url, title, onBack, imdbId, mediaType, season, epi
         }
 
         // Smart fallback if no focus target in that direction
-        if (key === 'ArrowLeft') v.currentTime = Math.max(0, v.currentTime - 10);
-        if (key === 'ArrowRight') v.currentTime = Math.min(v.duration, v.currentTime + 10);
+        if (v && key === 'ArrowLeft') v.currentTime = Math.max(0, v.currentTime - 10);
+        if (v && key === 'ArrowRight') v.currentTime = Math.min(v.duration, v.currentTime + 10);
       }
     };
 
