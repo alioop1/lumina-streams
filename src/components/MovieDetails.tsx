@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowRight, ArrowLeft, Play, Star, Plus, Share2, Link, Loader2, Search, Download } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -37,6 +37,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const [showTorrents, setShowTorrents] = useState(false);
   const unrestrict = useRDUnrestrict();
   const addMagnet = useRDAddMagnet();
+  const torrentResultsRef = useRef<HTMLDivElement>(null);
 
   const detailMovie = details?.movie || movie;
   const rawDetails = details?.raw;
@@ -53,6 +54,13 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
   const [loadingStreamIdx, setLoadingStreamIdx] = useState<number | null>(null);
 
+  // Scroll to torrent results when they appear
+  useEffect(() => {
+    if (showTorrents && torrentResultsRef.current) {
+      torrentResultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showTorrents, selectedEpisode]);
+
   const handleStreamSelect = async (stream: TorrentioStream, idx: number) => {
     const link = streamToMagnet(stream);
     if (!link) return;
@@ -60,25 +68,24 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
     try {
       if (link.startsWith('magnet:')) {
         const result = await addMagnet.mutateAsync(link);
-        // Poll torrent info until we get links, then unrestrict
-          const pollForLinks = async (torrentId: string, retries = 15): Promise<{ url: string; fileId: string } | null> => {
-            const { realDebrid } = await import('@/lib/realDebrid');
-            for (let i = 0; i < retries; i++) {
-              await new Promise(r => setTimeout(r, 2000));
-              const info = await realDebrid.getTorrentInfo(torrentId);
-              if (info.links && info.links.length > 0) {
-                const unrestricted = await unrestrict.mutateAsync(info.links[0]);
-                return { url: unrestricted.download, fileId: unrestricted.id };
-              }
-              if (info.status === 'error' || info.status === 'dead') break;
+        const pollForLinks = async (torrentId: string, retries = 15): Promise<{ url: string; fileId: string } | null> => {
+          const { realDebrid } = await import('@/lib/realDebrid');
+          for (let i = 0; i < retries; i++) {
+            await new Promise(r => setTimeout(r, 2000));
+            const info = await realDebrid.getTorrentInfo(torrentId);
+            if (info.links && info.links.length > 0) {
+              const unrestricted = await unrestrict.mutateAsync(info.links[0]);
+              return { url: unrestricted.download, fileId: unrestricted.id };
             }
-            return null;
-          };
-          const result2 = await pollForLinks(result.id);
-          if (result2) {
-            setStreamUrl(result2.url);
-            setRdFileId(result2.fileId);
+            if (info.status === 'error' || info.status === 'dead') break;
           }
+          return null;
+        };
+        const result2 = await pollForLinks(result.id);
+        if (result2) {
+          setStreamUrl(result2.url);
+          setRdFileId(result2.fileId);
+        }
       } else {
         const result3 = await unrestrict.mutateAsync(link);
         setStreamUrl(result3.download);
@@ -133,6 +140,63 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const cast = rawDetails?.credits?.cast?.slice(0, 10) || [];
   const trailer = rawDetails?.videos?.results?.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube');
 
+  const renderTorrentResults = () => (
+    <div ref={torrentResultsRef} className="space-y-3">
+      <h3 className="font-semibold text-foreground flex items-center gap-2">
+        <Search className="w-4 h-4 text-primary" />
+        {lang === 'he' ? 'תוצאות Torrentio' : 'Torrentio Results'}
+        {movie.type === 'series' && selectedEpisode !== null && (
+          <span className="text-xs text-primary font-normal">
+            — {t('season')} {selectedSeason} {t('episode')} {selectedEpisode}
+          </span>
+        )}
+        {!imdbId && (
+          <span className="text-xs text-muted-foreground font-normal">
+            ({lang === 'he' ? 'ממתין ל-IMDB ID...' : 'Waiting for IMDB ID...'})
+          </span>
+        )}
+      </h3>
+      {torrentsLoading && (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+        </div>
+      )}
+      {!torrentsLoading && streams.length === 0 && imdbId && (
+        <div className="glass rounded-xl p-4 text-center text-muted-foreground text-sm">
+          {lang === 'he' ? 'לא נמצאו טורנטים' : 'No torrents found'}
+        </div>
+      )}
+      {streams.map((stream: TorrentioStream, idx: number) => {
+        const parsed = parseTorrentioTitle(stream.title || '');
+        return (
+          <button
+            key={idx}
+            onClick={() => handleStreamSelect(stream, idx)}
+            disabled={loadingStreamIdx !== null}
+            className="w-full glass rounded-xl p-3 flex items-start gap-3 tv-focus text-start hover:bg-accent/50 transition-colors disabled:opacity-50"
+          >
+            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              {loadingStreamIdx === idx ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Download className="w-5 h-5 text-primary" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground" dir="ltr">
+                {stream.name}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2" dir="ltr">
+                {parsed.quality}
+              </p>
+              <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                {parsed.size && <span>💾 {parsed.size}</span>}
+                {parsed.seeds > 0 && <span>👤 {parsed.seeds}</span>}
+                {parsed.source && <span className="truncate">{parsed.source}</span>}
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background animate-fade-in" dir={dir}>
       <div className="relative h-[50vh]">
@@ -175,13 +239,16 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
         </div>
 
         <div className="flex gap-3">
-          <button
-            onClick={() => setShowTorrents(!showTorrents)}
-            className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold glow-red transition-all hover:bg-primary/90 tv-focus"
-          >
-            <Search className="w-5 h-5" />
-            {lang === 'he' ? 'חפש טורנטים' : 'Find Torrents'}
-          </button>
+          {/* For movies: show find torrents button. For series: episodes trigger torrent search */}
+          {movie.type !== 'series' && (
+            <button
+              onClick={() => setShowTorrents(!showTorrents)}
+              className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3.5 rounded-xl font-semibold glow-red transition-all hover:bg-primary/90 tv-focus"
+            >
+              <Search className="w-5 h-5" />
+              {lang === 'he' ? 'חפש טורנטים' : 'Find Torrents'}
+            </button>
+          )}
           <button
             onClick={() => setShowLinkInput(true)}
             className="glass w-14 h-14 rounded-xl flex items-center justify-center text-foreground hover:bg-accent transition-colors tv-focus"
@@ -206,57 +273,8 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           </button>
         </div>
 
-        {showTorrents && (
-          <div className="space-y-3">
-            <h3 className="font-semibold text-foreground flex items-center gap-2">
-              <Search className="w-4 h-4 text-primary" />
-              {lang === 'he' ? 'תוצאות Torrentio' : 'Torrentio Results'}
-              {!imdbId && (
-                <span className="text-xs text-muted-foreground font-normal">
-                  ({lang === 'he' ? 'ממתין ל-IMDB ID...' : 'Waiting for IMDB ID...'})
-                </span>
-              )}
-            </h3>
-            {torrentsLoading && (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 text-primary animate-spin" />
-              </div>
-            )}
-            {!torrentsLoading && streams.length === 0 && imdbId && (
-              <div className="glass rounded-xl p-4 text-center text-muted-foreground text-sm">
-                {lang === 'he' ? 'לא נמצאו טורנטים' : 'No torrents found'}
-              </div>
-            )}
-            {streams.map((stream: TorrentioStream, idx: number) => {
-              const parsed = parseTorrentioTitle(stream.title || '');
-              return (
-                <button
-                  key={idx}
-                  onClick={() => handleStreamSelect(stream, idx)}
-                  disabled={loadingStreamIdx !== null}
-                  className="w-full glass rounded-xl p-3 flex items-start gap-3 tv-focus text-start hover:bg-accent/50 transition-colors disabled:opacity-50"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {loadingStreamIdx === idx ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Download className="w-5 h-5 text-primary" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground" dir="ltr">
-                      {stream.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2" dir="ltr">
-                      {parsed.quality}
-                    </p>
-                    <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                      {parsed.size && <span>💾 {parsed.size}</span>}
-                      {parsed.seeds > 0 && <span>👤 {parsed.seeds}</span>}
-                      {parsed.source && <span className="truncate">{parsed.source}</span>}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* Movie torrent results - shown inline for movies */}
+        {showTorrents && movie.type !== 'series' && renderTorrentResults()}
 
         {showLinkInput && (
           <div className="glass rounded-xl p-4 space-y-3">
@@ -353,6 +371,7 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           </div>
         )}
 
+        {/* Series: Seasons & Episodes */}
         {movie.type === 'series' && seasons.length > 0 && (
           <div>
             <h3 className="font-semibold text-foreground mb-3">{t('seasons')}</h3>
@@ -371,10 +390,26 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                 </button>
               ))}
             </div>
+
+            {/* Episode hint */}
+            {!selectedEpisode && (
+              <p className="text-xs text-muted-foreground mt-2">
+                {lang === 'he' ? '👆 לחץ על פרק כדי לחפש טורנטים' : '👆 Click an episode to search for torrents'}
+              </p>
+            )}
+
             {seasonData?.episodes && (
               <div className="mt-4 space-y-3">
                 {seasonData.episodes.map((ep: any) => (
-                  <button key={ep.id} onClick={() => { setSelectedEpisode(ep.episode_number); setShowTorrents(true); }} className="w-full glass rounded-xl p-3 flex items-center gap-3 tv-focus text-start">
+                  <button
+                    key={ep.id}
+                    onClick={() => { setSelectedEpisode(ep.episode_number); setShowTorrents(true); }}
+                    className={`w-full rounded-xl p-3 flex items-center gap-3 tv-focus text-start transition-all ${
+                      selectedEpisode === ep.episode_number
+                        ? 'ring-2 ring-primary bg-primary/10'
+                        : 'glass hover:bg-accent/50'
+                    }`}
+                  >
                     {ep.still_path ? (
                       <img
                         src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
@@ -396,10 +431,16 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
                         <p className="text-xs text-muted-foreground">{ep.runtime} {t('minutes')}</p>
                       )}
                     </div>
+                    {selectedEpisode === ep.episode_number && (
+                      <Search className="w-4 h-4 text-primary flex-shrink-0" />
+                    )}
                   </button>
                 ))}
               </div>
             )}
+
+            {/* Series torrent results - shown AFTER episodes */}
+            {showTorrents && selectedEpisode !== null && renderTorrentResults()}
           </div>
         )}
 
