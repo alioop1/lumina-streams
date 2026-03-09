@@ -173,6 +173,10 @@ export const VideoPlayer = ({
 
   useEffect(() => {
     attemptedSourcesRef.current = new Set([url]);
+    if (startupTimeoutRef.current) {
+      clearTimeout(startupTimeoutRef.current);
+      startupTimeoutRef.current = null;
+    }
     setPlaybackUrl(url);
     setPlaybackMode('direct');
     setNeedsTranscodeFallback(false);
