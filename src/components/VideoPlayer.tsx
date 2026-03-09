@@ -257,6 +257,7 @@ export const VideoPlayer = ({
   useEffect(() => {
     const video = videoRef.current;
     if (!video || isYouTube) return;
+    video.preload = 'auto';
 
     // Destroy previous HLS instance
     if (hlsRef.current) {
