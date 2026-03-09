@@ -398,6 +398,41 @@ export const VideoPlayer = ({
     };
   }, [playbackUrl, isYouTube, rdFileId, fallbackToTranscode]);
 
+  // Startup fail-safe: if playback is stuck at 0s for too long, switch source
+  useEffect(() => {
+    if (isYouTube) return;
+
+    if (startupTimeoutRef.current) {
+      clearTimeout(startupTimeoutRef.current);
+      startupTimeoutRef.current = null;
+    }
+
+    if (!isBuffering || currentTime > 0) return;
+
+    startupTimeoutRef.current = window.setTimeout(() => {
+      const v = videoRef.current;
+      if (!v) return;
+
+      const isStuckAtStart = v.currentTime < 1 && v.readyState < 3;
+      if (!isStuckAtStart) return;
+
+      if (fallbackToTranscode('startup timeout')) return;
+
+      if (rdFileId) {
+        setNeedsTranscodeFallback(true);
+      } else {
+        setIsBuffering(false);
+      }
+    }, 12000);
+
+    return () => {
+      if (startupTimeoutRef.current) {
+        clearTimeout(startupTimeoutRef.current);
+        startupTimeoutRef.current = null;
+      }
+    };
+  }, [isYouTube, isBuffering, currentTime, rdFileId, fallbackToTranscode]);
+
   /* ═══ Subtitles ═══ */
   useEffect(() => {
     if (!imdbId || isYouTube) return;
