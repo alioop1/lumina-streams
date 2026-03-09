@@ -27,7 +27,10 @@ const resolveIsRTL = (): boolean => {
 
 const getVisibleFocusable = (container: Element): HTMLElement[] =>
   Array.from(container.querySelectorAll<HTMLElement>('.tv-focus'))
-    .filter(el => el.offsetParent !== null && el.getBoundingClientRect().width > 0);
+    .filter(el => {
+       const r = el.getBoundingClientRect();
+       return r.width > 0 && r.height > 0;
+    });
 
 const getSidebarItems = (): HTMLElement[] => {
   const sidebar = document.querySelector('[data-sidebar]');
@@ -52,6 +55,7 @@ const getContentRows = (): NavRow[] => {
 
   for (const c of containers) {
     const rect = c.getBoundingClientRect();
+    const absoluteY = window.scrollY + rect.top;
     if (rect.height === 0) continue;
 
     const items = getVisibleFocusable(c);
@@ -93,7 +97,7 @@ const getContentRows = (): NavRow[] => {
       items.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
     }
 
-    rows.push({ id: c.getAttribute('data-nav-row')!, y: rect.top, items, vertical, grid, gridCols });
+    rows.push({ id: c.getAttribute('data-nav-row')!, y: absoluteY, items, vertical, grid, gridCols });
   }
 
   rows.sort((a, b) => a.y - b.y);
@@ -194,7 +198,7 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
       const goToContent = () => {
         if (rows.length === 0) return;
 
-        const activeY = active.getBoundingClientRect().top + active.getBoundingClientRect().height / 2;
+        const activeY = window.scrollY + active.getBoundingClientRect().top + active.getBoundingClientRect().height / 2;
         let best = rows[0];
         let bestDist = Infinity;
 
