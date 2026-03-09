@@ -314,7 +314,7 @@ export const VideoPlayer = ({
       video.play().catch(() => {});
       return;
     }
-  }, [playbackUrl, isYouTube]);
+  }, [playbackUrl, isYouTube, fallbackToTranscode]);
 
   /* ═══ Video events ═══ */
   useEffect(() => {
