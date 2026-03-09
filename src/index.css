@@ -77,12 +77,13 @@
   .overflow-y-auto {
     contain: layout;
     -webkit-overflow-scrolling: touch;
+    padding-bottom: 1.5rem !important; /* Prevent focus ring cutoff */
+    margin-bottom: -1.5rem; /* Offset the padding */
   }
 
   /* Optimize images globally */
   img {
-    contain-intrinsic-size: auto 200px;
-    content-visibility: auto;
+    /* Removed content-visibility: auto as it breaks bounding client rect height in Android TV causing D-Pad to stuck */
   }
 
   input, textarea {
