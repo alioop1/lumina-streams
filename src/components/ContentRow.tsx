@@ -104,7 +104,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
       <div
         data-nav-row={rowId}
         ref={scrollRef}
-        className="flex gap-4 3xl:gap-6 4k:gap-8 overflow-x-auto px-6 3xl:px-10 4k:px-14 pt-3 3xl:pt-4 pb-4 3xl:pb-5 snap-x snap-mandatory scroll-smooth"
+        className="flex gap-4 3xl:gap-6 4k:gap-8 overflow-x-auto px-6 3xl:px-10 4k:px-14 pt-3 3xl:pt-4 pb-8 3xl:pb-10 snap-x snap-mandatory scroll-smooth"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {movies.map((movie, i) => (
