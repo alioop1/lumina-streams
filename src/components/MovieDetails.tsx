@@ -207,16 +207,8 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
     if (candidates.length === 0) return;
 
-    // Prefer browser-compatible video/audio first, then more seeds
-    candidates.sort((a, b) => {
-      if (a.parsed.videoCompatible !== b.parsed.videoCompatible) {
-        return a.parsed.videoCompatible ? -1 : 1;
-      }
-      if (a.parsed.audioCompatible !== b.parsed.audioCompatible) {
-        return a.parsed.audioCompatible ? -1 : 1;
-      }
-      return b.parsed.seeds - a.parsed.seeds;
-    });
+    // Prefer fast-start profile
+    candidates.sort((a, b) => streamScore(b.stream.title || '') - streamScore(a.stream.title || ''));
 
     await handleStreamSelect(candidates[0].stream, candidates[0].idx);
   };
