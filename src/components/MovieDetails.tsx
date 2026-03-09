@@ -53,14 +53,30 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
     torrentType === 'series' && selectedEpisode !== null ? selectedEpisode : undefined
   );
   const streams = torrentioData?.streams || [];
-  const displayStreams = [...streams].sort((a, b) => {
-    const pa = parseTorrentioTitle(a.title || '');
-    const pb = parseTorrentioTitle(b.title || '');
 
-    if (pa.videoCompatible !== pb.videoCompatible) return pa.videoCompatible ? -1 : 1;
-    if (pa.audioCompatible !== pb.audioCompatible) return pa.audioCompatible ? -1 : 1;
-    return pb.seeds - pa.seeds;
-  });
+  const resolutionWeight = (resolution: string) => {
+    if (resolution === '1080p') return 120;
+    if (resolution === '720p') return 100;
+    if (resolution === '4K') return 40;
+    if (resolution === '480p') return 60;
+    return 80;
+  };
+
+  const streamScore = (title: string) => {
+    const parsed = parseTorrentioTitle(title || '');
+    const sizeWeight = Number.isFinite(parsed.sizeInMB) ? Math.max(0, 130 - parsed.sizeInMB / 140) : 0;
+
+    return (
+      (parsed.isInstant ? 1200 : 0) +
+      (parsed.videoCompatible ? 300 : 0) +
+      (parsed.audioCompatible ? 160 : 0) +
+      resolutionWeight(parsed.resolution) +
+      sizeWeight +
+      parsed.seeds * 2
+    );
+  };
+
+  const displayStreams = [...streams].sort((a, b) => streamScore(b.title || '') - streamScore(a.title || ''));
 
   const [loadingStreamIdx, setLoadingStreamIdx] = useState<number | null>(null);
 
