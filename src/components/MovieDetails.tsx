@@ -90,23 +90,19 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const handleStreamSelect = async (stream: TorrentioStream, idx: number) => {
     let selected = { stream, idx, parsed: parseTorrentioTitle(stream.title || '') };
 
-    if (!selected.parsed.videoCompatible) {
-      const compatibleAlternative = displayStreams
+    // Prefer instant + browser-compatible source if chosen stream is weak
+    if (!selected.parsed.videoCompatible || !selected.parsed.isInstant) {
+      const fastAlternative = displayStreams
         .map((candidate, candidateIdx) => ({
           stream: candidate,
           idx: candidateIdx,
           parsed: parseTorrentioTitle(candidate.title || ''),
         }))
-        .filter((item) => item.parsed.videoCompatible)
-        .sort((a, b) => {
-          if (a.parsed.audioCompatible !== b.parsed.audioCompatible) {
-            return a.parsed.audioCompatible ? -1 : 1;
-          }
-          return b.parsed.seeds - a.parsed.seeds;
-        })[0];
+        .filter((item) => item.parsed.videoCompatible && item.parsed.isInstant)
+        .sort((a, b) => streamScore(b.stream.title || '') - streamScore(a.stream.title || ''))[0];
 
-      if (compatibleAlternative) {
-        selected = compatibleAlternative;
+      if (fastAlternative) {
+        selected = fastAlternative;
       }
     }
 
@@ -119,23 +115,55 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
     try {
       if (link.startsWith('magnet:')) {
         const result = await addMagnet.mutateAsync(link);
-        const pollForLinks = async (torrentId: string, retries = 15): Promise<{ url: string; fileId: string } | null> => {
+        const pollForLinks = async (
+          torrentId: string,
+          retries: number
+        ): Promise<{ url: string; fileId: string } | null> => {
           const { realDebrid } = await import('@/lib/realDebrid');
+
           for (let i = 0; i < retries; i++) {
-            await new Promise(r => setTimeout(r, 2000));
+            await new Promise(r => setTimeout(r, 1500));
             const info = await realDebrid.getTorrentInfo(torrentId);
+
             if (info.links && info.links.length > 0) {
               const unrestricted = await unrestrict.mutateAsync(info.links[0]);
               return { url: unrestricted.download, fileId: unrestricted.id };
             }
-            if (info.status === 'error' || info.status === 'dead') break;
+
+            if (['error', 'dead', 'magnet_error', 'virus'].includes(info.status)) break;
+
+            // If torrent is not instant-cached, don't wait long
+            if (
+              !selected.parsed.isInstant &&
+              ['downloading', 'queued', 'waiting_files_selection'].includes(info.status) &&
+              i >= 2
+            ) {
+              break;
+            }
           }
+
           return null;
         };
-        const result2 = await pollForLinks(result.id);
+
+        const result2 = await pollForLinks(result.id, selected.parsed.isInstant ? 10 : 4);
+
         if (result2) {
           setStreamUrl(result2.url);
           setRdFileId(result2.fileId);
+        } else if (!selected.parsed.isInstant) {
+          const instantFallback = displayStreams
+            .map((candidate, candidateIdx) => ({
+              stream: candidate,
+              idx: candidateIdx,
+              parsed: parseTorrentioTitle(candidate.title || ''),
+            }))
+            .filter((item) => item.idx !== selected.idx && item.parsed.videoCompatible && item.parsed.isInstant)
+            .sort((a, b) => streamScore(b.stream.title || '') - streamScore(a.stream.title || ''))[0];
+
+          if (instantFallback) {
+            await handleStreamSelect(instantFallback.stream, instantFallback.idx);
+            return;
+          }
         }
       } else {
         const result3 = await unrestrict.mutateAsync(link);
