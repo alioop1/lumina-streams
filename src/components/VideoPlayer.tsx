@@ -108,6 +108,7 @@ export const VideoPlayer = ({
   const hideTimerRef = useRef<number | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const attemptedSourcesRef = useRef<Set<string>>(new Set());
+  const startupTimeoutRef = useRef<number | null>(null);
 
   const { data: transcodeData } = useRDTranscode(rdFileId || null);
 
