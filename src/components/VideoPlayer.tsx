@@ -766,8 +766,8 @@ export const VideoPlayer = ({
         ref={videoRef}
         className="w-full h-full object-contain"
         autoPlay
+        preload="auto"
         playsInline
-        crossOrigin="anonymous"
       />
 
       {isBuffering && (
