@@ -18,7 +18,7 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
       data-card-index={index}
     >
       {/* Feature: Full border frame on poster — no clipping */}
-      <div className="relative rounded-xl 4k:rounded-2xl aspect-[2/3] mb-2 3xl:mb-3 movie-card-poster bg-card overflow-hidden ring-1 ring-border/20">
+      <div className="relative rounded-xl 4k:rounded-2xl aspect-[2/3] mb-2 3xl:mb-3 movie-card-poster bg-transparent overflow-hidden ring-1 ring-border/20">
         {movie.poster ? (
           <img
             src={movie.poster}
