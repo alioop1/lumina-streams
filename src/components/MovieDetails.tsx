@@ -53,14 +53,30 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
     torrentType === 'series' && selectedEpisode !== null ? selectedEpisode : undefined
   );
   const streams = torrentioData?.streams || [];
-  const displayStreams = [...streams].sort((a, b) => {
-    const pa = parseTorrentioTitle(a.title || '');
-    const pb = parseTorrentioTitle(b.title || '');
 
-    if (pa.videoCompatible !== pb.videoCompatible) return pa.videoCompatible ? -1 : 1;
-    if (pa.audioCompatible !== pb.audioCompatible) return pa.audioCompatible ? -1 : 1;
-    return pb.seeds - pa.seeds;
-  });
+  const resolutionWeight = (resolution: string) => {
+    if (resolution === '1080p') return 120;
+    if (resolution === '720p') return 100;
+    if (resolution === '4K') return 40;
+    if (resolution === '480p') return 60;
+    return 80;
+  };
+
+  const streamScore = (title: string) => {
+    const parsed = parseTorrentioTitle(title || '');
+    const sizeWeight = Number.isFinite(parsed.sizeInMB) ? Math.max(0, 130 - parsed.sizeInMB / 140) : 0;
+
+    return (
+      (parsed.isInstant ? 1200 : 0) +
+      (parsed.videoCompatible ? 300 : 0) +
+      (parsed.audioCompatible ? 160 : 0) +
+      resolutionWeight(parsed.resolution) +
+      sizeWeight +
+      parsed.seeds * 2
+    );
+  };
+
+  const displayStreams = [...streams].sort((a, b) => streamScore(b.title || '') - streamScore(a.title || ''));
 
   const [loadingStreamIdx, setLoadingStreamIdx] = useState<number | null>(null);
 
@@ -74,23 +90,19 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const handleStreamSelect = async (stream: TorrentioStream, idx: number) => {
     let selected = { stream, idx, parsed: parseTorrentioTitle(stream.title || '') };
 
-    if (!selected.parsed.videoCompatible) {
-      const compatibleAlternative = displayStreams
+    // Prefer instant + browser-compatible source if chosen stream is weak
+    if (!selected.parsed.videoCompatible || !selected.parsed.isInstant) {
+      const fastAlternative = displayStreams
         .map((candidate, candidateIdx) => ({
           stream: candidate,
           idx: candidateIdx,
           parsed: parseTorrentioTitle(candidate.title || ''),
         }))
-        .filter((item) => item.parsed.videoCompatible)
-        .sort((a, b) => {
-          if (a.parsed.audioCompatible !== b.parsed.audioCompatible) {
-            return a.parsed.audioCompatible ? -1 : 1;
-          }
-          return b.parsed.seeds - a.parsed.seeds;
-        })[0];
+        .filter((item) => item.parsed.videoCompatible && item.parsed.isInstant)
+        .sort((a, b) => streamScore(b.stream.title || '') - streamScore(a.stream.title || ''))[0];
 
-      if (compatibleAlternative) {
-        selected = compatibleAlternative;
+      if (fastAlternative) {
+        selected = fastAlternative;
       }
     }
 
@@ -103,23 +115,55 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
     try {
       if (link.startsWith('magnet:')) {
         const result = await addMagnet.mutateAsync(link);
-        const pollForLinks = async (torrentId: string, retries = 15): Promise<{ url: string; fileId: string } | null> => {
+        const pollForLinks = async (
+          torrentId: string,
+          retries: number
+        ): Promise<{ url: string; fileId: string } | null> => {
           const { realDebrid } = await import('@/lib/realDebrid');
+
           for (let i = 0; i < retries; i++) {
-            await new Promise(r => setTimeout(r, 2000));
+            await new Promise(r => setTimeout(r, 1500));
             const info = await realDebrid.getTorrentInfo(torrentId);
+
             if (info.links && info.links.length > 0) {
               const unrestricted = await unrestrict.mutateAsync(info.links[0]);
               return { url: unrestricted.download, fileId: unrestricted.id };
             }
-            if (info.status === 'error' || info.status === 'dead') break;
+
+            if (['error', 'dead', 'magnet_error', 'virus'].includes(info.status)) break;
+
+            // If torrent is not instant-cached, don't wait long
+            if (
+              !selected.parsed.isInstant &&
+              ['downloading', 'queued', 'waiting_files_selection'].includes(info.status) &&
+              i >= 2
+            ) {
+              break;
+            }
           }
+
           return null;
         };
-        const result2 = await pollForLinks(result.id);
+
+        const result2 = await pollForLinks(result.id, selected.parsed.isInstant ? 10 : 4);
+
         if (result2) {
           setStreamUrl(result2.url);
           setRdFileId(result2.fileId);
+        } else if (!selected.parsed.isInstant) {
+          const instantFallback = displayStreams
+            .map((candidate, candidateIdx) => ({
+              stream: candidate,
+              idx: candidateIdx,
+              parsed: parseTorrentioTitle(candidate.title || ''),
+            }))
+            .filter((item) => item.idx !== selected.idx && item.parsed.videoCompatible && item.parsed.isInstant)
+            .sort((a, b) => streamScore(b.stream.title || '') - streamScore(a.stream.title || ''))[0];
+
+          if (instantFallback) {
+            await handleStreamSelect(instantFallback.stream, instantFallback.idx);
+            return;
+          }
         }
       } else {
         const result3 = await unrestrict.mutateAsync(link);
@@ -163,16 +207,8 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
 
     if (candidates.length === 0) return;
 
-    // Prefer browser-compatible video/audio first, then more seeds
-    candidates.sort((a, b) => {
-      if (a.parsed.videoCompatible !== b.parsed.videoCompatible) {
-        return a.parsed.videoCompatible ? -1 : 1;
-      }
-      if (a.parsed.audioCompatible !== b.parsed.audioCompatible) {
-        return a.parsed.audioCompatible ? -1 : 1;
-      }
-      return b.parsed.seeds - a.parsed.seeds;
-    });
+    // Prefer fast-start profile
+    candidates.sort((a, b) => streamScore(b.stream.title || '') - streamScore(a.stream.title || ''));
 
     await handleStreamSelect(candidates[0].stream, candidates[0].idx);
   };

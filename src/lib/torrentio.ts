@@ -182,9 +182,21 @@ const detectHDR = (title: string): string => {
   return '';
 };
 
+const parseSizeToMB = (size: string): number => {
+  const match = size.match(/([\d.]+)\s*(GB|MB)/i);
+  if (!match) return Number.POSITIVE_INFINITY;
+  const value = Number(match[1]);
+  const unit = match[2].toUpperCase();
+  return unit === 'GB' ? value * 1024 : value;
+};
+
+const detectInstantAvailability = (title: string): boolean =>
+  /⚡|instant|cached|rd\+|real-?debrid/i.test(title);
+
 export interface ParsedTorrentInfo {
   quality: string;
   size: string;
+  sizeInMB: number;
   seeds: number;
   source: string;
   languages: string[];
@@ -195,6 +207,7 @@ export interface ParsedTorrentInfo {
   resolution: string;
   sourceType: string;
   hdr: string;
+  isInstant: boolean;
 }
 
 export const parseTorrentioTitle = (title: string): ParsedTorrentInfo => {
@@ -208,10 +221,12 @@ export const parseTorrentioTitle = (title: string): ParsedTorrentInfo => {
   const resolution = detectResolution(title);
   const sourceType = detectSourceType(title);
   const hdr = detectHDR(title);
+  const size = sizeMatch?.[1] || '';
 
   return {
     quality: lines[0]?.replace(/💾.*/, '').replace(/👤.*/, '').trim() || '',
-    size: sizeMatch?.[1] || '',
+    size,
+    sizeInMB: parseSizeToMB(size),
     seeds: seedMatch ? parseInt(seedMatch[1]) : 0,
     source: lines[1] || '',
     languages,
@@ -222,6 +237,7 @@ export const parseTorrentioTitle = (title: string): ParsedTorrentInfo => {
     resolution,
     sourceType,
     hdr,
+    isInstant: detectInstantAvailability(title),
   };
 };
 

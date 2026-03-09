@@ -108,6 +108,7 @@ export const VideoPlayer = ({
   const hideTimerRef = useRef<number | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const attemptedSourcesRef = useRef<Set<string>>(new Set());
+  const startupTimeoutRef = useRef<number | null>(null);
 
   const { data: transcodeData } = useRDTranscode(rdFileId || null);
 
@@ -172,6 +173,10 @@ export const VideoPlayer = ({
 
   useEffect(() => {
     attemptedSourcesRef.current = new Set([url]);
+    if (startupTimeoutRef.current) {
+      clearTimeout(startupTimeoutRef.current);
+      startupTimeoutRef.current = null;
+    }
     setPlaybackUrl(url);
     setPlaybackMode('direct');
     setNeedsTranscodeFallback(false);
@@ -252,6 +257,7 @@ export const VideoPlayer = ({
   useEffect(() => {
     const video = videoRef.current;
     if (!video || isYouTube) return;
+    video.preload = 'auto';
 
     // Destroy previous HLS instance
     if (hlsRef.current) {
@@ -308,7 +314,7 @@ export const VideoPlayer = ({
       video.play().catch(() => {});
       return;
     }
-  }, [playbackUrl, isYouTube]);
+  }, [playbackUrl, isYouTube, fallbackToTranscode]);
 
   /* ═══ Video events ═══ */
   useEffect(() => {
@@ -391,6 +397,41 @@ export const VideoPlayer = ({
       v.removeEventListener('error', onError);
     };
   }, [playbackUrl, isYouTube, rdFileId, fallbackToTranscode]);
+
+  // Startup fail-safe: if playback is stuck at 0s for too long, switch source
+  useEffect(() => {
+    if (isYouTube) return;
+
+    if (startupTimeoutRef.current) {
+      clearTimeout(startupTimeoutRef.current);
+      startupTimeoutRef.current = null;
+    }
+
+    if (!isBuffering || currentTime > 0) return;
+
+    startupTimeoutRef.current = window.setTimeout(() => {
+      const v = videoRef.current;
+      if (!v) return;
+
+      const isStuckAtStart = v.currentTime < 1 && v.readyState < 3;
+      if (!isStuckAtStart) return;
+
+      if (fallbackToTranscode('startup timeout')) return;
+
+      if (rdFileId) {
+        setNeedsTranscodeFallback(true);
+      } else {
+        setIsBuffering(false);
+      }
+    }, 12000);
+
+    return () => {
+      if (startupTimeoutRef.current) {
+        clearTimeout(startupTimeoutRef.current);
+        startupTimeoutRef.current = null;
+      }
+    };
+  }, [isYouTube, isBuffering, currentTime, rdFileId, fallbackToTranscode]);
 
   /* ═══ Subtitles ═══ */
   useEffect(() => {
@@ -725,8 +766,8 @@ export const VideoPlayer = ({
         ref={videoRef}
         className="w-full h-full object-contain"
         autoPlay
+        preload="auto"
         playsInline
-        crossOrigin="anonymous"
       />
 
       {isBuffering && (
