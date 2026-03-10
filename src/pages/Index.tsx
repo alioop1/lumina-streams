@@ -21,7 +21,6 @@ const Index = () => {
   const handleMovieClick = useCallback((movie: Movie) => setSelectedMovie(movie), []);
   const handleBack = useCallback(() => setSelectedMovie(null), []);
 
-  // Feature: Scroll to top when returning from movie details
   useEffect(() => {
     if (!selectedMovie) {
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
@@ -41,10 +40,10 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 3xl:pb-28 4k:pb-32 page-enter">
+    <div className="min-h-screen bg-background pb-24 3xl:pb-32 4k:pb-40 page-enter">
       <HeroBanner movies={trending || []} onInfoClick={handleMovieClick} />
 
-      <div className="mt-6 3xl:mt-10 4k:mt-12 space-y-2 3xl:space-y-4">
+      <div className="mt-4 3xl:mt-6 4k:mt-8 space-y-1 3xl:space-y-2">
         <ContentRow
           rowId="trending"
           title={t('trendingNow')}

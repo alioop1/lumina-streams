@@ -14,11 +14,10 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
 
   return (
     <div
-      className="flex-shrink-0 w-[140px] sm:w-[160px] md:w-[200px] 3xl:w-[260px] 4k:w-[320px] tv:w-[400px] snap-start cursor-pointer text-start bg-transparent border-none p-0 outline-none"
+      className="flex-shrink-0 w-[130px] sm:w-[150px] md:w-[170px] 3xl:w-[190px] 4k:w-[210px] tv:w-[230px] snap-start cursor-pointer text-start bg-transparent border-none p-0 outline-none"
       data-card-index={index}
     >
-      {/* Feature: Full border frame on poster — no clipping */}
-      <div className="relative rounded-xl 4k:rounded-2xl aspect-[2/3] mb-2 3xl:mb-3 movie-card-poster bg-card overflow-hidden ring-1 ring-border/20">
+      <div className="relative rounded-lg 3xl:rounded-xl aspect-[2/3] mb-1.5 3xl:mb-2 movie-card-poster bg-card overflow-hidden ring-1 ring-border/20">
         {movie.poster ? (
           <img
             src={movie.poster}
@@ -29,27 +28,27 @@ export const MovieCard = memo(({ movie, index }: MovieCardProps) => {
           />
         ) : (
           <div className="w-full h-full bg-muted flex items-center justify-center">
-            <span className="text-muted-foreground text-xs 3xl:text-sm 4k:text-base">No Image</span>
+            <span className="text-muted-foreground text-xs 3xl:text-sm">No Image</span>
           </div>
         )}
         {movie.quality && (
-          <div className="absolute top-2 end-2 3xl:top-3 3xl:end-3 bg-primary/90 backdrop-blur-sm rounded px-1.5 py-0.5 3xl:px-2 3xl:py-1 z-10">
-            <span className="text-[10px] 3xl:text-xs 4k:text-sm font-bold text-primary-foreground tracking-wide">{movie.quality}</span>
+          <div className="absolute top-1.5 end-1.5 3xl:top-2 3xl:end-2 bg-primary/90 backdrop-blur-sm rounded px-1.5 py-0.5 3xl:px-2 3xl:py-0.5 z-10">
+            <span className="text-[10px] 3xl:text-xs font-bold text-primary-foreground tracking-wide">{movie.quality}</span>
           </div>
         )}
         {/* Hover/focus overlay */}
         <div className="movie-card-overlay absolute inset-0 bg-gradient-to-t from-background/75 via-transparent to-transparent opacity-0 transition-opacity duration-150 pointer-events-none flex flex-col items-center justify-center gap-2">
-          <div className="w-10 h-10 3xl:w-14 3xl:h-14 4k:w-16 4k:h-16 rounded-full bg-primary/90 flex items-center justify-center">
-            <Play className="w-4 h-4 3xl:w-6 3xl:h-6 4k:w-7 4k:h-7 text-primary-foreground fill-primary-foreground ms-0.5" />
+          <div className="w-9 h-9 3xl:w-11 3xl:h-11 4k:w-12 4k:h-12 rounded-full bg-primary/90 flex items-center justify-center">
+            <Play className="w-4 h-4 3xl:w-5 3xl:h-5 4k:w-5 4k:h-5 text-primary-foreground fill-primary-foreground ms-0.5" />
           </div>
-          <div className="absolute bottom-2 start-2 3xl:bottom-3 3xl:start-3 flex items-center gap-1">
-            <Star className="w-3 h-3 3xl:w-4 3xl:h-4 text-primary fill-primary" />
-            <span className="text-xs 3xl:text-sm font-semibold text-foreground">{movie.rating}</span>
+          <div className="absolute bottom-1.5 start-1.5 3xl:bottom-2 3xl:start-2 flex items-center gap-1">
+            <Star className="w-3 h-3 3xl:w-3.5 3xl:h-3.5 text-primary fill-primary" />
+            <span className="text-xs font-semibold text-foreground">{movie.rating}</span>
           </div>
         </div>
       </div>
-      <h3 className="text-sm 3xl:text-base 4k:text-lg tv:text-xl font-medium text-foreground truncate">{displayTitle}</h3>
-      <p className="text-xs 3xl:text-sm 4k:text-base text-muted-foreground">
+      <h3 className="text-xs 3xl:text-sm 4k:text-base tv:text-base font-medium text-foreground truncate">{displayTitle}</h3>
+      <p className="text-[11px] 3xl:text-xs 4k:text-sm text-muted-foreground">
         {movie.year}{movie.genres?.[0] ? ` · ${movie.genres[0]}` : ''}
       </p>
     </div>

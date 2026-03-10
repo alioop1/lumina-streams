@@ -57,11 +57,6 @@
     text-rendering: optimizeSpeed;
   }
 
-  /* GPU-accelerated compositing for TV/streamer chipsets */
-  #root {
-    contain: layout style;
-  }
-
   /* Force GPU layer promotion on focusable elements */
   .tv-focus,
   .focus-card {
@@ -72,10 +67,8 @@
     will-change: transform;
   }
 
-  /* Reduce paint on scrollable areas */
-  .overflow-x-auto,
-  .overflow-y-auto {
-    contain: layout;
+  /* Reduce paint on scrollable areas — NO contain: layout (breaks scrollIntoView) */
+  .overflow-x-auto {
     -webkit-overflow-scrolling: touch;
   }
 
@@ -179,7 +172,6 @@
   .focus-card {
     transition: transform 0.12s ease-out;
     will-change: transform;
-    contain: layout style;
   }
 
   .focus-card:focus-visible {
@@ -209,11 +201,6 @@
     -webkit-transform: translateZ(0);
     backface-visibility: hidden;
     will-change: transform;
-  }
-
-  /* Contain paint on card grids */
-  [data-nav-row] {
-    contain: layout;
   }
 
   /* Feature: Auto-hide cursor in fullscreen player */
