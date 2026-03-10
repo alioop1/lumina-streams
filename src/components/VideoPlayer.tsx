@@ -702,9 +702,21 @@ export const VideoPlayer = ({
     if (!v) return;
     const vAny = v as any;
     if (!vAny.audioTracks) return;
+    // Preserve playback position when switching audio
+    const savedTime = v.currentTime;
+    const wasPlaying = !v.paused;
     for (let i = 0; i < vAny.audioTracks.length; i++) {
       vAny.audioTracks[i].enabled = (i === trackId);
     }
+    // Restore position after audio track switch
+    requestAnimationFrame(() => {
+      if (v.currentTime !== savedTime) {
+        v.currentTime = savedTime;
+      }
+      if (wasPlaying && v.paused) {
+        v.play().catch(() => {});
+      }
+    });
     setSelectedAudioTrack(trackId);
     setAudioTracks(prev => prev.map((t, i) => ({ ...t, enabled: i === trackId })));
     setSettingsPanel('main');
