@@ -66,10 +66,8 @@ const getContentRows = (): NavRow[] => {
       const xSpread = Math.max(...rects.map(r => r.left)) - Math.min(...rects.map(r => r.left));
       const ySpread = Math.max(...rects.map(r => r.top)) - Math.min(...rects.map(r => r.top));
 
-      // Detect grid: both spreads are significant
       if (xSpread > 20 && ySpread > 20 && items.length > 2) {
         grid = true;
-        // Count columns by checking how many items share roughly the same Y as the first item
         const firstY = rects[0].top;
         gridCols = rects.filter(r => Math.abs(r.top - firstY) < 20).length;
         if (gridCols < 1) gridCols = 1;
@@ -81,7 +79,6 @@ const getContentRows = (): NavRow[] => {
     if (vertical) {
       items.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
     } else if (grid) {
-      // Sort grid items: top-to-bottom, then left-to-right within same row
       items.sort((a, b) => {
         const ar = a.getBoundingClientRect();
         const br = b.getBoundingClientRect();
@@ -104,11 +101,11 @@ const focusEl = (el: HTMLElement | undefined, alignRowStart = false) => {
   if (!el) return;
   const isRTL = resolveIsRTL();
 
-  el.focus({ preventScroll: true });
+  el.focus({ preventScroll: false });
 
   if (alignRowStart) {
     el.scrollIntoView({
-      behavior: 'auto',
+      behavior: 'smooth',
       block: 'nearest',
       inline: isRTL ? 'end' : 'start',
     });
@@ -116,7 +113,7 @@ const focusEl = (el: HTMLElement | undefined, alignRowStart = false) => {
   }
 
   el.scrollIntoView({
-    behavior: 'auto',
+    behavior: 'smooth',
     block: 'nearest',
     inline: 'nearest',
   });
@@ -188,7 +185,7 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
           }
         }
 
-        best.focus({ preventScroll: true });
+        best.focus({ preventScroll: false });
       };
 
       const goToContent = () => {
@@ -218,9 +215,9 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
         const idx = sidebarItems.indexOf(active);
 
         if (key === 'ArrowUp' && idx > 0) {
-          sidebarItems[idx - 1].focus({ preventScroll: true });
+          sidebarItems[idx - 1].focus({ preventScroll: false });
         } else if (key === 'ArrowDown' && idx < sidebarItems.length - 1) {
-          sidebarItems[idx + 1].focus({ preventScroll: true });
+          sidebarItems[idx + 1].focus({ preventScroll: false });
         } else if (key === towardContent) {
           goToContent();
         }
@@ -252,7 +249,15 @@ export const useTVGlobalNavigation = (enabled: boolean) => {
           const idx = prev.vertical ? 0 : (isRTL ? prev.items.length - 1 : 0);
           focusEl(prev.items[idx], true);
         } else {
-          goToSidebar();
+          // At the very top row — scroll page to top so hero is visible
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          // Try to focus the first focusable in the hero or sidebar
+          const heroRow = rows.find(r => r.id === 'hero-actions');
+          if (heroRow && heroRow.items.length > 0) {
+            focusEl(heroRow.items[0], true);
+          } else {
+            goToSidebar();
+          }
         }
       };
 
