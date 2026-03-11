@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowRight, ArrowLeft, Play, Star, Plus, Share2, Link, Loader2, Search, Download } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Play, Star, Plus, Check, Share2, Link, Loader2, Search, Download } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMovieDetails, useSeason } from '@/hooks/useTMDB';
@@ -7,6 +7,8 @@ import { useRDUnrestrict, useRDAddMagnet } from '@/hooks/useRealDebrid';
 import { useTorrentioSearch } from '@/hooks/useTorrentio';
 import { parseTorrentioTitle, streamToMagnet, type TorrentioStream } from '@/lib/torrentio';
 import { VideoPlayer } from './VideoPlayer';
+import { useWatchlist, useWatchHistory } from '@/hooks/useWatchlist';
+import { useToast } from '@/hooks/use-toast';
 
 interface MovieDetailsProps {
   movie: Movie;
@@ -16,6 +18,9 @@ interface MovieDetailsProps {
 export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const backdrop = movie.backdrop || movie.poster;
   const { t, lang, dir } = useLanguage();
+  const { toast } = useToast();
+  const watchlist = useWatchlist();
+  const history = useWatchHistory();
   const displayTitle = lang === 'he' ? (movie.titleHe || movie.title) : movie.title;
   const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
 
@@ -214,6 +219,9 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   };
 
   if (streamUrl) {
+    // Track in watch history
+    history.addToHistory(movie);
+
     return (
       <VideoPlayer
         url={streamUrl}
@@ -443,13 +451,24 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           </button>
           <button
             onClick={() => {
-              const text = `${displayTitle} (${detailMovie.year})`;
-              navigator.clipboard.writeText(text);
-              alert(lang === 'he' ? 'נוסף לרשימה!' : 'Added to watchlist!');
+              watchlist.toggle(movie);
+              const wasInList = watchlist.isInList(movie.id);
+              toast({
+                title: wasInList
+                  ? (lang === 'he' ? '✗ הוסר מהרשימה' : '✗ Removed from watchlist')
+                  : (lang === 'he' ? '✓ נוסף לרשימה' : '✓ Added to watchlist'),
+                description: displayTitle,
+              });
             }}
-            className="glass w-14 h-14 3xl:w-16 3xl:h-16 4k:w-18 4k:h-18 rounded-xl 3xl:rounded-2xl flex items-center justify-center text-foreground transition-colors tv-focus"
+            className={`glass w-14 h-14 3xl:w-16 3xl:h-16 4k:w-18 4k:h-18 rounded-xl 3xl:rounded-2xl flex items-center justify-center transition-colors tv-focus ${
+              watchlist.isInList(movie.id) ? 'text-primary bg-primary/20' : 'text-foreground'
+            }`}
           >
-            <Plus className="w-6 h-6 3xl:w-7 3xl:h-7" />
+            {watchlist.isInList(movie.id) ? (
+              <Check className="w-6 h-6 3xl:w-7 3xl:h-7" />
+            ) : (
+              <Plus className="w-6 h-6 3xl:w-7 3xl:h-7" />
+            )}
           </button>
           <button
             onClick={handleShare}

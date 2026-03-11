@@ -4,19 +4,21 @@ import { ContentRow } from '@/components/ContentRow';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTrending, usePopular, useTopRated } from '@/hooks/useTMDB';
+import { useWatchHistory } from '@/hooks/useWatchlist';
 import { Loader2 } from 'lucide-react';
 
 const MovieDetails = lazy(() => import('@/components/MovieDetailsLazy'));
 
 const Index = () => {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const { data: trending, isLoading: trendingLoading } = useTrending('all', 'week');
   const { data: popular, isLoading: popularLoading } = usePopular('movie');
   const { data: topRated } = useTopRated('movie');
   const { data: popularTV } = usePopular('tv');
   const { data: topRatedTV } = useTopRated('tv');
+  const history = useWatchHistory();
 
   const handleMovieClick = useCallback((movie: Movie) => setSelectedMovie(movie), []);
   const handleBack = useCallback(() => setSelectedMovie(null), []);
@@ -44,6 +46,16 @@ const Index = () => {
       <HeroBanner movies={trending || []} onInfoClick={handleMovieClick} />
 
       <div className="mt-4 3xl:mt-6 4k:mt-8 space-y-1 3xl:space-y-2">
+        {/* Feature: Continue watching / recently viewed */}
+        {history.items.length > 0 && (
+          <ContentRow
+            rowId="history"
+            title={lang === 'he' ? 'צפית לאחרונה' : 'Recently Watched'}
+            movies={history.items.slice(0, 20)}
+            onMovieClick={handleMovieClick}
+          />
+        )}
+
         <ContentRow
           rowId="trending"
           title={t('trendingNow')}
