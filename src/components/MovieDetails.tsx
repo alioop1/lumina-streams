@@ -18,6 +18,9 @@ interface MovieDetailsProps {
 export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   const backdrop = movie.backdrop || movie.poster;
   const { t, lang, dir } = useLanguage();
+  const { toast } = useToast();
+  const watchlist = useWatchlist();
+  const history = useWatchHistory();
   const displayTitle = lang === 'he' ? (movie.titleHe || movie.title) : movie.title;
   const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
 
