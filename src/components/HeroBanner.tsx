@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Plus, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Plus, Check, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useWatchlist } from '@/hooks/useWatchlist';
 import { useToast } from '@/hooks/use-toast';
 
 interface HeroBannerProps {
@@ -16,10 +17,10 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
   const movie = heroMovies[current];
   const { t, lang, dir } = useLanguage();
   const { toast } = useToast();
+  const watchlist = useWatchlist();
   const isRTL = dir === 'rtl';
   const timerRef = useRef<ReturnType<typeof setInterval>>();
 
-  // Feature: Auto-rotate with smooth crossfade
   useEffect(() => {
     if (heroMovies.length <= 1) return;
     timerRef.current = setInterval(() => {
@@ -32,7 +33,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
     return () => clearInterval(timerRef.current);
   }, [heroMovies.length]);
 
-  // Feature: Preload next hero image
   useEffect(() => {
     if (heroMovies.length <= 1) return;
     const nextIdx = (current + 1) % heroMovies.length;
@@ -53,7 +53,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
     }, 300);
   }, [current]);
 
-  // Feature: Manual prev/next
   const goPrev = useCallback(() => {
     goTo((current - 1 + heroMovies.length) % heroMovies.length);
   }, [current, heroMovies.length, goTo]);
@@ -67,21 +66,24 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
   }, [movie, onInfoClick]);
 
   const handleAddToList = useCallback(() => {
-    if (movie) {
-      toast({
-        title: lang === 'he' ? '✓ נוסף לרשימה' : '✓ Added to list',
-        description: lang === 'he' ? (movie.titleHe || movie.title) : movie.title,
-      });
-    }
-  }, [movie, lang, toast]);
+    if (!movie) return;
+    watchlist.toggle(movie);
+    const inList = watchlist.isInList(movie.id);
+    toast({
+      title: inList
+        ? (lang === 'he' ? '✗ הוסר מהרשימה' : '✗ Removed from list')
+        : (lang === 'he' ? '✓ נוסף לרשימה' : '✓ Added to list'),
+      description: lang === 'he' ? (movie.titleHe || movie.title) : movie.title,
+    });
+  }, [movie, lang, toast, watchlist]);
 
   if (!movie) return <div className="w-full h-[70vh] bg-background" />;
 
   const displayTitle = lang === 'he' ? (movie.titleHe || movie.title) : movie.title;
+  const inWatchlist = watchlist.isInList(movie.id);
 
   return (
     <div className="relative w-full h-[70vh] 3xl:h-[75vh] 4k:h-[80vh] overflow-hidden" dir={dir} style={{ contain: 'layout style paint' }}>
-      {/* Background image with crossfade */}
       <div className={`absolute inset-0 transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
         <img
           src={movie.backdrop || movie.poster}
@@ -93,7 +95,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
       <div className="absolute inset-0 gradient-fade-bottom" />
       <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background" />
 
-      {/* Feature: Prev/Next arrows */}
       {heroMovies.length > 1 && (
         <>
           <button
@@ -121,7 +122,6 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
           {movie.overview}
         </p>
 
-        {/* Hero buttons row */}
         <div data-nav-row="hero-actions" className="flex items-center gap-3 3xl:gap-4 4k:gap-5">
           <button
             onClick={handlePlay}
@@ -139,13 +139,18 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
           </button>
           <button
             onClick={handleAddToList}
-            className="tv-focus glass w-12 h-12 3xl:w-14 3xl:h-14 4k:w-16 4k:h-16 rounded-full flex items-center justify-center text-foreground outline-none"
+            className={`tv-focus glass w-12 h-12 3xl:w-14 3xl:h-14 4k:w-16 4k:h-16 rounded-full flex items-center justify-center outline-none transition-colors ${
+              inWatchlist ? 'text-primary bg-primary/20' : 'text-foreground'
+            }`}
           >
-            <Plus className="w-5 h-5 3xl:w-6 3xl:h-6 4k:w-7 4k:h-7" />
+            {inWatchlist ? (
+              <Check className="w-5 h-5 3xl:w-6 3xl:h-6 4k:w-7 4k:h-7" />
+            ) : (
+              <Plus className="w-5 h-5 3xl:w-6 3xl:h-6 4k:w-7 4k:h-7" />
+            )}
           </button>
         </div>
 
-        {/* Feature: Dot indicators */}
         {heroMovies.length > 1 && (
           <div className="flex items-center gap-2 3xl:gap-3 pt-2">
             {heroMovies.map((_, idx) => (
