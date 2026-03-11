@@ -219,6 +219,9 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
   };
 
   if (streamUrl) {
+    // Track in watch history
+    history.addToHistory(movie);
+
     return (
       <VideoPlayer
         url={streamUrl}
