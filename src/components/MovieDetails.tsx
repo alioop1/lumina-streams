@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowRight, ArrowLeft, Play, Star, Plus, Share2, Link, Loader2, Search, Download } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Play, Star, Plus, Check, Share2, Link, Loader2, Search, Download } from 'lucide-react';
 import { Movie } from '@/lib/mockData';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMovieDetails, useSeason } from '@/hooks/useTMDB';
@@ -7,6 +7,8 @@ import { useRDUnrestrict, useRDAddMagnet } from '@/hooks/useRealDebrid';
 import { useTorrentioSearch } from '@/hooks/useTorrentio';
 import { parseTorrentioTitle, streamToMagnet, type TorrentioStream } from '@/lib/torrentio';
 import { VideoPlayer } from './VideoPlayer';
+import { useWatchlist, useWatchHistory } from '@/hooks/useWatchlist';
+import { useToast } from '@/hooks/use-toast';
 
 interface MovieDetailsProps {
   movie: Movie;
