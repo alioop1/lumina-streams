@@ -8,6 +8,11 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { useTVGlobalNavigation } from "@/hooks/use-tv";
+import { useFocusMemory } from "@/hooks/useFocusMemory";
+import { NetworkIndicator } from "@/components/NetworkIndicator";
+import { StatusBar } from "@/components/StatusBar";
+import { ScreenSaver } from "@/components/ScreenSaver";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import SearchRoute from "./pages/Search";
 import Watchlist from "./pages/Watchlist";
@@ -21,7 +26,6 @@ const AppLayout = () => {
   const { dir } = useLanguage();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
-  // Collapse/expand sidebar based on focus location
   const handleFocusChange = useCallback(() => {
     const active = document.activeElement as HTMLElement;
     if (!active) return;
@@ -35,16 +39,23 @@ const AppLayout = () => {
   }, [handleFocusChange]);
 
   useTVGlobalNavigation(true);
-
-  // Responsive sidebar margin: scales with TV breakpoints
-  const mainMargin = sidebarCollapsed
-    ? 'ms-20 3xl:ms-24 4k:ms-28'
-    : 'ms-60 3xl:ms-64 4k:ms-72';
+  useFocusMemory();
 
   return (
-    <div className="min-h-screen flex w-full bg-background text-foreground" dir={dir}>
+    <div className="min-h-screen bg-background text-foreground" dir={dir}>
       <AppSidebar collapsed={sidebarCollapsed} />
-      <main className={`flex-1 ${mainMargin} transition-[margin] duration-200`}>
+      <StatusBar />
+      <NetworkIndicator />
+      <ScreenSaver />
+
+      {/* Main content area — offset from sidebar via padding, NOT margin */}
+      <main
+        className={`min-h-screen transition-[padding] duration-200 ${
+          sidebarCollapsed
+            ? 'ps-16 3xl:ps-20 4k:ps-24'
+            : 'ps-56 3xl:ps-64 4k:ps-72'
+        }`}
+      >
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<SearchRoute />} />
@@ -63,11 +74,13 @@ const App = () => (
     <TooltipProvider>
       <LanguageProvider>
         <SettingsProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppLayout />
-          </BrowserRouter>
+          <ErrorBoundary>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppLayout />
+            </BrowserRouter>
+          </ErrorBoundary>
         </SettingsProvider>
       </LanguageProvider>
     </TooltipProvider>
