@@ -448,13 +448,24 @@ export const MovieDetails = ({ movie, onBack }: MovieDetailsProps) => {
           </button>
           <button
             onClick={() => {
-              const text = `${displayTitle} (${detailMovie.year})`;
-              navigator.clipboard.writeText(text);
-              alert(lang === 'he' ? 'נוסף לרשימה!' : 'Added to watchlist!');
+              watchlist.toggle(movie);
+              const wasInList = watchlist.isInList(movie.id);
+              toast({
+                title: wasInList
+                  ? (lang === 'he' ? '✗ הוסר מהרשימה' : '✗ Removed from watchlist')
+                  : (lang === 'he' ? '✓ נוסף לרשימה' : '✓ Added to watchlist'),
+                description: displayTitle,
+              });
             }}
-            className="glass w-14 h-14 3xl:w-16 3xl:h-16 4k:w-18 4k:h-18 rounded-xl 3xl:rounded-2xl flex items-center justify-center text-foreground transition-colors tv-focus"
+            className={`glass w-14 h-14 3xl:w-16 3xl:h-16 4k:w-18 4k:h-18 rounded-xl 3xl:rounded-2xl flex items-center justify-center transition-colors tv-focus ${
+              watchlist.isInList(movie.id) ? 'text-primary bg-primary/20' : 'text-foreground'
+            }`}
           >
-            <Plus className="w-6 h-6 3xl:w-7 3xl:h-7" />
+            {watchlist.isInList(movie.id) ? (
+              <Check className="w-6 h-6 3xl:w-7 3xl:h-7" />
+            ) : (
+              <Plus className="w-6 h-6 3xl:w-7 3xl:h-7" />
+            )}
           </button>
           <button
             onClick={handleShare}
