@@ -33,7 +33,7 @@ const Index = () => {
     return (
       <Suspense fallback={
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loader2 className="w-8 h-8 3xl:w-12 3xl:h-12 text-primary animate-spin" />
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
       }>
         <MovieDetails movie={selectedMovie} onBack={handleBack} />
@@ -42,11 +42,10 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24 3xl:pb-32 4k:pb-40 page-enter">
+    <div className="min-h-screen bg-background pb-20 3xl:pb-28 page-enter">
       <HeroBanner movies={trending || []} onInfoClick={handleMovieClick} />
 
-      <div className="mt-4 3xl:mt-6 4k:mt-8 space-y-1 3xl:space-y-2">
-        {/* Feature: Continue watching / recently viewed */}
+      <div className="mt-2 3xl:mt-4 space-y-0">
         {history.items.length > 0 && (
           <ContentRow
             rowId="history"
@@ -55,7 +54,6 @@ const Index = () => {
             onMovieClick={handleMovieClick}
           />
         )}
-
         <ContentRow
           rowId="trending"
           title={t('trendingNow')}
