@@ -1,25 +1,18 @@
-import { Power, Cast, Clock, Film, Tv, Link2, Sparkles, Trophy, Radio, MonitorPlay, Puzzle, Heart } from 'lucide-react';
+import { Power, Cast, Clock, Film, Tv, Sparkles, Trophy, Radio, MonitorPlay, Puzzle, Heart, Search } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const menuItems = [
-  { icon: Film, label: 'Movies', labelHe: 'סרטים', path: '/', id: 'movies' },
-  { icon: Tv, label: 'TV Shows', labelHe: 'סדרות', path: '/', id: 'tv' },
-  { icon: Link2, label: 'Chains', labelHe: 'רשתות', path: '/', id: 'chains' },
-  { icon: Sparkles, label: 'Anime', labelHe: 'אנימה', path: '/', id: 'anime' },
-  { icon: Trophy, label: 'Live Sports', labelHe: 'ספורט חי', path: '/', id: 'sports' },
-  { icon: Radio, label: 'Live TV', labelHe: 'טלוויזיה חיה', path: '/', id: 'livetv' },
-  { icon: Puzzle, label: 'Add-ons', labelHe: 'תוספים', path: '/settings', id: 'addons' },
-  { icon: Heart, label: 'Favourites', labelHe: 'מועדפים', path: '/watchlist', id: 'favourites' },
-];
-
-const topButtons = [
-  { icon: Power, label: 'Power', action: 'power' },
-  { icon: Cast, label: 'Cast', action: 'cast' },
-  { icon: Clock, label: 'History', action: 'history' },
+  { label: 'Movies', labelHe: 'סרטים', path: '/', id: 'movies' },
+  { label: 'TV Shows', labelHe: 'סדרות', path: '/', id: 'tv' },
+  { label: 'Anime', labelHe: 'אנימה', path: '/', id: 'anime' },
+  { label: 'Live Sports', labelHe: 'ספורט חי', path: '/', id: 'sports' },
+  { label: 'Live TV', labelHe: 'טלוויזיה חיה', path: '/', id: 'livetv' },
+  { label: 'Add-ons', labelHe: 'תוספים', path: '/settings', id: 'addons' },
+  { label: 'Favourites', labelHe: 'מועדפים', path: '/watchlist', id: 'favourites' },
 ];
 
 interface Props {
@@ -40,58 +33,71 @@ export const AppSidebar = ({ collapsed }: Props) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Map current path to active menu item
   useEffect(() => {
     if (location.pathname === '/watchlist') setActiveId('favourites');
     else if (location.pathname === '/settings') setActiveId('addons');
+    else if (location.pathname === '/search') setActiveId('search');
     else if (location.pathname === '/') setActiveId('movies');
   }, [location.pathname]);
 
+  const handleNav = useCallback((id: string, path: string) => {
+    setActiveId(id);
+    navigate(path);
+  }, [navigate]);
+
   const timeStr = time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  const dateStr = time.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+  const dayName = time.toLocaleDateString('en-US', { weekday: 'long' });
+  const dateRest = time.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
     <nav
       data-sidebar
       className={cn(
         'fixed top-0 h-full z-50 flex flex-col transition-all duration-300 ease-out',
-        collapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-[320px] 3xl:w-[360px] 4k:w-[400px] opacity-100',
+        collapsed
+          ? 'w-0 opacity-0 pointer-events-none -translate-x-8'
+          : 'w-[300px] 3xl:w-[340px] 4k:w-[380px] opacity-100 translate-x-0',
         isRTL ? 'right-0' : 'left-0'
       )}
       style={{
-        background: 'linear-gradient(180deg, hsl(0 0% 0% / 0.92) 0%, hsl(0 20% 8% / 0.95) 100%)',
-        willChange: 'width, opacity',
+        background: 'linear-gradient(180deg, hsl(0 0% 0% / 0.93) 0%, hsl(0 15% 6% / 0.96) 100%)',
+        willChange: 'transform, opacity',
       }}
     >
       {/* Top action buttons */}
-      <div className="flex items-center gap-3 3xl:gap-4 px-8 3xl:px-10 pt-8 3xl:pt-10 pb-4">
-        {topButtons.map(({ icon: Icon, label, action }) => (
-          <button
-            key={action}
-            className="tv-focus w-12 h-12 3xl:w-14 3xl:h-14 4k:w-16 4k:h-16 rounded-full border-2 border-primary/40 bg-primary/10 flex items-center justify-center text-primary/80 hover:bg-primary/20 hover:border-primary/60 transition-colors outline-none"
-            aria-label={label}
-            onClick={() => {
-              if (action === 'history') navigate('/downloads');
-            }}
-          >
-            <Icon className="w-5 h-5 3xl:w-6 3xl:h-6 4k:w-7 4k:h-7" />
-          </button>
-        ))}
+      <div className="flex items-center gap-3 3xl:gap-4 px-8 3xl:px-10 pt-8 3xl:pt-10 pb-6">
+        <button
+          className="tv-focus w-11 h-11 3xl:w-13 3xl:h-13 4k:w-14 4k:h-14 rounded-full border-2 border-primary/40 bg-primary/10 flex items-center justify-center text-primary/80 hover:bg-primary/25 hover:border-primary/60 transition-colors outline-none"
+          aria-label="Power"
+        >
+          <Power className="w-5 h-5 3xl:w-6 3xl:h-6" />
+        </button>
+        <button
+          onClick={() => handleNav('search', '/search')}
+          className="tv-focus w-11 h-11 3xl:w-13 3xl:h-13 4k:w-14 4k:h-14 rounded-full border-2 border-primary/40 bg-primary/10 flex items-center justify-center text-primary/80 hover:bg-primary/25 hover:border-primary/60 transition-colors outline-none"
+          aria-label="Search"
+        >
+          <Search className="w-5 h-5 3xl:w-6 3xl:h-6" />
+        </button>
+        <button
+          onClick={() => handleNav('history', '/downloads')}
+          className="tv-focus w-11 h-11 3xl:w-13 3xl:h-13 4k:w-14 4k:h-14 rounded-full border-2 border-primary/40 bg-primary/10 flex items-center justify-center text-primary/80 hover:bg-primary/25 hover:border-primary/60 transition-colors outline-none"
+          aria-label="History"
+        >
+          <Clock className="w-5 h-5 3xl:w-6 3xl:h-6" />
+        </button>
       </div>
 
       {/* Menu items */}
-      <div className="flex-1 flex flex-col gap-0.5 px-4 3xl:px-6 pt-4 3xl:pt-6">
-        {menuItems.map(({ icon: Icon, label, labelHe, path, id }) => {
+      <div className="flex-1 flex flex-col gap-0.5 px-4 3xl:px-5">
+        {menuItems.map(({ label, labelHe, path, id }) => {
           const active = activeId === id;
           return (
             <button
               key={id}
-              onClick={() => {
-                setActiveId(id);
-                navigate(path);
-              }}
+              onClick={() => handleNav(id, path)}
               className={cn(
-                'tv-focus relative flex items-center gap-4 3xl:gap-5 rounded-lg h-12 3xl:h-14 4k:h-16 px-4 3xl:px-6 transition-colors duration-150 outline-none text-start',
+                'tv-focus relative flex items-center gap-3 rounded-lg h-12 3xl:h-14 4k:h-16 px-5 3xl:px-6 transition-colors duration-150 outline-none text-start',
                 active
                   ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground/80'
@@ -104,8 +110,8 @@ export const AppSidebar = ({ collapsed }: Props) => {
                 )} />
               )}
               <span className={cn(
-                'text-xl 3xl:text-2xl 4k:text-3xl font-medium tracking-wide whitespace-nowrap',
-                active && 'text-foreground font-semibold'
+                'text-xl 3xl:text-2xl 4k:text-3xl tracking-wide whitespace-nowrap',
+                active ? 'text-foreground font-semibold' : 'font-normal'
               )}>
                 {lang === 'he' ? labelHe : label}
               </span>
@@ -125,12 +131,7 @@ export const AppSidebar = ({ collapsed }: Props) => {
           {timeStr}
         </div>
         <div className="text-sm 3xl:text-base 4k:text-lg text-muted-foreground mt-0.5">
-          {dateStr.split(',').map((part, i) => (
-            <span key={i}>
-              {i === 1 && <span className="text-primary mx-1">•</span>}
-              {part.trim()}
-            </span>
-          ))}
+          {dayName}<span className="text-primary mx-1.5">•</span>{dateRest}
         </div>
       </div>
     </nav>

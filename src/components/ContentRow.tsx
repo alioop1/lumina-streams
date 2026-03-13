@@ -1,4 +1,4 @@
-import { useRef, memo, useEffect, useState } from 'react';
+import { useRef, memo, useEffect, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MovieCard } from './MovieCard';
 import { Movie } from '@/lib/mockData';
@@ -19,7 +19,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
   const [canScrollStart, setCanScrollStart] = useState(false);
   const [canScrollEnd, setCanScrollEnd] = useState(false);
 
-  const checkScroll = () => {
+  const checkScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
     const { scrollLeft, scrollWidth, clientWidth } = el;
@@ -27,7 +27,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
     const maxScroll = scrollWidth - clientWidth;
     setCanScrollStart(absScroll > 10);
     setCanScrollEnd(absScroll < maxScroll - 10);
-  };
+  }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -37,25 +37,25 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
     const ro = new ResizeObserver(checkScroll);
     ro.observe(el);
     return () => { el.removeEventListener('scroll', checkScroll); ro.disconnect(); };
-  }, [movies]);
+  }, [movies, checkScroll]);
 
-  const scroll = (direction: 'start' | 'end') => {
+  const scroll = useCallback((direction: 'start' | 'end') => {
     const el = scrollRef.current;
     if (!el) return;
     const scrollAmount = el.clientWidth * 0.75;
     const delta = direction === 'end' ? scrollAmount : -scrollAmount;
     el.scrollBy({ left: isRTL ? -delta : delta, behavior: 'smooth' });
-  };
+  }, [isRTL]);
 
   if (isLoading) {
     return (
-      <div className="mb-6 3xl:mb-8 4k:mb-10">
-        <h2 className="font-display text-2xl 3xl:text-3xl 4k:text-4xl tracking-wide px-6 3xl:px-10 4k:px-14 mb-3 3xl:mb-4 text-foreground">{title}</h2>
-        <div className="flex gap-3 3xl:gap-4 4k:gap-5 px-6 3xl:px-10 4k:px-14">
+      <div className="mb-6 3xl:mb-8 4k:mb-10 ps-12 3xl:ps-16 4k:ps-20">
+        <h2 className="font-display text-xl 3xl:text-2xl 4k:text-3xl tracking-wide px-6 3xl:px-8 mb-3 text-foreground">{title}</h2>
+        <div className="flex gap-3 3xl:gap-4 px-6 3xl:px-8">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="flex-shrink-0 w-[130px] sm:w-[150px] md:w-[170px] 3xl:w-[190px] 4k:w-[210px] tv:w-[230px]">
-              <div className="rounded-lg 3xl:rounded-xl aspect-[2/3] mb-2 bg-muted animate-pulse" />
-              <div className="h-4 bg-muted rounded animate-pulse mb-1" />
+            <div key={i} className="flex-shrink-0 w-[140px] 3xl:w-[170px] 4k:w-[190px]">
+              <div className="rounded-lg aspect-[2/3] mb-2 bg-muted animate-pulse" />
+              <div className="h-3.5 bg-muted rounded animate-pulse mb-1" />
               <div className="h-3 bg-muted rounded animate-pulse w-2/3" />
             </div>
           ))}
@@ -70,40 +70,39 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
   const EndArrow = isRTL ? ChevronLeft : ChevronRight;
 
   return (
-    <div className="mb-6 3xl:mb-8 4k:mb-10 relative group/row">
-      <h2 className="font-display text-2xl 3xl:text-3xl 4k:text-4xl tracking-wide px-6 3xl:px-10 4k:px-14 mb-3 3xl:mb-4 text-foreground">{title}</h2>
+    <div className="mb-4 3xl:mb-6 4k:mb-8 relative group/row">
+      <h2 className="font-display text-xl 3xl:text-2xl 4k:text-3xl tracking-wide ps-12 pe-6 3xl:ps-16 3xl:pe-8 4k:ps-20 mb-2 3xl:mb-3 text-foreground">{title}</h2>
       
-      {/* Scroll arrows — always on top, no gradient overlays on posters */}
       {canScrollStart && (
         <button
           onClick={() => scroll('start')}
-          className="absolute start-1 3xl:start-2 top-1/2 z-20 w-10 h-10 3xl:w-12 3xl:h-12 4k:w-14 4k:h-14 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-foreground opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity tv-focus"
+          className="absolute start-1 top-1/2 z-20 w-9 h-9 3xl:w-11 3xl:h-11 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-foreground opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity tv-focus"
           aria-label="Scroll back"
         >
-          <StartArrow className="w-5 h-5 3xl:w-6 3xl:h-6" />
+          <StartArrow className="w-4 h-4 3xl:w-5 3xl:h-5" />
         </button>
       )}
       {canScrollEnd && (
         <button
           onClick={() => scroll('end')}
-          className="absolute end-1 3xl:end-2 top-1/2 z-20 w-10 h-10 3xl:w-12 3xl:h-12 4k:w-14 4k:h-14 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-foreground opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity tv-focus"
+          className="absolute end-1 top-1/2 z-20 w-9 h-9 3xl:w-11 3xl:h-11 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-foreground opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity tv-focus"
           aria-label="Scroll forward"
         >
-          <EndArrow className="w-5 h-5 3xl:w-6 3xl:h-6" />
+          <EndArrow className="w-4 h-4 3xl:w-5 3xl:h-5" />
         </button>
       )}
 
       <div
         data-nav-row={rowId}
         ref={scrollRef}
-        className="flex gap-3 3xl:gap-4 4k:gap-5 overflow-x-auto px-6 3xl:px-10 4k:px-14 pt-2 3xl:pt-3 pb-4 3xl:pb-5 snap-x snap-mandatory scroll-smooth"
+        className="flex gap-3 3xl:gap-4 overflow-x-auto ps-12 pe-6 3xl:ps-16 3xl:pe-8 4k:ps-20 pt-1 pb-3 snap-x snap-mandatory scroll-smooth scrollbar-hide"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {movies.map((movie, i) => (
           <button
             key={`${movie.id}-${i}`}
             onClick={() => onMovieClick(movie)}
-            className="tv-focus flex-shrink-0 rounded-lg 3xl:rounded-xl text-start focus-card outline-none snap-start"
+            className="tv-focus flex-shrink-0 rounded-lg text-start focus-card outline-none snap-start"
           >
             <MovieCard movie={movie} index={i} />
           </button>
