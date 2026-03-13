@@ -10,7 +10,6 @@ import { SettingsProvider } from "@/contexts/SettingsContext";
 import { useTVGlobalNavigation } from "@/hooks/use-tv";
 import { useFocusMemory } from "@/hooks/useFocusMemory";
 import { NetworkIndicator } from "@/components/NetworkIndicator";
-import { StatusBar } from "@/components/StatusBar";
 import { ScreenSaver } from "@/components/ScreenSaver";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
@@ -24,13 +23,13 @@ const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const { dir } = useLanguage();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleFocusChange = useCallback(() => {
     const active = document.activeElement as HTMLElement;
     if (!active) return;
     const inSidebar = !!active.closest('[data-sidebar]');
-    setSidebarCollapsed(!inSidebar);
+    setSidebarOpen(inSidebar);
   }, []);
 
   useEffect(() => {
@@ -43,19 +42,12 @@ const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground" dir={dir}>
-      <AppSidebar collapsed={sidebarCollapsed} />
-      <StatusBar />
+      <AppSidebar collapsed={!sidebarOpen} />
       <NetworkIndicator />
       <ScreenSaver />
 
-      {/* Main content area — offset from sidebar via padding, NOT margin */}
-      <main
-        className={`min-h-screen transition-[padding] duration-200 ${
-          sidebarCollapsed
-            ? 'ps-16 3xl:ps-20 4k:ps-24'
-            : 'ps-56 3xl:ps-64 4k:ps-72'
-        }`}
-      >
+      {/* Main content — full width, sidebar overlays on top */}
+      <main className="min-h-screen">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<SearchRoute />} />
