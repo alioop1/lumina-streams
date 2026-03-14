@@ -213,7 +213,7 @@ const SettingsPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background p-8 3xl:p-12 4k:p-16" dir={dir}>
+    <div className="min-h-screen bg-background ps-16 pe-8 py-8 3xl:ps-20 3xl:pe-12 3xl:py-12 4k:ps-24 4k:pe-16 4k:py-16 page-enter" dir={dir}>
       <div className="flex items-center gap-4 3xl:gap-5 mb-10 3xl:mb-12">
         <div className="w-12 h-12 3xl:w-14 3xl:h-14 4k:w-16 4k:h-16 rounded-xl 3xl:rounded-2xl bg-primary/10 flex items-center justify-center">
           <Settings className="w-6 h-6 3xl:w-7 3xl:h-7 4k:w-8 4k:h-8 text-primary" />

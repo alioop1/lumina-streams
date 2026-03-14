@@ -119,8 +119,8 @@ export const HeroBanner = ({ movies, onInfoClick }: HeroBannerProps) => {
         </>
       )}
 
-      {/* Content overlay */}
-      <div className={`absolute bottom-0 start-0 end-0 p-8 3xl:p-12 4k:p-16 space-y-3 3xl:space-y-5 transition-opacity duration-300 will-change-[opacity] ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+      {/* Content overlay — shifted right to avoid sidebar zone */}
+      <div className={`absolute bottom-0 start-0 end-0 ps-16 pe-8 pb-8 pt-8 3xl:ps-20 3xl:pe-12 3xl:pb-12 4k:ps-24 4k:pe-16 4k:pb-16 space-y-3 3xl:space-y-5 transition-opacity duration-300 will-change-[opacity] ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
         <h1 className="font-display text-5xl 3xl:text-6xl 4k:text-7xl tv:text-8xl text-foreground drop-shadow-lg">
           {displayTitle}
         </h1>

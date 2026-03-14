@@ -35,7 +35,7 @@ const Downloads = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-12 3xl:pt-16 4k:pt-20 pb-24 3xl:pb-32 px-6 3xl:px-10 4k:px-14" dir={dir}>
+    <div className="min-h-screen bg-background pt-12 3xl:pt-16 4k:pt-20 pb-24 3xl:pb-32 px-12 3xl:px-16 4k:px-20 page-enter" dir={dir}>
       <div className="flex items-center justify-between mb-6 3xl:mb-8">
         <h1 className="font-display text-3xl 3xl:text-4xl 4k:text-5xl text-foreground">
           {lang === 'he' ? 'הורדות' : 'Downloads'}
