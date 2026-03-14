@@ -1,47 +1,55 @@
-import { Power, Cast, Clock, Film, Tv, Sparkles, Trophy, Radio, MonitorPlay, Puzzle, Heart, Search } from 'lucide-react';
+import { Power, Clock, Search, Film, Tv, Sparkles, Trophy, Radio, Puzzle, Heart } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { cn } from '@/lib/utils';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 
 const menuItems = [
-  { label: 'Movies', labelHe: 'סרטים', path: '/', id: 'movies' },
-  { label: 'TV Shows', labelHe: 'סדרות', path: '/', id: 'tv' },
-  { label: 'Anime', labelHe: 'אנימה', path: '/', id: 'anime' },
-  { label: 'Live Sports', labelHe: 'ספורט חי', path: '/', id: 'sports' },
-  { label: 'Live TV', labelHe: 'טלוויזיה חיה', path: '/', id: 'livetv' },
-  { label: 'Add-ons', labelHe: 'תוספים', path: '/settings', id: 'addons' },
-  { label: 'Favourites', labelHe: 'מועדפים', path: '/watchlist', id: 'favourites' },
+  { label: 'Movies', labelHe: 'סרטים', path: '/movies', id: 'movies', icon: Film },
+  { label: 'TV Shows', labelHe: 'סדרות', path: '/tv-shows', id: 'tv', icon: Tv },
+  { label: 'Anime', labelHe: 'אנימה', path: '/anime', id: 'anime', icon: Sparkles },
+  { label: 'Live Sports', labelHe: 'ספורט חי', path: '/live-sports', id: 'sports', icon: Trophy },
+  { label: 'Live TV', labelHe: 'טלוויזיה חיה', path: '/live-tv', id: 'livetv', icon: Radio },
+  { label: 'Add-ons', labelHe: 'תוספים', path: '/addons', id: 'addons', icon: Puzzle },
+  { label: 'Favourites', labelHe: 'מועדפים', path: '/watchlist', id: 'favourites', icon: Heart },
 ];
+
+const pathToId: Record<string, string> = {
+  '/': 'movies',
+  '/movies': 'movies',
+  '/tv-shows': 'tv',
+  '/anime': 'anime',
+  '/live-sports': 'sports',
+  '/live-tv': 'livetv',
+  '/addons': 'addons',
+  '/watchlist': 'favourites',
+  '/settings': 'settings',
+  '/search': 'search',
+  '/history': 'history',
+  '/downloads': 'downloads',
+};
 
 interface Props {
   collapsed: boolean;
 }
 
-export const AppSidebar = ({ collapsed }: Props) => {
+export const AppSidebar = memo(({ collapsed }: Props) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { lang, dir } = useLanguage();
   const { count } = useWatchlist();
   const isRTL = dir === 'rtl';
   const [time, setTime] = useState(() => new Date());
-  const [activeId, setActiveId] = useState('movies');
+
+  const activeId = pathToId[location.pathname] || 'movies';
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 30000);
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (location.pathname === '/watchlist') setActiveId('favourites');
-    else if (location.pathname === '/settings') setActiveId('addons');
-    else if (location.pathname === '/search') setActiveId('search');
-    else if (location.pathname === '/') setActiveId('movies');
-  }, [location.pathname]);
-
-  const handleNav = useCallback((id: string, path: string) => {
-    setActiveId(id);
+  const handleNav = useCallback((path: string) => {
     navigate(path);
   }, [navigate]);
 
@@ -56,7 +64,7 @@ export const AppSidebar = ({ collapsed }: Props) => {
         'fixed top-0 h-full z-50 flex flex-col transition-all duration-300 ease-out',
         collapsed
           ? 'w-0 opacity-0 pointer-events-none -translate-x-8'
-          : 'w-[300px] 3xl:w-[340px] 4k:w-[380px] opacity-100 translate-x-0',
+          : 'w-[280px] 3xl:w-[320px] 4k:w-[360px] opacity-100 translate-x-0',
         isRTL ? 'right-0' : 'left-0'
       )}
       style={{
@@ -65,39 +73,50 @@ export const AppSidebar = ({ collapsed }: Props) => {
       }}
     >
       {/* Top action buttons */}
-      <div className="flex items-center gap-3 3xl:gap-4 px-8 3xl:px-10 pt-8 3xl:pt-10 pb-6">
+      <div className="flex items-center gap-3 3xl:gap-4 px-7 3xl:px-9 pt-7 3xl:pt-9 pb-5">
         <button
-          className="tv-focus w-11 h-11 3xl:w-13 3xl:h-13 4k:w-14 4k:h-14 rounded-full border-2 border-primary/40 bg-primary/10 flex items-center justify-center text-primary/80 hover:bg-primary/25 hover:border-primary/60 transition-colors outline-none"
-          aria-label="Power"
+          onClick={() => handleNav('/history')}
+          className={cn(
+            'tv-focus w-11 h-11 3xl:w-13 3xl:h-13 rounded-full border-2 flex items-center justify-center transition-colors outline-none',
+            activeId === 'history'
+              ? 'border-primary bg-primary/25 text-primary'
+              : 'border-primary/40 bg-primary/10 text-primary/80 hover:bg-primary/25 hover:border-primary/60'
+          )}
+          aria-label="History"
         >
-          <Power className="w-5 h-5 3xl:w-6 3xl:h-6" />
+          <Clock className="w-5 h-5 3xl:w-6 3xl:h-6" />
         </button>
         <button
-          onClick={() => handleNav('search', '/search')}
-          className="tv-focus w-11 h-11 3xl:w-13 3xl:h-13 4k:w-14 4k:h-14 rounded-full border-2 border-primary/40 bg-primary/10 flex items-center justify-center text-primary/80 hover:bg-primary/25 hover:border-primary/60 transition-colors outline-none"
+          onClick={() => handleNav('/search')}
+          className={cn(
+            'tv-focus w-11 h-11 3xl:w-13 3xl:h-13 rounded-full border-2 flex items-center justify-center transition-colors outline-none',
+            activeId === 'search'
+              ? 'border-primary bg-primary/25 text-primary'
+              : 'border-primary/40 bg-primary/10 text-primary/80 hover:bg-primary/25 hover:border-primary/60'
+          )}
           aria-label="Search"
         >
           <Search className="w-5 h-5 3xl:w-6 3xl:h-6" />
         </button>
         <button
-          onClick={() => handleNav('history', '/downloads')}
-          className="tv-focus w-11 h-11 3xl:w-13 3xl:h-13 4k:w-14 4k:h-14 rounded-full border-2 border-primary/40 bg-primary/10 flex items-center justify-center text-primary/80 hover:bg-primary/25 hover:border-primary/60 transition-colors outline-none"
-          aria-label="History"
+          className="tv-focus w-11 h-11 3xl:w-13 3xl:h-13 rounded-full border-2 border-primary/40 bg-primary/10 flex items-center justify-center text-primary/80 hover:bg-primary/25 hover:border-primary/60 transition-colors outline-none"
+          aria-label="Power"
+          onClick={() => window.close()}
         >
-          <Clock className="w-5 h-5 3xl:w-6 3xl:h-6" />
+          <Power className="w-5 h-5 3xl:w-6 3xl:h-6" />
         </button>
       </div>
 
       {/* Menu items */}
-      <div className="flex-1 flex flex-col gap-0.5 px-4 3xl:px-5">
+      <div className="flex-1 flex flex-col gap-0.5 px-4 3xl:px-5 overflow-y-auto">
         {menuItems.map(({ label, labelHe, path, id }) => {
           const active = activeId === id;
           return (
             <button
               key={id}
-              onClick={() => handleNav(id, path)}
+              onClick={() => handleNav(path)}
               className={cn(
-                'tv-focus relative flex items-center gap-3 rounded-lg h-12 3xl:h-14 4k:h-16 px-5 3xl:px-6 transition-colors duration-150 outline-none text-start',
+                'tv-focus relative flex items-center gap-3 rounded-lg h-11 3xl:h-13 4k:h-15 px-4 3xl:px-5 transition-colors duration-150 outline-none text-start',
                 active
                   ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground/80'
@@ -105,12 +124,12 @@ export const AppSidebar = ({ collapsed }: Props) => {
             >
               {active && (
                 <div className={cn(
-                  'absolute top-3 bottom-3 w-[3px] rounded-full bg-primary',
+                  'absolute top-2.5 bottom-2.5 w-[3px] rounded-full bg-primary',
                   isRTL ? 'right-0' : 'left-0'
                 )} />
               )}
               <span className={cn(
-                'text-xl 3xl:text-2xl 4k:text-3xl tracking-wide whitespace-nowrap',
+                'text-lg 3xl:text-xl 4k:text-2xl tracking-wide whitespace-nowrap',
                 active ? 'text-foreground font-semibold' : 'font-normal'
               )}>
                 {lang === 'he' ? labelHe : label}
@@ -126,7 +145,7 @@ export const AppSidebar = ({ collapsed }: Props) => {
       </div>
 
       {/* Clock at bottom */}
-      <div className="px-8 3xl:px-10 pb-8 3xl:pb-10 pt-4">
+      <div className="px-7 3xl:px-9 pb-7 3xl:pb-9 pt-4">
         <div className="text-2xl 3xl:text-3xl 4k:text-4xl font-semibold text-foreground/90 tracking-wide">
           {timeStr}
         </div>
@@ -136,4 +155,6 @@ export const AppSidebar = ({ collapsed }: Props) => {
       </div>
     </nav>
   );
-};
+});
+
+AppSidebar.displayName = 'AppSidebar';
