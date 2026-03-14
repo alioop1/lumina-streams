@@ -12,6 +12,9 @@ interface ContentRowProps {
   rowId: string;
 }
 
+// Safe area padding to prevent poster clipping near sidebar zone
+const SAFE_AREA = 'ps-16 pe-6 3xl:ps-20 3xl:pe-8 4k:ps-24 4k:pe-10';
+
 export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId }: ContentRowProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { dir } = useLanguage();
@@ -49,14 +52,14 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
 
   if (isLoading) {
     return (
-      <div className="mb-6 3xl:mb-8 4k:mb-10 ps-12 3xl:ps-16 4k:ps-20">
-        <h2 className="font-display text-xl 3xl:text-2xl 4k:text-3xl tracking-wide px-6 3xl:px-8 mb-3 text-foreground">{title}</h2>
-        <div className="flex gap-3 3xl:gap-4 px-6 3xl:px-8">
+      <div className={`mb-6 3xl:mb-8 4k:mb-10 ${SAFE_AREA}`}>
+        <h2 className="font-display text-xl 3xl:text-2xl 4k:text-3xl tracking-wide mb-3 text-foreground">{title}</h2>
+        <div className="flex gap-3 3xl:gap-4">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="flex-shrink-0 w-[140px] 3xl:w-[170px] 4k:w-[190px]">
-              <div className="rounded-lg aspect-[2/3] mb-2 bg-muted animate-pulse" />
-              <div className="h-3.5 bg-muted rounded animate-pulse mb-1" />
-              <div className="h-3 bg-muted rounded animate-pulse w-2/3" />
+              <div className="rounded-lg aspect-[2/3] mb-2 bg-muted skeleton-pulse" />
+              <div className="h-3.5 bg-muted rounded skeleton-pulse mb-1" />
+              <div className="h-3 bg-muted rounded skeleton-pulse w-2/3" />
             </div>
           ))}
         </div>
@@ -71,12 +74,12 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
 
   return (
     <div className="mb-4 3xl:mb-6 4k:mb-8 relative group/row">
-      <h2 className="font-display text-xl 3xl:text-2xl 4k:text-3xl tracking-wide ps-12 pe-6 3xl:ps-16 3xl:pe-8 4k:ps-20 mb-2 3xl:mb-3 text-foreground">{title}</h2>
+      <h2 className={`font-display text-xl 3xl:text-2xl 4k:text-3xl tracking-wide ${SAFE_AREA} mb-2 3xl:mb-3 text-foreground`}>{title}</h2>
       
       {canScrollStart && (
         <button
           onClick={() => scroll('start')}
-          className="absolute start-1 top-1/2 z-20 w-9 h-9 3xl:w-11 3xl:h-11 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-foreground opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity tv-focus"
+          className="absolute start-2 top-1/2 z-20 w-9 h-9 3xl:w-11 3xl:h-11 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-foreground opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity tv-focus"
           aria-label="Scroll back"
         >
           <StartArrow className="w-4 h-4 3xl:w-5 3xl:h-5" />
@@ -85,7 +88,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
       {canScrollEnd && (
         <button
           onClick={() => scroll('end')}
-          className="absolute end-1 top-1/2 z-20 w-9 h-9 3xl:w-11 3xl:h-11 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-foreground opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity tv-focus"
+          className="absolute end-2 top-1/2 z-20 w-9 h-9 3xl:w-11 3xl:h-11 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-foreground opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity tv-focus"
           aria-label="Scroll forward"
         >
           <EndArrow className="w-4 h-4 3xl:w-5 3xl:h-5" />
@@ -95,7 +98,7 @@ export const ContentRow = memo(({ title, movies, onMovieClick, isLoading, rowId 
       <div
         data-nav-row={rowId}
         ref={scrollRef}
-        className="flex gap-3 3xl:gap-4 overflow-x-auto ps-12 pe-6 3xl:ps-16 3xl:pe-8 4k:ps-20 pt-1 pb-3 snap-x snap-mandatory scroll-smooth scrollbar-hide"
+        className={`flex gap-3 3xl:gap-4 overflow-x-auto ${SAFE_AREA} pt-1 pb-3 snap-x snap-mandatory scroll-smooth scrollbar-hide`}
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {movies.map((movie, i) => (

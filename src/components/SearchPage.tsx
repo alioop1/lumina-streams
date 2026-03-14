@@ -50,7 +50,7 @@ export const SearchPage = ({ onMovieClick }: SearchPageProps) => {
   const gridCols = 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 3xl:grid-cols-7 4k:grid-cols-8 tv:grid-cols-10';
 
   return (
-    <div className="min-h-screen bg-background pt-12 3xl:pt-16 4k:pt-20 pb-24 3xl:pb-32 px-6 3xl:px-10 4k:px-14" dir={dir}>
+    <div className="min-h-screen bg-background pt-12 3xl:pt-16 4k:pt-20 pb-24 3xl:pb-32 px-12 3xl:px-16 4k:px-20 page-enter" dir={dir}>
       <h1 className="font-display text-3xl 3xl:text-4xl 4k:text-5xl text-foreground mb-6 3xl:mb-8">{t('searchTitle')}</h1>
 
       {/* Search input row */}
